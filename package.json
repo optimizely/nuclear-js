@@ -1,0 +1,23 @@
+{
+  "name": "fluxit",
+  "version": "0.0.1",
+  "description": "Flux implementation",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "jest": {
+    "scriptPreprocessor": "jestPreprocessor.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "jstransform-loader": "^0.1.1",
+    "webpack": "^1.4.0-beta4",
+    "jstransform": "^6.2.0"
+  },
+  "devDependencies": {
+    "jest": "^0.1.37",
+    "jasmine": "^2.0.1"
+  }
+}
