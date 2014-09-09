@@ -44,21 +44,42 @@
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var DispatchStream = __webpack_require__(1);
+	var Writable = __webpack_require__(2).Writable;
+	var Store = __webpack_require__(1);
 
 
 	  function Flux() {"use strict";
 	    this.stores = {}
 	    this.actionGroups = {}
-	    this.dispatchStream = new DispatchStream(this)
+	    this.dispatchStream = new Writable()
+
+	    null.call(this)
 	  }
 
 	  Flux.prototype.registerStore=function(id, store) {"use strict";
+	    if (!(store instanceof Store)) {
+	      store = new Store()
+	    }
+	    // save reference
 	    this.stores[id] = store
+	    // pipe all dispatches
+	    this.dispatchStream.pipe(store)
+	  };
+
+	  Flux.prototype.unregisterStore=function(id) {"use strict";
+	    this.dispatchStream.unpipe(this.stores[id])
 	  };
 
 	  Flux.prototype.registerActionGroup=function(id, actionGroup) {"use strict";
 	    this.actionGroups[id] = actionGroup
+	  };
+
+	  Flux.prototype.getStore=function(id) {"use strict";
+	    return this.stores[id]
+	  };
+
+	  Flux.prototype.getActionGroup=function(id) {"use strict";
+	    return this.actionGroups[id]
 	  };
 
 
@@ -69,24 +90,34 @@
 /* 1 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Writable = __webpack_require__(2).Writable;
+	var StoreStream = __webpack_require__(3);
 
-	for(var Writable____Key in Writable){if(Writable.hasOwnProperty(Writable____Key)){DispatchStream[Writable____Key]=Writable[Writable____Key];}}var ____SuperProtoOfWritable=Writable===null?null:Writable.prototype;DispatchStream.prototype=Object.create(____SuperProtoOfWritable);DispatchStream.prototype.constructor=DispatchStream;DispatchStream.__superConstructor__=Writable;
-	  /**
-	   * @param {Flux} flux
-	   */
-	  function DispatchStream(flux) {"use strict";
-	    this.flux = flux
 
-	    Writable.call(this)
+	  function Store() {"use strict";
+	    null.call(this)
+	    this.state = null
+	    this.stream = new StoreStream()
 	  }
 
-	  DispatchStream.prototype.$DispatchStream_write=function(action) {"use strict";
-	    this.flux.dispatch(action)
+	  // state getter/setter
+	  Store.prototype.getState=function() {"use strict";
+	    return this.state
+	  };
+
+	  Store.prototype.setState=function(state) {"use strict";
+	    this.state = state;
+	  };
+
+	  Store.prototype.emitState=function() {"use strict";
+	    this.stream.$Store_read()
+	  };
+
+	  Store.prototype.handle=function(action) {"use strict";
+	    // Stores must implement
 	  };
 
 
-	module.exports = DispatchStream
+	module.exports = Store;
 
 
 /***/ },
@@ -116,15 +147,15 @@
 
 	module.exports = Stream;
 
-	var EE = __webpack_require__(3).EventEmitter;
-	var inherits = __webpack_require__(4);
+	var EE = __webpack_require__(4).EventEmitter;
+	var inherits = __webpack_require__(5);
 
 	inherits(Stream, EE);
-	Stream.Readable = __webpack_require__(5);
-	Stream.Writable = __webpack_require__(6);
-	Stream.Duplex = __webpack_require__(7);
-	Stream.Transform = __webpack_require__(8);
-	Stream.PassThrough = __webpack_require__(9);
+	Stream.Readable = __webpack_require__(6);
+	Stream.Writable = __webpack_require__(7);
+	Stream.Duplex = __webpack_require__(8);
+	Stream.Transform = __webpack_require__(9);
+	Stream.PassThrough = __webpack_require__(10);
 
 	// Backwards-compat with node 0.4.x
 	Stream.Stream = Stream;
@@ -224,6 +255,41 @@
 
 /***/ },
 /* 3 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var TransformStream = __webpack_require__(2).Transform;
+
+	for(var TransformStream____Key in TransformStream){if(TransformStream.hasOwnProperty(TransformStream____Key)){StoreStream[TransformStream____Key]=TransformStream[TransformStream____Key];}}var ____SuperProtoOfTransformStream=TransformStream===null?null:TransformStream.prototype;StoreStream.prototype=Object.create(____SuperProtoOfTransformStream);StoreStream.prototype.constructor=StoreStream;StoreStream.__superConstructor__=TransformStream;
+	  /**
+	   * @param {Store} store
+	   */
+	  function StoreStream(store) {"use strict";
+	    this.store = store;
+
+	    TransformStream.call(this)
+	  }
+
+	  /**
+	   * Implements Writable
+	   */
+	  StoreStream.prototype.$StoreStream_write=function(action) {"use strict";
+	    // handle the action and write to the output
+	    this.store.handle(action)
+	  };
+
+	  /**
+	   * Implements Readable
+	   */
+	  StoreStream.prototype.$StoreStream_read=function(action) {"use strict";
+	    this.push(this.store.getState())
+	  };
+
+
+	module.exports = StoreStream
+
+
+/***/ },
+/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -530,7 +596,7 @@
 
 
 /***/ },
-/* 4 */
+/* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
 	if (typeof Object.create === 'function') {
@@ -559,23 +625,16 @@
 
 
 /***/ },
-/* 5 */
-/***/ function(module, exports, __webpack_require__) {
-
-	exports = module.exports = __webpack_require__(10);
-	exports.Stream = __webpack_require__(2);
-	exports.Readable = exports;
-	exports.Writable = __webpack_require__(11);
-	exports.Duplex = __webpack_require__(12);
-	exports.Transform = __webpack_require__(13);
-	exports.PassThrough = __webpack_require__(14);
-
-
-/***/ },
 /* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(11)
+	exports = module.exports = __webpack_require__(11);
+	exports.Stream = __webpack_require__(2);
+	exports.Readable = exports;
+	exports.Writable = __webpack_require__(12);
+	exports.Duplex = __webpack_require__(13);
+	exports.Transform = __webpack_require__(14);
+	exports.PassThrough = __webpack_require__(15);
 
 
 /***/ },
@@ -603,6 +662,13 @@
 /* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
+	module.exports = __webpack_require__(15)
+
+
+/***/ },
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
 	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
 	//
 	// Permission is hereby granted, free of charge, to any person obtaining a
@@ -627,7 +693,7 @@
 	module.exports = Readable;
 
 	/*<replacement>*/
-	var isArray = __webpack_require__(16);
+	var isArray = __webpack_require__(18);
 	/*</replacement>*/
 
 
@@ -637,7 +703,7 @@
 
 	Readable.ReadableState = ReadableState;
 
-	var EE = __webpack_require__(3).EventEmitter;
+	var EE = __webpack_require__(4).EventEmitter;
 
 	/*<replacement>*/
 	if (!EE.listenerCount) EE.listenerCount = function(emitter, type) {
@@ -648,15 +714,15 @@
 	var Stream = __webpack_require__(2);
 
 	/*<replacement>*/
-	var util = __webpack_require__(21);
-	util.inherits = __webpack_require__(20);
+	var util = __webpack_require__(22);
+	util.inherits = __webpack_require__(21);
 	/*</replacement>*/
 
 	var StringDecoder;
 
 
 	/*<replacement>*/
-	var debug = __webpack_require__(15);
+	var debug = __webpack_require__(16);
 	if (debug && debug.debuglog) {
 	  debug = debug.debuglog('stream');
 	} else {
@@ -668,7 +734,7 @@
 	util.inherits(Readable, Stream);
 
 	function ReadableState(options, stream) {
-	  var Duplex = __webpack_require__(12);
+	  var Duplex = __webpack_require__(13);
 
 	  options = options || {};
 
@@ -729,14 +795,14 @@
 	  this.encoding = null;
 	  if (options.encoding) {
 	    if (!StringDecoder)
-	      StringDecoder = __webpack_require__(18).StringDecoder;
+	      StringDecoder = __webpack_require__(19).StringDecoder;
 	    this.decoder = new StringDecoder(options.encoding);
 	    this.encoding = options.encoding;
 	  }
 	}
 
 	function Readable(options) {
-	  var Duplex = __webpack_require__(12);
+	  var Duplex = __webpack_require__(13);
 
 	  if (!(this instanceof Readable))
 	    return new Readable(options);
@@ -839,7 +905,7 @@
 	// backwards compatibility.
 	Readable.prototype.setEncoding = function(enc) {
 	  if (!StringDecoder)
-	    StringDecoder = __webpack_require__(18).StringDecoder;
+	    StringDecoder = __webpack_require__(19).StringDecoder;
 	  this._readableState.decoder = new StringDecoder(enc);
 	  this._readableState.encoding = enc;
 	  return this;
@@ -1555,10 +1621,10 @@
 	  return -1;
 	}
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20)))
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -1596,8 +1662,8 @@
 
 
 	/*<replacement>*/
-	var util = __webpack_require__(21);
-	util.inherits = __webpack_require__(20);
+	var util = __webpack_require__(22);
+	util.inherits = __webpack_require__(21);
 	/*</replacement>*/
 
 	var Stream = __webpack_require__(2);
@@ -1611,7 +1677,7 @@
 	}
 
 	function WritableState(options, stream) {
-	  var Duplex = __webpack_require__(12);
+	  var Duplex = __webpack_require__(13);
 
 	  options = options || {};
 
@@ -1699,7 +1765,7 @@
 	}
 
 	function Writable(options) {
-	  var Duplex = __webpack_require__(12);
+	  var Duplex = __webpack_require__(13);
 
 	  // Writable ctor is applied to Duplexes, though they're not
 	  // instanceof Writable, they're instanceof Readable.
@@ -2039,10 +2105,10 @@
 	  state.ended = true;
 	}
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20)))
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -2083,12 +2149,12 @@
 
 
 	/*<replacement>*/
-	var util = __webpack_require__(21);
-	util.inherits = __webpack_require__(20);
+	var util = __webpack_require__(22);
+	util.inherits = __webpack_require__(21);
 	/*</replacement>*/
 
-	var Readable = __webpack_require__(10);
-	var Writable = __webpack_require__(11);
+	var Readable = __webpack_require__(11);
+	var Writable = __webpack_require__(12);
 
 	util.inherits(Duplex, Readable);
 
@@ -2135,10 +2201,10 @@
 	  }
 	}
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20)))
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -2207,11 +2273,11 @@
 
 	module.exports = Transform;
 
-	var Duplex = __webpack_require__(12);
+	var Duplex = __webpack_require__(13);
 
 	/*<replacement>*/
-	var util = __webpack_require__(21);
-	util.inherits = __webpack_require__(20);
+	var util = __webpack_require__(22);
+	util.inherits = __webpack_require__(21);
 	/*</replacement>*/
 
 	util.inherits(Transform, Duplex);
@@ -2353,7 +2419,7 @@
 
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -2383,11 +2449,11 @@
 
 	module.exports = PassThrough;
 
-	var Transform = __webpack_require__(13);
+	var Transform = __webpack_require__(14);
 
 	/*<replacement>*/
-	var util = __webpack_require__(21);
-	util.inherits = __webpack_require__(20);
+	var util = __webpack_require__(22);
+	util.inherits = __webpack_require__(21);
 	/*</replacement>*/
 
 	util.inherits(PassThrough, Transform);
@@ -2405,19 +2471,10 @@
 
 
 /***/ },
-/* 15 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* (ignored) */
-
-/***/ },
 /* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = Array.isArray || function (arr) {
-	  return Object.prototype.toString.call(arr) == '[object Array]';
-	};
-
+	/* (ignored) */
 
 /***/ },
 /* 17 */
@@ -2430,8 +2487,8 @@
 	 * @license  MIT
 	 */
 
-	var base64 = __webpack_require__(23)
-	var ieee754 = __webpack_require__(22)
+	var base64 = __webpack_require__(24)
+	var ieee754 = __webpack_require__(23)
 
 	exports.Buffer = Buffer
 	exports.SlowBuffer = Buffer
@@ -3599,6 +3656,15 @@
 /* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
+	module.exports = Array.isArray || function (arr) {
+	  return Object.prototype.toString.call(arr) == '[object Array]';
+	};
+
+
+/***/ },
+/* 19 */
+/***/ function(module, exports, __webpack_require__) {
+
 	// Copyright Joyent, Inc. and other Node contributors.
 	//
 	// Permission is hereby granted, free of charge, to any person obtaining a
@@ -3823,7 +3889,7 @@
 
 
 /***/ },
-/* 19 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// shim for using process in browser
@@ -3892,7 +3958,7 @@
 
 
 /***/ },
-/* 20 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	if (typeof Object.create === 'function') {
@@ -3921,7 +3987,7 @@
 
 
 /***/ },
-/* 21 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {// Copyright Joyent, Inc. and other Node contributors.
@@ -4034,7 +4100,7 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(17).Buffer))
 
 /***/ },
-/* 22 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	exports.read = function(buffer, offset, isLE, mLen, nBytes) {
@@ -4124,7 +4190,7 @@
 
 
 /***/ },
-/* 23 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
