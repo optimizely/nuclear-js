@@ -1,14 +1,19 @@
 var through = require('through')
+var Immutable = require('immutable')
 
 class Store {
   constructor() {
     this.state = null
     this.stream = through(
-      (action) => {
+     (action) => {
         this.handle(action)
         this.emitState()
       }
     )
+  }
+
+  // extending classes implement
+  initialize() {
   }
 
   // state getter/setter
@@ -21,6 +26,9 @@ class Store {
   }
 
   emitState() {
+    if (!this.stream) {
+      throw new Error("Cannot emit state until the store is initialized")
+    }
     this.stream.queue(this.getState())
   }
 

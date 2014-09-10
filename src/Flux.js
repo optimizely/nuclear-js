@@ -12,6 +12,8 @@ class Flux {
     if (!(store instanceof Store)) {
       store = new Store()
     }
+    // initialize the store's stream
+    store.initialize()
     // save reference
     this.stores[id] = store
     // pipe all dispatches

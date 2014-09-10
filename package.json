@@ -15,7 +15,8 @@
     "jstransform-loader": "^0.1.1",
     "webpack": "^1.4.0-beta4",
     "jstransform": "^6.2.0",
-    "through": "^2.3.4"
+    "through": "^2.3.4",
+    "immutable": "^2.0.17"
   },
   "devDependencies": {
     "jest": "^0.1.37",
