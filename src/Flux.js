@@ -1,5 +1,6 @@
 var through = require('through')
 var Store = require('./Store');
+var utils = require('./utils')
 
 class Flux {
   constructor() {
@@ -8,9 +9,20 @@ class Flux {
     this.dispatchStream = through()
   }
 
+  /**
+   * @param {string} actionType
+   * @param {object} payload
+   */
+  dispatch(actionType, payload) {
+    this.dispatchStream.write({
+      type: actionType,
+      payload: payload
+    })
+  }
+
   registerStore(id, store) {
     if (!(store instanceof Store)) {
-      store = new Store()
+      store = new store()
     }
     // initialize the store's stream
     store.initialize()

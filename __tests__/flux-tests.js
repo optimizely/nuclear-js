@@ -1,6 +1,5 @@
 jest.autoMockOff();
 
-var concat = require('concat-stream')
 var Flux = require('../src/Flux');
 var Store = require('../src/Store');
 

@@ -1,28 +1,67 @@
 var through = require('through')
 var Immutable = require('immutable')
+var isArray = require('./utils').isArray;
 
 class Store {
-  constructor() {
-    this.state = null
+  constructor(initialState) {
+    this.setState(initialState || {})
+    this.__handlers = {}
+    // initialize the stream interface
     this.stream = through(
      (action) => {
-        this.handle(action)
+        this.__handle(action)
         this.emitState()
       }
     )
   }
 
-  // extending classes implement
   initialize() {
+    // extending classes implement to setup action handlers
   }
 
-  // state getter/setter
-  getState() {
-    return this.state
+  bindActions(...actions) {
+    if (actions.length % 2 !== 0) {
+      throw new Error("bindActions must take an even number of arguments.");
+    }
+
+    for (var i = 0; i < actions.length; i += 2) {
+      var type = actions[i];
+      var handler = actions[i+1];
+      this.__handlers[type] = handler;
+    }
   }
 
-  setState(state) {
-    this.state = state;
+  /**
+   * Gets the state at a keypath
+   * @param {string|array} keyPath
+   * @return {Immutable.Map}
+   */
+  getState(keyPath) {
+    if (keyPath === undefined) {
+      return this.state;
+    }
+    keyPath = (isArray(keyPath)) ? keyPath : [keyPath]
+    // all keys are strings
+    keyPath = keyPath.map(String)
+    return this.state.getIn(keyPath)
+  }
+
+  /**
+   * Sets a property on the state
+   * @param {array|string|number} key
+   * @param {any} val
+   */
+  setState(keyPath, val) {
+    var args = Array.prototype.slice.call(arguments)
+    if (args.length === 1) {
+      this.state = Immutable.fromJS(args[0])
+    } else {
+      keyPath = (!isArray(keyPath)) ? [keyPath] : keyPath
+      this.state = this.state.updateIn(keyPath, curr => {
+        return Immutable.fromJS(val)
+      })
+    }
+    //console.log('set state', keyPath, val, this.state.toJS())
   }
 
   emitState() {
@@ -32,8 +71,12 @@ class Store {
     this.stream.queue(this.getState())
   }
 
-  handle(action) {
-    // Stores must implement
+  __handle(action) {
+    var handler = this.__handlers[action.type];
+    if (handler && typeof handler === 'function') {
+      handler.call(this, action.payload, action.type);
+      // TODO: implelment flux logger
+    }
   }
 }
 

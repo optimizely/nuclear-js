@@ -16,7 +16,8 @@
     "webpack": "^1.4.0-beta4",
     "jstransform": "^6.2.0",
     "through": "^2.3.4",
-    "immutable": "^2.0.17"
+    "immutable": "^2.0.17",
+    "underscore": "^1.7.0"
   },
   "devDependencies": {
     "jest": "^0.1.37",
