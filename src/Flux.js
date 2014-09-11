@@ -1,12 +1,15 @@
 var through = require('through')
 var Store = require('./Store');
 var utils = require('./utils')
+var StoreWatcher = require('./StoreWatcher')
 
 class Flux {
   constructor() {
     this.stores = {}
     this.actionGroups = {}
     this.dispatchStream = through()
+
+    this.watcher = new StoreWatcher(this)
   }
 
   /**
@@ -24,6 +27,7 @@ class Flux {
     if (!(store instanceof Store)) {
       store = new store()
     }
+    store.id = id;
     // initialize the store's stream
     store.initialize()
     // save reference
@@ -39,6 +43,30 @@ class Flux {
 
   registerActionGroup(id, actionGroup) {
     this.actionGroups[id] = actionGroup
+  }
+
+  /**
+   * @param {array<string>} storePaths
+   * @return {ComputedStream}
+   */
+  createComputedStream(...storePaths) {
+    return this.watcher.createComputed(storePaths)
+  }
+
+  /**
+   * Gets the state from the corresponding store
+   * storePath 'Entity.experiments.1' corresponds to EntityStore.getState(['experiments'], 1])
+   * @param {string} storePath
+   * @return {*}
+   */
+  getState(storePath) {
+    var exploded = storePath.split('.')
+    var storeId = exploded[0]
+    if (exploded.length === 1) {
+      return this.getStore(storeId).getState()
+    } else {
+      return this.getStore(storeId).getState(exploded.slice(1))
+    }
   }
 
   getStore(id) {

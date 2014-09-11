@@ -10,7 +10,6 @@ class Store {
     this.stream = through(
      (action) => {
         this.__handle(action)
-        this.emitState()
       }
     )
   }
@@ -64,17 +63,15 @@ class Store {
     //console.log('set state', keyPath, val, this.state.toJS())
   }
 
-  emitState() {
-    if (!this.stream) {
-      throw new Error("Cannot emit state until the store is initialized")
-    }
-    this.stream.queue(this.getState())
-  }
-
   __handle(action) {
     var handler = this.__handlers[action.type];
     if (handler && typeof handler === 'function') {
+      console.log('%s: handling action %s', this.id, action)
       handler.call(this, action.payload, action.type);
+      this.stream.queue({
+        id: this.id,
+        state: this.getState()
+      })
       // TODO: implelment flux logger
     }
   }
