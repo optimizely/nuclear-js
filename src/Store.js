@@ -39,11 +39,10 @@ class Store extends State {
     if (!handler) return
 
     if (typeof handler === 'function') {
-      console.log('%s: handling action %s', this.id, action)
       handler.call(this, action.payload, action.type);
       this.stream.queue({
         id: this.id,
-        state: this.get()
+        state: this.getState()
       })
       // TODO: implelment flux logger
     }

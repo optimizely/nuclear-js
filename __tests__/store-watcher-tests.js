@@ -57,7 +57,7 @@ describe("StoreWatcher", () => {
       expect(mockFn.mock.calls.length).toEqual(1)
     })
 
-    it("shouldnt emit on the stream if a different part of the store changes", () => {
+    it("should not emit on the stream if a different part of the store changes", () => {
       var stream = flux.createComputedStream('EntityStore.experiments')
 
       var mockFn = jest.genMockFn()
@@ -77,24 +77,23 @@ describe("StoreWatcher", () => {
 
   describe("subscribing to two Stores", () => {
     it.only("should get events when either changes", () => {
-      var stream = flux.createComputedStream('EntityStore.experiments', 'CurrentProject.id')
-
       var mockFn = jest.genMockFn()
 
-      var currentExperimentStream = stream.transform(function(data) {
-        var experiments = data[0]
-        var currentProjectId = data[1]
+      flux.createComputedStream('EntityStore.experiments', 'CurrentProject.id')
+        .transform(function(experiments, id) {
+          if (!id) return
 
-        if (!currentProjectId) return
+          /** @type {Immutable.Map} */
+          return experiments.filter(exp => {
+            return exp.get('project_id') === id
+          }).toVector()
+        })
+        .transform(toJS)
+        .pipe(through(mockFn))
 
-        /** @type {Immutable.Map} */
-        return experiments.filter(exp => {
-          return exp.get('project_id') === currentProjectId
-        }).toVector()
-      }).transform(toJS).pipe(through(mockFn))
-
-      flux.dispatch('experimentsFetched', {
-        experiments: experiments
+      flux.dispatch('entityFetched', {
+        entity: 'experiments',
+        data: experiments
       })
 
       flux.dispatch('changeCurrentProject', {
@@ -103,10 +102,7 @@ describe("StoreWatcher", () => {
         }
       })
 
-      // first call, first arg
-      expect(mockFn.mock.calls[0][0]).toEqual([])
-      // second call, first arg
-      expect(mockFn.mock.calls[1][0]).toEqual([experiments[0]])
+      expect(mockFn.mock.calls[0][0]).toEqual([experiments[0]])
     })
   })
 })

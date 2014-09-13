@@ -1,11 +1,19 @@
 var Immutable = require('immutable')
 var isArray = require('./utils').isArray
+var isFunction = require('./utils').isFunction
 var coerceKeyPath = require('./utils').keyPath
 
 
+/**
+ * Basic state model that Stores inherit from
+ */
 class State {
   constructor(initialState) {
     this.state = Immutable.fromJS(initialState || {})
+  }
+
+  getState() {
+    return this.state
   }
 
   /**
@@ -14,12 +22,6 @@ class State {
    * @return {Immutable.Map}
    */
   get(keyPath) {
-    if (
-      keyPath === undefined ||
-      (isArray(keyPath) && keyPath.length === 0)
-    ) {
-      return this.state;
-    }
     return this.state.getIn(coerceKeyPath(keyPath))
   }
 
@@ -40,11 +42,17 @@ class State {
    * @param {any} val
    */
   update(key, val) {
-    this.state = this.state.updateIn(coerceKeyPath(key), _ => {
+    var keyPath = coerceKeyPath(key)
+    var updateFn = (isFunction(val)) ? val : function(data) {
       return Immutable.fromJS(val)
-    })
+    }
+    this.state = this.state.updateIn(keyPath, updateFn)
   }
 
+  /**
+   * Sets the state as mutable and allows batch updates to the state
+   * object via this.update/this.remove/this.get etc
+   */
   mutate(transformFn) {
     this.state.asMutable()
     transformFn.call(this)

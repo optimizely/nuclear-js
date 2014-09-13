@@ -2,9 +2,11 @@ var through = require('through')
 var Store = require('./Store');
 var utils = require('./utils')
 var StoreWatcher = require('./StoreWatcher')
+var createTransformStream = require('./create-transform-stream')
 
 class Flux {
   constructor() {
+    this.__computeds = {}
     this.stores = {}
     this.actionGroups = {}
     this.dispatchStream = through()
@@ -23,6 +25,9 @@ class Flux {
     })
   }
 
+  /**
+   * Hooks a Store up to receive all actions dispatched on the system
+   */
   registerStore(id, store) {
     if (!(store instanceof Store)) {
       store = new store()
@@ -54,18 +59,40 @@ class Flux {
   }
 
   /**
+   * Registers a computed stream on the flux instance
+   * by a transform function that accepts an input stream
+   * and must pipe to an output stream
+   * @param {string} id
+   * @param {array<string>} storePaths
+   * @param {function(inputStream, outputStream)} transform
+   */
+  registerComputed(id, storePaths, transform) {
+    var outputStream = createTransformStream()
+    this.__computeds[id] = outputStream
+    var inputStream = this.createComputedStream.apply(this, storePaths)
+    transform(inputStream, outputStream)
+  }
+
+  /**
+   * Gets a computed stream
+   * @param {string} id
+   */
+  computed(id) {
+    return this.__computeds[id]
+  }
+
+  /**
    * Gets the state from the corresponding store
    * storePath 'Entity.experiments.1' corresponds to EntityStore.getState(['experiments'], 1])
    * @param {string} storePath
    * @return {*}
    */
   getState(storePath) {
-    var exploded = storePath.split('.')
-    var storeId = exploded[0]
-    if (exploded.length === 1) {
-      return this.getStore(storeId).get()
+    var path = utils.keyPath(storePath)
+    if (path.length === 1) {
+      return this.getStore(path[0]).getState()
     } else {
-      return this.getStore(storeId).get(exploded.slice(1))
+      return this.getStore(path[0]).get(path.slice(1))
     }
   }
 

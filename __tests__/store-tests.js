@@ -10,7 +10,7 @@ class MockStore extends Store {
   }
 
   __handleA(payload) {
-    this.mutate('test', payload)
+    this.update('test', payload)
   }
 }
 
@@ -26,7 +26,7 @@ describe("instantiation", () => {
   })
 })
 
-describe("#mutate", () => {
+describe("#update", () => {
   var store;
   beforeEach(() => {
     store = new Store();
@@ -37,8 +37,8 @@ describe("#mutate", () => {
       var id = 123
       var coll = [1,2,3]
 
-      store.mutate('id', id)
-      store.mutate('coll', coll)
+      store.update('id', id)
+      store.update('coll', coll)
 
       var result = store.getState().toJS()
       expect({ id: id, coll: coll }).toEqual(result)
@@ -53,7 +53,7 @@ describe("#mutate", () => {
         val: 'entity'
       }
 
-      store.mutate(keypath, entity)
+      store.update(keypath, entity)
 
       var result = store.getState().toJS()
       expect(result).toEqual({
@@ -65,7 +65,7 @@ describe("#mutate", () => {
   })
 })
 
-describe("#getState", () => {
+describe("#getState and #getState", () => {
   var store
   var state = {
     id: 'store',
@@ -87,23 +87,23 @@ describe("#getState", () => {
     expect(result).toEqual(state)
   })
 
-  it("calling getState with a string key", () => {
-    var result = store.getState('id')
+  it("calling get with a string key", () => {
+    var result = store.get('id')
     expect(result).toEqual('store')
   })
 
-  it("calling getState with an array key", () => {
-    var result = store.getState(['id'])
+  it("calling get with an array key", () => {
+    var result = store.get(['id'])
     expect(result).toEqual('store')
   })
 
-  it("calling getState with a deep array key", () => {
-    var result = store.getState(['entities', 1, 'val'])
+  it("calling get with a deep array key", () => {
+    var result = store.get(['entities', 1, 'val'])
     expect(result).toEqual(state.entities[1].val)
   })
 
-  it("calling getState that returns an immutable value", () => {
-    var result = store.getState('coll').toJS()
+  it("calling get that returns an immutable value", () => {
+    var result = store.get('coll').toJS()
     expect(result).toEqual(state.coll)
   })
 })
@@ -123,6 +123,6 @@ describe("binding action handlers", () => {
       payload: payload
     })
 
-    expect(store.getState('test').toJS()).toEqual(payload)
+    expect(store.get('test').toJS()).toEqual(payload)
   })
 })

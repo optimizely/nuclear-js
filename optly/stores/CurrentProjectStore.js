@@ -1,11 +1,12 @@
 var Store = require('../../src/Store')
+var ActionTypes = require('../ActionTypes')
 
 class CurrentProjectStore extends Store {
   constructor() {
     super({
       id: null
     })
-    this.on('changeCurrentProject', this.__changeCurrentProject)
+    this.on(ActionTypes.CHANGE_CURRENT_PROJECT, this.__changeCurrentProject)
   }
 
   __changeCurrentProject(payload) {

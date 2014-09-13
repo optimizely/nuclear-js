@@ -1,20 +1,3 @@
-var through = require('through')
-
-function createTransformStream(transformFn) {
-  var stream = through(function(data) {
-    result = transformFn(data)
-    if (result !== undefined) {
-      this.queue(result)
-    }
-  })
-  stream.transform = function(fn) {
-    transformStream = createTransformStream(fn)
-    stream.pipe(transformStream)
-    return transformStream
-  }
-  return stream
-}
-
 /**
  * A wrapper around a through stream that holds its dependencies
  *

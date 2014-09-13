@@ -1,5 +1,5 @@
 var through = require('through')
-var ComputedStream = require('./ComputedStream')
+var createTransformStream = require('./create-transform-stream')
 var Immutable = require('immutable')
 
 class StoreWatcher {
@@ -32,7 +32,9 @@ class StoreWatcher {
    * @param {array.<string>} storePaths array of 'StoreId.keypart1.keypart2'
    */
   createComputed(storePaths) {
-    var computedStream = new ComputedStream(storePaths)
+    var computedStream = createTransformStream()
+    // bind the store paths to an instance of the transform stream
+    computedStream.storePaths = storePaths
     this.__computedStreams.push(computedStream)
     storePaths.forEach(path => {
       this.__setupWatch(path, computedStream)
