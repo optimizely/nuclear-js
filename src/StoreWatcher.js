@@ -32,9 +32,7 @@ class StoreWatcher {
    * @param {array.<string>} storePaths array of 'StoreId.keypart1.keypart2'
    */
   createComputed(storePaths) {
-    console.log('creatingComputed', storePaths)
     var computedStream = new ComputedStream(storePaths)
-    console.log(computedStream.storePaths)
     this.__computedStreams.push(computedStream)
     storePaths.forEach(path => {
       this.__setupWatch(path, computedStream)
@@ -64,7 +62,6 @@ class StoreWatcher {
 
     // if the store isn't watched
     if (!this.__watchedStores[storeId]) {
-      console.log('watching store %s', storeId)
       var store = this.__flux.getStore(storeId)
       store.stream.pipe(this.__watcherStream)
       this.__watchedStores[storeId] = {
@@ -76,7 +73,6 @@ class StoreWatcher {
     }
 
     if (!this.__storePathsToComputedStreams[storePath]) {
-      console.log('adding store paths to computed stream for %s', storePath)
       this.__storePathsToComputedStreams[storePath] = []
     }
     this.__storePathsToComputedStreams[storePath].push(computedStream)
@@ -91,20 +87,16 @@ class StoreWatcher {
     var storeId = data.id
     var state = data.state
 
-    console.log('handlingStoreChange', storeId, state.toString())
 
     // find all the paths we care about
     var watchedPaths = this.__watchedStores[storeId].watchedPaths
     watchedPaths.forEach(path => {
-      console.log('checking if %s changed', path)
       var cached = this.__storeStateCache[path]
       var current = this.__flux.getState(path)
       if (cached !== current) {
-        console.log('%s changed', path)
         // the state has changed since last time
         pathsChanged.push(path)
         // update the cache
-        console.log('updating cache with ', current.toString())
         this.__storeStateCache[path] = current
       }
     })
@@ -116,7 +108,6 @@ class StoreWatcher {
       })
     })
 
-    console.log('computeds to update: %j', toUpdate.toString())
     // write to all the computed streams
     toUpdate.forEach(this.__emitOnComputedStreams.bind(this))
   }
@@ -126,13 +117,9 @@ class StoreWatcher {
    * @param {ComputedStream} computedstreams
    */
   __emitOnComputedStreams(computedStream) {
-    console.log('emitting on computedSteam')
-    console.log('with deps: ', computedStream.storePaths)
-    console.log(computedStream.write)
     var args = computedStream.storePaths.map(path => {
       return this.__storeStateCache[path]
     })
-    console.log('emitting on computedSteam with args')
     computedStream.write(args)
   }
 }

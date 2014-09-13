@@ -6,7 +6,7 @@ var EntityStore = require('./mocks/EntityStore')
 var through = require('through')
 var toJS = require('../src/transforms/to-js')
 
-describe("ComputedStream", () => {
+describe("StoreWatcher", () => {
   var flux
   // mock data
   var experiments = [
@@ -81,24 +81,17 @@ describe("ComputedStream", () => {
 
       var mockFn = jest.genMockFn()
 
-      var currentExperimentStream = stream.pipe(through(function(data) {
+      var currentExperimentStream = stream.transform(function(data) {
         var experiments = data[0]
         var currentProjectId = data[1]
 
-        if (currentProjectId) {
-          var filtered = experiments.filter(exp => {
-            return exp.get('project_id') === currentProjectId
-          }).toVector()
-          this.queue(filtered)
-        } else {
-          this.queue([])
-        }
-      })).pipe(through(function(data) {
-        console.log('yes', toJS(data))
-        this.queue(toJS(data))
-      }))
+        if (!currentProjectId) return
 
-      currentExperimentStream.pipe(through(mockFn))
+        /** @type {Immutable.Map} */
+        return experiments.filter(exp => {
+          return exp.get('project_id') === currentProjectId
+        }).toVector()
+      }).transform(toJS).pipe(through(mockFn))
 
       flux.dispatch('experimentsFetched', {
         experiments: experiments

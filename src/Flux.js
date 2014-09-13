@@ -63,9 +63,9 @@ class Flux {
     var exploded = storePath.split('.')
     var storeId = exploded[0]
     if (exploded.length === 1) {
-      return this.getStore(storeId).getState()
+      return this.getStore(storeId).get()
     } else {
-      return this.getStore(storeId).getState(exploded.slice(1))
+      return this.getStore(storeId).get(exploded.slice(1))
     }
   }
 

@@ -6,11 +6,11 @@ var through = require('through');
 
 class MockStore extends Store {
   initialize() {
-    this.bindActions('actionA', this.__handleA)
+    this.on('actionA', this.__handleA)
   }
 
   __handleA(payload) {
-    this.setState('test', payload)
+    this.mutate('test', payload)
   }
 }
 
@@ -26,24 +26,10 @@ describe("instantiation", () => {
   })
 })
 
-describe("#setState", () => {
+describe("#mutate", () => {
   var store;
   beforeEach(() => {
     store = new Store();
-  })
-
-  describe("without the keypath argument", () => {
-    it("it should set this.state to whatever value is provided", () => {
-      var state = {
-        id: 1,
-        coll: [1, 2, 3]
-      }
-
-      store.setState(state)
-
-      var result = store.getState().toJS()
-      expect(result).toEqual(state)
-    })
   })
 
   describe("keypath is a string", () => {
@@ -51,14 +37,11 @@ describe("#setState", () => {
       var id = 123
       var coll = [1,2,3]
 
-      store.setState('id', id)
-      store.setState('coll', coll)
+      store.mutate('id', id)
+      store.mutate('coll', coll)
 
       var result = store.getState().toJS()
-      expect(result).toEqual({
-        id: id,
-        coll: coll
-      })
+      expect({ id: id, coll: coll }).toEqual(result)
     })
   })
 
@@ -70,7 +53,7 @@ describe("#setState", () => {
         val: 'entity'
       }
 
-      store.setState(keypath, entity)
+      store.mutate(keypath, entity)
 
       var result = store.getState().toJS()
       expect(result).toEqual({

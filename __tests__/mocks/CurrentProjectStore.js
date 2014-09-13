@@ -2,11 +2,11 @@ var Store = require('../../src/Store')
 
 class CurrentProjectStore extends Store {
   initialize() {
-    this.bindActions('changeCurrentProject', this.__changeCurrentProject)
+    this.on('changeCurrentProject', this.__changeCurrentProject)
   }
 
   __changeCurrentProject(payload) {
-    this.setState('id', payload.project.id)
+    this.mutate(['id'], payload.project.id)
   }
 }
 

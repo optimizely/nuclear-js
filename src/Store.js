@@ -1,10 +1,11 @@
 var through = require('through')
 var Immutable = require('immutable')
+var State = require('./State')
 var isArray = require('./utils').isArray;
 
-class Store {
+class Store extends State {
   constructor(initialState) {
-    this.setState(initialState || {})
+    super(initialState)
     this.__handlers = {}
     // initialize the stream interface
     this.stream = through(
@@ -18,9 +19,12 @@ class Store {
     // extending classes implement to setup action handlers
   }
 
-  bindActions(...actions) {
+  /**
+   * Binds an action type => handler
+   */
+  on(...actions) {
     if (actions.length % 2 !== 0) {
-      throw new Error("bindActions must take an even number of arguments.");
+      throw new Error("on must take an even number of arguments.");
     }
 
     for (var i = 0; i < actions.length; i += 2) {
@@ -30,47 +34,16 @@ class Store {
     }
   }
 
-  /**
-   * Gets the state at a keypath
-   * @param {string|array} keyPath
-   * @return {Immutable.Map}
-   */
-  getState(keyPath) {
-    if (keyPath === undefined) {
-      return this.state;
-    }
-    keyPath = (isArray(keyPath)) ? keyPath : [keyPath]
-    // all keys are strings
-    keyPath = keyPath.map(String)
-    return this.state.getIn(keyPath)
-  }
-
-  /**
-   * Sets a property on the state
-   * @param {array|string|number} key
-   * @param {any} val
-   */
-  setState(keyPath, val) {
-    var args = Array.prototype.slice.call(arguments)
-    if (args.length === 1) {
-      this.state = Immutable.fromJS(args[0])
-    } else {
-      keyPath = (!isArray(keyPath)) ? [keyPath] : keyPath
-      this.state = this.state.updateIn(keyPath, curr => {
-        return Immutable.fromJS(val)
-      })
-    }
-    //console.log('set state', keyPath, val, this.state.toJS())
-  }
-
   __handle(action) {
     var handler = this.__handlers[action.type];
-    if (handler && typeof handler === 'function') {
+    if (!handler) return
+
+    if (typeof handler === 'function') {
       console.log('%s: handling action %s', this.id, action)
       handler.call(this, action.payload, action.type);
       this.stream.queue({
         id: this.id,
-        state: this.getState()
+        state: this.get()
       })
       // TODO: implelment flux logger
     }
