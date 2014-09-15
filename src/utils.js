@@ -1,5 +1,7 @@
 var _ = require('underscore');
 
+exports.clone = _.clone
+
 exports.extend = _.extend
 
 exports.each = _.each

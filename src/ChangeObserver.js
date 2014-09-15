@@ -3,7 +3,7 @@ var createTransformStream = require('./create-transform-stream')
 var Immutable = require('immutable')
 var coerceKeyPath = require('./utils').keyPath
 
-class StoreWatcher {
+class ChangeObserver {
   constructor(changeStream) {
     this.prevState = Immutable.Map({})
     changeStream.pipe(through(state => {
@@ -76,4 +76,4 @@ class StoreWatcher {
   }
 }
 
-module.exports = StoreWatcher
+module.exports = ChangeObserver
