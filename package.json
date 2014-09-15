@@ -1,7 +1,7 @@
 {
-  "name": "fluxit",
+  "name": "nuclear-js",
   "version": "0.0.1",
-  "description": "Flux implementation",
+  "description": "A stream based immutable data system",
   "main": "index.js",
   "scripts": {
     "test": "jest"
