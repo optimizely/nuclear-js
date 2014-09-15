@@ -15,4 +15,4 @@ class ActionGroup {
   }
 }
 
-module.exports = Store
+module.exports = ActionGroup

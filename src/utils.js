@@ -2,6 +2,8 @@ var _ = require('underscore');
 
 exports.extend = _.extend
 
+exports.each = _.each
+
 exports.isArray = _.isArray
 
 exports.isFunction = _.isFunction

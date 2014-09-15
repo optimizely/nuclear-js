@@ -1,17 +1,24 @@
 var through = require('through')
-var Store = require('./Store');
 var utils = require('./utils')
+var each = require('./utils').each
+var coerceKeyPath = require('./utils').keyPath
 var StoreWatcher = require('./StoreWatcher')
 var createTransformStream = require('./create-transform-stream')
+var Immutable = require('immutable')
+
 
 class Flux {
   constructor() {
-    this.__computeds = {}
-    this.stores = {}
+    this.state = Immutable.Map({})
+    this.mutators = {}
     this.actionGroups = {}
-    this.dispatchStream = through()
+    this.dispatchStream = through(action => {
+      return this.dispatch(action.type, action.payload)
+    })
 
-    this.watcher = new StoreWatcher(this)
+    this.changeStream = through()
+
+    this.watcher = new StoreWatcher(this.changeStream)
   }
 
   /**
@@ -19,85 +26,44 @@ class Flux {
    * @param {object} payload
    */
   dispatch(actionType, payload) {
-    this.dispatchStream.write({
-      type: actionType,
-      payload: payload
+    this.state = this.state.withMutations(state => {
+      each(this.mutators,
+           (mut, id) => {
+             var newState = mut.handle(
+               state.get(id),
+               actionType,
+               payload
+             )
+             state.set(id, newState)
+           })
     })
+
+    console.log('after dispatch, new state: %s', this.state.toString())
+    this.changeStream.write(this.state)
   }
 
-  /**
-   * Hooks a Store up to receive all actions dispatched on the system
-   */
-  registerStore(id, store) {
-    if (!(store instanceof Store)) {
-      store = new store()
+  registerMutator(id, Mutator) {
+    if (this.mutators[id]) {
+      throw new Error("Only one mutator can be registered per id")
     }
-    store.id = id;
-    // initialize the store's stream
-    store.initialize()
-    // save reference
-    this.stores[id] = store
-    // pipe all dispatches
-    this.dispatchStream.pipe(store.stream)
+    if (!this.state.get(id)) {
+      this.state = this.state.set(id, Immutable.Map())
+    }
+    var mutator = new Mutator(this.state.get(id))
+    mutator.initialize()
+    this.mutators[id] = mutator
   }
 
-  unregisterStore(id) {
-    var store = this.getStore(id)
-    this.dispatchStream.unpipe(store.stream)
+  unregisterMutator(id) {
+    delete this.mutators[id]
   }
 
   registerActionGroup(id, actionGroup) {
     this.actionGroups[id] = actionGroup
   }
 
-  /**
-   * @param {array<string>} storePaths
-   * @return {ComputedStream}
-   */
-  createComputedStream(...storePaths) {
-    return this.watcher.createComputed(storePaths)
-  }
-
-  /**
-   * Registers a computed stream on the flux instance
-   * by a transform function that accepts an input stream
-   * and must pipe to an output stream
-   * @param {string} id
-   * @param {array<string>} storePaths
-   * @param {function(inputStream, outputStream)} transform
-   */
-  registerComputed(id, storePaths, transform) {
-    var outputStream = createTransformStream()
-    this.__computeds[id] = outputStream
-    var inputStream = this.createComputedStream.apply(this, storePaths)
-    transform(inputStream, outputStream)
-  }
-
-  /**
-   * Gets a computed stream
-   * @param {string} id
-   */
-  computed(id) {
-    return this.__computeds[id]
-  }
-
-  /**
-   * Gets the state from the corresponding store
-   * storePath 'Entity.experiments.1' corresponds to EntityStore.getState(['experiments'], 1])
-   * @param {string} storePath
-   * @return {*}
-   */
-  getState(storePath) {
-    var path = utils.keyPath(storePath)
-    if (path.length === 1) {
-      return this.getStore(path[0]).getState()
-    } else {
-      return this.getStore(path[0]).get(path.slice(1))
-    }
-  }
-
-  getStore(id) {
-    return this.stores[id]
+  subscribe(...storePaths) {
+    return this.watcher.subscribe(storePaths)
   }
 
   getActionGroup(id) {

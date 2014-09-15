@@ -1,8 +1,8 @@
 jest.autoMockOff()
 
 var Flux = require('../src/Flux')
-var CurrentProjectStore = require('./mocks/CurrentProjectStore')
-var EntityStore = require('./mocks/EntityStore')
+var EntityMutator = require('./mocks/EntityMutator')
+var CurrentProjectMutator = require('./mocks/CurrentProjectMutator')
 var through = require('through')
 var toJS = require('../src/transforms/to-js')
 
@@ -20,58 +20,51 @@ describe("StoreWatcher", () => {
 
   beforeEach(() => {
     flux = new Flux()
-    flux.registerStore('EntityStore', EntityStore)
-    flux.registerStore('CurrentProject', CurrentProjectStore)
+    flux.registerMutator('CurrentProject', CurrentProjectMutator)
+    flux.registerMutator('Entity', EntityMutator)
   })
 
-  describe("subscribing to EntityStore", () => {
-    it("should emit the stores state on the changeStream", () => {
-      var stream = flux.createComputedStream('EntityStore')
-
-      stream.pipe(through(data => {
-        var entityStoreState = flux.getStore('EntityStore').getState().toJS()
-        expect(data[0].toJS()).toEqual(entityStoreState)
-      }))
-
-      flux.dispatch('experimentsFetched', {
-        experiments: experiments
-      })
-    })
-
-    it("should not emit on the stream if multiple change events happen but the state doesnt change", () => {
-      var stream = flux.createComputedStream('EntityStore')
-
+  describe("subscribing to CurrentProject", () => {
+    it("should emit anytime the store changes", () => {
       var mockFn = jest.genMockFn()
-      stream.pipe(through(mockFn))
 
-      flux.dispatch('experimentsFetched', {
-        experiments: experiments
+      flux.dispatch('changeCurrentProjectId', {
+        id: 123
       })
 
-      var EntityStore = flux.getStore('EntityStore')
-      EntityStore.stream.queue({
-        id: EntityStore.id,
-        state: EntityStore.getState()
-      })
+      var stream = flux.subscribe('CurrentProject')
+      .transform(toJS)
+      .pipe(through(mockFn))
 
-      expect(mockFn.mock.calls.length).toEqual(1)
+      expect(mockFn.mock.calls[0][0]).toEqual({
+        id: 123
+      })
     })
+  })
 
+  describe("subscribing to Entity", () => {
     it("should not emit on the stream if a different part of the store changes", () => {
-      var stream = flux.createComputedStream('EntityStore.experiments')
-
       var mockFn = jest.genMockFn()
-      stream.pipe(through(mockFn))
 
-      flux.dispatch('experimentsFetched', {
-        experiments: experiments
+      flux.subscribe('Entity.projects')
+        .transform(x => {
+          return x.toVector()
+        })
+        .transform(toJS)
+        .pipe(through(mockFn))
+
+      flux.dispatch('entityLoaded', {
+        entity: 'experiemnts',
+        data: experiments
       })
 
-      flux.dispatch('projectsFetched', {
-        projects: projects
+      flux.dispatch('entityLoaded', {
+        entity: 'projects',
+        data: projects
       })
 
       expect(mockFn.mock.calls.length).toEqual(1)
+      expect(mockFn.mock.calls[0][0]).toEqual(projects)
     })
   })
 
@@ -79,7 +72,7 @@ describe("StoreWatcher", () => {
     it.only("should get events when either changes", () => {
       var mockFn = jest.genMockFn()
 
-      flux.createComputedStream('EntityStore.experiments', 'CurrentProject.id')
+      flux.subscribe('Entity.experiments', 'CurrentProject.id')
         .transform(function(experiments, id) {
           if (!id) return
 
@@ -91,15 +84,13 @@ describe("StoreWatcher", () => {
         .transform(toJS)
         .pipe(through(mockFn))
 
-      flux.dispatch('entityFetched', {
+      flux.dispatch('entityLoaded', {
         entity: 'experiments',
         data: experiments
       })
 
-      flux.dispatch('changeCurrentProject', {
-        project: {
-          id: 3
-        }
+      flux.dispatch('changeCurrentProjectId', {
+        id: 3
       })
 
       expect(mockFn.mock.calls[0][0]).toEqual([experiments[0]])

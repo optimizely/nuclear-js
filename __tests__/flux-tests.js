@@ -1,12 +1,18 @@
 jest.autoMockOff();
 
+var through = require('through')
 var Flux = require('../src/Flux');
-var Store = require('../src/Store');
 
 describe("instantiation", () => {
-  it('should expose stores and actionGroups as objects', () => {
+  it('exposes a dispatch stream and change stream', () => {
+    var mockFn = jest.genMockFn()
     var flux = new Flux();
-    expect(flux.stores).toEqual({});
-    expect(flux.actionGroups).toEqual({});
+    flux.changeStream.pipe(through(mockFn))
+
+    flux.dispatch('no-op', {})
+    flux.dispatch('no-op', {})
+
+    var calls = mockFn.mock.calls
+    expect(calls[0][0]).toEqual(calls[1][0])
   })
 })
