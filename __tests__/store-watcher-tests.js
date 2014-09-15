@@ -6,6 +6,7 @@ var CurrentProjectMutator = require('./mocks/CurrentProjectMutator')
 var through = require('through')
 var toJS = require('../src/transforms/to-js')
 
+// TODO refactor to ChangeWatcher
 describe("StoreWatcher", () => {
   var flux
   // mock data

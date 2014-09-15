@@ -1,8 +1,5 @@
 var stream = require('through')
-var utils = require('./utils')
 var each = require('./utils').each
-var createTransformStream = require('./create-transform-stream')
-var flushingQueue = require('./flushign-queue')
 var Immutable = require('immutable')
 
 var mutate = require('../immutable-helpers').mutate
@@ -89,4 +86,4 @@ class ReactorCluster {
   }
 }
 
-module.exports = Flux
+module.exports = ReactorCluster

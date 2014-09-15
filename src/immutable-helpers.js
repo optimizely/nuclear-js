@@ -1,6 +1,3 @@
-
-
-
 /**
  * Gets the state at a keypath
  * @param {string|array} keyPath
