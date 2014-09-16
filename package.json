@@ -2,7 +2,7 @@
   "name": "nuclear-js",
   "version": "0.0.1",
   "description": "A stream based immutable data system",
-  "main": "index.js",
+  "main": "src/exports.js",
   "scripts": {
     "test": "jest"
   },
