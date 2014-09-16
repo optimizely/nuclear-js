@@ -2,7 +2,7 @@ var stream = require('through')
 var each = require('./utils').each
 var Immutable = require('immutable')
 
-var mutate = require('../immutable-helpers').mutate
+var mutate = require('./immutable-helpers').mutate
 
 class ReactorCluster {
   constructor() {

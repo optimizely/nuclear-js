@@ -1,7 +1,7 @@
 module.exports = {
-  entry: './src/Flux.js',
+  entry: './src/exports.js',
   output: {
-    filename: './dist/flux.js'
+    filename: './dist/nuclear.js'
   },
   module: {
     loaders: [
