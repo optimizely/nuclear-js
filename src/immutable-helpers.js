@@ -1,3 +1,6 @@
+var coerceKeyPath = require('./utils').keyPath
+var Immutable = require('immutable')
+
 /**
  * Gets the state at a keypath
  * @param {string|array} keyPath
@@ -13,8 +16,10 @@ function get(state, keyPath) {
  */
 function remove(state, key) {
   var keyPath = coerceKeyPath(key)
+  var removeKey = keyPath.splice(keyPath.length - 1, 1)[0]
+  //console.log('removing', state.toString(), keyPath, removeKey)
   return state.updateIn(keyPath, toRemove => {
-    toRemove.remove()
+    return toRemove.remove(removeKey)
   })
 }
 

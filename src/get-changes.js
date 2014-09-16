@@ -28,3 +28,5 @@ function resolvePathValues(state, paths) {
     return state.getIn(path)
   })
 }
+
+module.exports = getChanges

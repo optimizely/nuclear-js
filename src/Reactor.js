@@ -1,43 +1,89 @@
+var stream = require('through')
+var each = require('./utils').each
 var Immutable = require('immutable')
-var coerceKeyPath = require('./utils').keyPath
-var isFunction = require('./utils').isFunction
 
-/**
- * In Nuclear.js reactors are the only parts of the system
- * that can manipulate state.
- *
- * The react function takes in state, action type and payload
- * and returns a new state
- */
-class Reactor {
+var mutate = require('./immutable-helpers').mutate
+
+class ReactorCluster {
   constructor() {
-    this.__handlers = {}
-  }
+    /**
+     * The state for the whole cluster
+     */
+    this.state = Immutable.Map({})
+    /**
+     * Holds a map of id => reactor instance
+     */
+    this.reactorCores = {}
 
-  initialize() {
-    // extending classes implement to setup action handlers
+    /**
+     * Queues an action object to be handled
+     * on the next cycle
+     */
+    this.actionQueue = []
+
+    /**
+     * Actions are written to this input stream and handled by the reactor
+     * cluster
+     */
+    this.inputStream = stream(action => {
+      this.actionQueue.push(action)
+    })
+
+    /**
+     * Output stream that emits the state of the reactor cluster anytime
+     * a cycle happens
+     */
+    this.outputStream = stream()
   }
 
   /**
-   * Binds an action type => handler
+   * Executes all the actions in the action queue and emits the new
+   * state of the cluster on the output stream
    */
-  on(actionType, handler) {
-    this.__handlers[actionType] = handler
+  cycle() {
+    var state = this.state
+    var actionQueue = this.actionQueue
+    var cores = this.reactorCores
+
+    this.state = mutate(state, state => {
+      while (actionQueue.length > 0) {
+        var action = actionQueue.shift()
+        each(cores, (reactor, id) => {
+          // dont let the reactor mutate by reference
+          var reactorState = state.get(id).asImmutable()
+          var newState = reactor.react(
+            state.get(id),
+            action.type,
+            action.payload
+          )
+          state.set(id, newState)
+        })
+      }
+    })
+
+    // write the new state to the output stream
+    this.outputStream.write(this.state)
   }
 
   /**
-   * Takes a current reactor state, action type and payload
-   * does the reaction and returns the new state
+   * @param {string} id
+   * @param {Reactor} Reactor
    */
-  react(state, type, payload) {
-    var handler = this.__handlers[type];
-
-    if (typeof handler === 'function') {
-      state = handler.call(this, state, payload, type);
+  attachCore(id, Reactor) {
+    if (this.reactorCores[id]) {
+      throw new Error("Only one reactor can be registered per id")
     }
+    if (!this.state.get(id)) {
+      this.state = this.state.set(id, Immutable.Map())
+    }
+    var reactor = new reactor(this.state.get(id))
+    reactor.initialize()
+    this.reactorCores[id] = reactor
+  }
 
-    return state
+  unattachCore(id) {
+    delete this.reactorCores[id]
   }
 }
 
-module.exports = Reactor
+module.exports = ReactorCluster
