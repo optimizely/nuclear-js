@@ -1,4 +1,5 @@
 var coerceKeyPath = require('./utils').keyPath
+var isFunction = require('./utils').isFunction
 var Immutable = require('immutable')
 
 /**

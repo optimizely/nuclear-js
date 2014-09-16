@@ -1,7 +1,8 @@
 var Immutable = require('immutable')
 var coerceKeyPath = require('./utils').keyPath
 var each = require('./utils').each
-var calculateComputeds = require('./computed').calculate
+var mutate = require('./immutable-helpers').mutate
+var calculateComputed = require('./computed').calculate
 var ComputedEntry = require('./computed').ComputedEntry
 
 /**
@@ -15,7 +16,6 @@ class ReactorCore {
   constructor() {
     this.__handlers = {}
     this.__computeds = {}
-    this.__changeObserver = null
   }
 
   initialize() {
@@ -44,7 +44,7 @@ class ReactorCore {
       throw new Error("Already a computed at " + keyPathString)
     }
 
-    this.__computeds[keyPathString] = new ComputedEntry(keyPaths, deps, computeFn)
+    this.__computeds[keyPathString] = new ComputedEntry(keyPath, deps, computeFn)
   }
 
   /**
@@ -52,19 +52,20 @@ class ReactorCore {
    * does the reaction and returns the new state
    */
   react(state, type, payload) {
+    var prevState = state
     var handler = this.__handlers[type];
 
     if (typeof handler === 'function') {
-      newState = handler.call(this, state, payload, type);
+      state = handler.call(this, state, payload, type);
     }
 
     // calculate computeds
-    each(this.__computeds, (entry) => {
-      newState = computed.calculate(state, newState, entry)
+    return mutate(state, state => {
+      each(this.__computeds, (entry) => {
+        calculateComputed(prevState, state, entry)
+      })
     })
-
-    return newState
   }
 }
 
-module.exports = Reactor
+module.exports = ReactorCore

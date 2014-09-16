@@ -36,9 +36,7 @@ function calculateComputed(prevState, currState, entry) {
     return remove(currState, keyPath)
   }
 
-  var newState = currState
-
-  newState.cursor(keyPath, (newValue, oldValue, path) => {
+  currState.cursor(keyPath, (newValue, oldValue, path) => {
     newState = newValue
     //console.log('changs', newValue.toString(), oldValue.toString(), path)
     // update function

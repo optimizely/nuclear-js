@@ -4,7 +4,7 @@ var Immutable = require('immutable')
 
 var mutate = require('./immutable-helpers').mutate
 
-class ReactorCluster {
+class Reactor {
   constructor() {
     /**
      * The state for the whole cluster
@@ -69,16 +69,13 @@ class ReactorCluster {
    * @param {string} id
    * @param {Reactor} Reactor
    */
-  attachCore(id, Reactor) {
+  attachCore(id, ReactorCore) {
     if (this.reactorCores[id]) {
       throw new Error("Only one reactor can be registered per id")
     }
-    if (!this.state.get(id)) {
-      this.state = this.state.set(id, Immutable.Map())
-    }
-    var reactor = new reactor(this.state.get(id))
-    reactor.initialize()
-    this.reactorCores[id] = reactor
+    var core = new ReactorCore()
+    this.state.set(id, core.initialize() || Immutable.Map())
+    this.reactorCores[id] = core
   }
 
   unattachCore(id) {
@@ -86,4 +83,4 @@ class ReactorCluster {
   }
 }
 
-module.exports = ReactorCluster
+module.exports = Reactor
