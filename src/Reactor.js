@@ -1,7 +1,10 @@
 var stream = require('through')
+var get = require('./immutable-helpers').get
+var coerceKeyPath = require('./utils').keyPath
 var each = require('./utils').each
 var Immutable = require('immutable')
 
+var ReactorCore = require('./ReactorCore')
 var mutate = require('./immutable-helpers').mutate
 
 class Reactor {
@@ -37,6 +40,15 @@ class Reactor {
   }
 
   /**
+   * Gets the state of the reactor by keyPath
+   * @param {array|string} keyPath
+   * @return {*}
+   */
+  get(keyPath) {
+    return get(this.state, coerceKeyPath(keyPath))
+  }
+
+  /**
    * Executes all the actions in the action queue and emits the new
    * state of the cluster on the output stream
    */
@@ -48,10 +60,10 @@ class Reactor {
     this.state = mutate(state, state => {
       while (actionQueue.length > 0) {
         var action = actionQueue.shift()
-        each(cores, (reactor, id) => {
+        each(cores, (core, id) => {
           // dont let the reactor mutate by reference
           var reactorState = state.get(id).asImmutable()
-          var newState = reactor.react(
+          var newState = core.react(
             state.get(id),
             action.type,
             action.payload
@@ -67,14 +79,17 @@ class Reactor {
 
   /**
    * @param {string} id
-   * @param {Reactor} Reactor
+   * @param {ReactorCore} Core
    */
-  attachCore(id, ReactorCore) {
+  attachCore(id, core) {
     if (this.reactorCores[id]) {
       throw new Error("Only one reactor can be registered per id")
     }
-    var core = new ReactorCore()
-    this.state.set(id, core.initialize() || Immutable.Map())
+    if (!(core instanceof ReactorCore)) {
+      core = new Core()
+    }
+    var initialState = core.initialize() || Immutable.Map()
+    this.state = this.state.set(id, initialState)
     this.reactorCores[id] = core
   }
 

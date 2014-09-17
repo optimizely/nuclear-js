@@ -3,16 +3,13 @@ jest.autoMockOff();
 var extend = require('../../src/utils').extend
 var through = require('through')
 // Real shit
-var Flux = require('../../src/Flux');
 var ActionTypes = require('../ActionTypes')
-var EntityStore = require('../stores/EntityStore');
-var CurrentProjectStore = require('../stores/CurrentProjectStore');
 // transforms
 var toJS = require('../../src/transforms/to-js');
 var map = require('../../src/transforms/map');
 var getIn = require('../../src/transforms/get-in');
 
-describe("EntityStore", () => {
+xdescribe("EntityStore", () => {
   var flux
   var exp1 = { id: 1, val: 'exp 1', project_id: 10 }
   var exp2 = { id: 2, val: 'exp 2', project_id: 10 }
