@@ -3,6 +3,7 @@ var get = require('./immutable-helpers').get
 var coerceKeyPath = require('./utils').keyPath
 var each = require('./utils').each
 var Immutable = require('immutable')
+var toJS = require('./transforms/to-js')
 
 var ReactorCore = require('./ReactorCore')
 var mutate = require('./immutable-helpers').mutate
@@ -45,6 +46,10 @@ class Reactor {
    * @return {*}
    */
   get(keyPath) {
+    return toJS(this.getImmutable(keyPath))
+  }
+
+  getImmutable(keyPath) {
     return get(this.state, coerceKeyPath(keyPath))
   }
 
@@ -52,7 +57,7 @@ class Reactor {
    * Executes all the actions in the action queue and emits the new
    * state of the cluster on the output stream
    */
-  cycle() {
+  react() {
     var state = this.state
     var actionQueue = this.actionQueue
     var cores = this.reactorCores

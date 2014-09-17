@@ -2,6 +2,7 @@ var Immutable = require('immutable')
 var coerceKeyPath = require('./utils').keyPath
 var each = require('./utils').each
 var mutate = require('./immutable-helpers').mutate
+var isImmutable = require('./immutable-helpers').isImmutable
 var calculateComputed = require('./computed').calculate
 var ComputedEntry = require('./computed').ComputedEntry
 
@@ -57,6 +58,10 @@ class ReactorCore {
 
     if (typeof handler === 'function') {
       state = handler.call(this, state, payload, type);
+      if (!isImmutable(state)) {
+        // cast to immutable object
+        state = Immutable.fromJS(state)
+      }
     }
 
     // calculate computeds

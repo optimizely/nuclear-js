@@ -3,6 +3,14 @@ var isFunction = require('./utils').isFunction
 var Immutable = require('immutable')
 
 /**
+ * @param {*} obj
+ * @return {boolean}
+ */
+function isImmutable(obj) {
+  return (obj instanceof Immutable.Sequence)
+}
+
+/**
  * Gets the state at a keypath
  * @param {string|array} keyPath
  * @return {Immutable.Map}
@@ -50,3 +58,4 @@ exports.mutate = mutate
 exports.remove = remove
 exports.update = update
 exports.get = get
+exports.isImmutable = isImmutable
