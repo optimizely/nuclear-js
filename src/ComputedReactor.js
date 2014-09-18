@@ -4,35 +4,48 @@ var isArray = require('./utils').isArray
 var each = require('./utils').each
 var Reactor = require('./Reactor')
 var getChanges = require('./get-changes')
-var ComputedEntry = require('./ComputedEntry')
+var coerceKeyPath = require('./utils').keyPath
 
 class ComputedReactor extends Reactor {
   constructor() {
     super()
-    this.prevState = Immutable.Map({})
-    this.prevState
+
     this.changeHandlers = []
-    this.outputStream.pipe(through((state) => {
-      each(this.changeHandlers, entry => {
-        var changes = getChanges(this.prevState, state, entry.deps)
+
+    // outputStream emits anytime state is changed
+    // iterate through the change handlers and execute
+    // if any of the dependencies changed
+    this.outputStream.pipe(through((currState) => {
+      this.changeHandlers.forEach(entry => {
+        // if any dependency changed getChanges returns
+        // an array of values for each keyPath in the map
+        var changes = getChanges(
+          this.prevState,
+          currState,
+          entry.deps
+        )
         if (changes) {
-          entry.computeFn.apply(null, changes)
+          entry.handler.apply(null, changes)
         }
       })
-      this.prevState = state
+      this.prevState = currState
     }))
   }
 
   /**
-   * Specify an array of keyPaths as dependencies and a
+   * Specify an array of keyPaths as dependencies and
+   * a changeHandler fn
+   * @param {string|array<string>} deps
+   * @param {Function} changeHandler
    */
   onChange(deps, changeHandler) {
     if (!isArray(deps)) {
       deps = [deps]
     }
-    // onchange doesnt put the computed value on a new keypath
-    // just executes the computeFn
-    this.changeHandlers.push(new ComputedEntry(null, deps, changeHandler))
+    this.changeHandlers.push({
+      deps: deps.map(coerceKeyPath),
+      handler: changeHandler
+    })
   }
 
   react() {

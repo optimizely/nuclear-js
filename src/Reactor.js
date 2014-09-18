@@ -9,7 +9,13 @@ var Immutable = require('immutable')
 var ReactorCore = require('./ReactorCore')
 
 /**
- * A Reactor is made up of 
+ * In Nuclear Reactors are where state is stored.  Reactors
+ * contain a "state" object which is an Immutable.Map
+ *
+ * The only way Reactors can change state is by reacting to
+ * actions.  To update staet, Reactor's dispatch actions to
+ * all registered cores, and the core returns it's new
+ * state based on the action
  */
 class Reactor {
   constructor() {
@@ -29,8 +35,8 @@ class Reactor {
     this.actionQueue = []
 
     /**
-     * Actions are written to this input stream and handled by the reactor
-     * cluster
+     * Actions are written to this input stream and flushed
+     * whenever the `react` method is called
      */
     this.inputStream = stream(action => {
       this.actionQueue.push(action)
@@ -44,7 +50,7 @@ class Reactor {
   }
 
   /**
-   * Gets the state of the reactor by keyPath
+   * Gets the coerced state (to JS object) of the reactor by keyPath
    * @param {array|string} keyPath
    * @return {*}
    */
@@ -52,6 +58,11 @@ class Reactor {
     return toJS(this.getImmutable(keyPath))
   }
 
+  /**
+   * Gets the Immutable state at the keyPath
+   * @param {array|string} keyPath
+   * @return {*}
+   */
   getImmutable(keyPath) {
     return get(this.state, coerceKeyPath(keyPath))
   }
@@ -86,6 +97,14 @@ class Reactor {
   }
 
   /**
+   * Cores represent distinct "silos" in your Reactor state
+   * When a core is attached the `initialize` method is called
+   * and the core's initial state is returned.
+   *
+   * Anytime a Reactor.react happens all of the cores are passed
+   * the action have the opportunity to return a "new state" to
+   * the Reactor
+   *
    * @param {string} id
    * @param {ReactorCore} Core
    */

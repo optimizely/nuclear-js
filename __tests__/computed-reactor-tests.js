@@ -20,7 +20,7 @@ describe('ComputedReactor', () => {
     reactor.attachCore('SelectedElement', SelectedElementCore)
   })
 
-  it('should call a function when the computed changes', () => {
+  it.only('should call a function when the computed changes', () => {
     var mockFn = jest.genMockFn()
 
     reactor.onChange('SelectedElement.foo', mockFn)
