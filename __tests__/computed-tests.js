@@ -1,11 +1,10 @@
 jest.autoMockOff()
 
 var Immutable = require('immutable')
-var computed = require('../src/computed')
 var remove = require('../src/immutable-helpers').remove
 
-var calculateComputed = computed.calculate
-var ComputedEntry = computed.ComputedEntry
+var calculateComputed = require('../src/calculate-computed')
+var ComputedEntry = require('../src/ComputedEntry')
 
 describe('calculating a computed', () => {
   var exp1 = { id: 1, proj_id: 10 }

@@ -3,6 +3,10 @@ var isFunction = require('./utils').isFunction
 var Immutable = require('immutable')
 
 /**
+ * A collection of helpers for the ImmutableJS library
+ */
+
+/**
  * @param {*} obj
  * @return {boolean}
  */
@@ -54,8 +58,19 @@ function mutate(state, fn) {
   return state.withMutations(fn)
 }
 
+/**
+ * Converts an Immutable Sequence to JS object
+ * Can be called on any type
+ */
+function toJS(arg) {
+  return (typeof arg === 'object' && arg.toJS)
+    ? arg.toJS()
+    : arg;
+}
+
 exports.mutate = mutate
 exports.remove = remove
 exports.update = update
 exports.get = get
+exports.toJS = toJS
 exports.isImmutable = isImmutable

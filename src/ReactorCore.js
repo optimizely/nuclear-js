@@ -3,8 +3,8 @@ var coerceKeyPath = require('./utils').keyPath
 var each = require('./utils').each
 var mutate = require('./immutable-helpers').mutate
 var isImmutable = require('./immutable-helpers').isImmutable
-var calculateComputed = require('./computed').calculate
-var ComputedEntry = require('./computed').ComputedEntry
+var calculateComputed = require('./calculate-computed')
+var ComputedEntry = require('./ComputedEntry')
 
 /**
  * In Nuclear.js ReactorCore's are the only parts of the system

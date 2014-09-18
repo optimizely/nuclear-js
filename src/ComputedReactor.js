@@ -4,7 +4,7 @@ var isArray = require('./utils').isArray
 var each = require('./utils').each
 var Reactor = require('./Reactor')
 var getChanges = require('./get-changes')
-var ComputedEntry = require('./computed').ComputedEntry
+var ComputedEntry = require('./ComputedEntry')
 
 class ComputedReactor extends Reactor {
   constructor() {

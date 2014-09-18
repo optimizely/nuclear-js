@@ -1,13 +1,16 @@
 var stream = require('through')
 var get = require('./immutable-helpers').get
+var toJS = require('./immutable-helpers').toJS
+var mutate = require('./immutable-helpers').mutate
 var coerceKeyPath = require('./utils').keyPath
 var each = require('./utils').each
 var Immutable = require('immutable')
-var toJS = require('./transforms/to-js')
 
 var ReactorCore = require('./ReactorCore')
-var mutate = require('./immutable-helpers').mutate
 
+/**
+ * A Reactor is made up of 
+ */
 class Reactor {
   constructor() {
     /**

@@ -1,5 +1,5 @@
 module.exports = {
-  entry: './src/exports.js',
+  entry: './src/facade.js',
   output: {
     filename: './dist/nuclear.js'
   },

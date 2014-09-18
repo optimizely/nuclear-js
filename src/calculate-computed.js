@@ -1,14 +1,5 @@
-var coerceKeyPath = require('./utils').keyPath
 var getChanges = require('./get-changes')
 var remove = require('./immutable-helpers').remove
-
-class ComputedEntry {
-  constructor(keyPath, deps, computeFn) {
-    this.keyPath = coerceKeyPath(keyPath)
-    this.deps = deps.map(coerceKeyPath)
-    this.computeFn = computeFn
-  }
-}
 
 /**
  * Takes a prevState, currState and array of ComputedEntries
@@ -18,7 +9,7 @@ class ComputedEntry {
  * @param {ComputedEntry} entry
  * @return {Immutable.Map} new state
  */
-function calculateComputed(prevState, currState, entry) {
+module.exports = function calculateComputed(prevState, currState, entry) {
   var keyPath = entry.keyPath
   var deps = entry.deps
   var computeFn = entry.computeFn
@@ -45,7 +36,3 @@ function calculateComputed(prevState, currState, entry) {
   })
   return newState
 }
-
-exports.calculate = calculateComputed
-
-exports.ComputedEntry = ComputedEntry
