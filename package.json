@@ -1,6 +1,6 @@
 {
   "name": "nuclear-js",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A stream based immutable data system",
   "main": "src/facade.js",
   "scripts": {

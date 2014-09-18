@@ -10,6 +10,7 @@ class ComputedReactor extends Reactor {
   constructor() {
     super()
     this.prevState = Immutable.Map({})
+    this.prevState
     this.changeHandlers = []
     this.outputStream.pipe(through((state) => {
       each(this.changeHandlers, entry => {
@@ -29,6 +30,12 @@ class ComputedReactor extends Reactor {
     // onchange doesnt put the computed value on a new keypath
     // just executes the computeFn
     this.changeHandlers.push(new ComputedEntry(null, deps, changeHandler))
+  }
+
+  react() {
+    // cache the prev state so we can compare computeds after the react
+    this.prevState = this.state
+    super.react()
   }
 }
 
