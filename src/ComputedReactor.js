@@ -3,7 +3,7 @@ var through = require('through')
 var isArray = require('./utils').isArray
 var each = require('./utils').each
 var Reactor = require('./Reactor')
-var calculateComputed = require('./computed').calculate
+var getChanges = require('./get-changes')
 var ComputedEntry = require('./computed').ComputedEntry
 
 class ComputedReactor extends Reactor {
@@ -14,7 +14,10 @@ class ComputedReactor extends Reactor {
     this.changeHandlers = []
     this.outputStream.pipe(through((state) => {
       each(this.changeHandlers, entry => {
-        calculateComputed(this.prevState, state, entry)
+        var changes = getChanges(this.prevState, state, entry.deps)
+        if (changes) {
+          entry.computeFn.apply(null, changes)
+        }
       })
       this.prevState = state
     }))
