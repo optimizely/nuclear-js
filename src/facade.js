@@ -18,3 +18,5 @@ exports.createCore = function(spec) {
   extend(core, spec)
   return core
 }
+
+exports.immutableHelpers = require('./immutable-helpers')
