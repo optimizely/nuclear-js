@@ -20,4 +20,3 @@ exports.createCore = function(spec) {
 }
 
 exports.immutableHelpers = require('./immutable-helpers')
-exports.Immutable = require('immutable')
