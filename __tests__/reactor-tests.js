@@ -59,7 +59,6 @@ describe('ReactorCore', () => {
           data: experiments
         }
       })
-      reactor.react()
 
       var results = reactor.getImmutable('ExperimentCore.experiments').toVector().toJS()
       expect(experiments).toEqual(results)

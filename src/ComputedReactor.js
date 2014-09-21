@@ -48,10 +48,15 @@ class ComputedReactor extends Reactor {
     })
   }
 
-  react() {
+  /**
+   * Executes all the messages in the message queue and emits the new
+   * state of the cluster on the output stream
+   * @param {array} messages
+   */
+  cycle(messages) {
     // cache the prev state so we can compare computeds after the react
     this.prevState = this.state
-    super.react()
+    super.cycle(messages)
   }
 }
 

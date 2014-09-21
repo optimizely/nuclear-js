@@ -20,7 +20,7 @@ describe('ComputedReactor', () => {
     reactor.attachCore('SelectedElement', SelectedElementCore)
   })
 
-  it.only('should call a function when the computed changes', () => {
+  it('should call a function when the computed changes', () => {
     var mockFn = jest.genMockFn()
 
     reactor.onChange('SelectedElement.foo', mockFn)
@@ -31,8 +31,6 @@ describe('ComputedReactor', () => {
         foo: 'bar'
       }
     })
-
-    reactor.react()
 
     expect(reactor.get('SelectedElement')).toEqual({
       foo: 'bar'

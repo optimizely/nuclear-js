@@ -1,8 +1,9 @@
-var stream = require('through')
+var through = require('through')
 var get = require('./immutable-helpers').get
 var toJS = require('./immutable-helpers').toJS
 var mutate = require('./immutable-helpers').mutate
 var coerceKeyPath = require('./utils').keyPath
+var coerceArray = require('./utils').coerceArray
 var each = require('./utils').each
 var Immutable = require('immutable')
 
@@ -13,9 +14,9 @@ var ReactorCore = require('./ReactorCore')
  * contain a "state" object which is an Immutable.Map
  *
  * The only way Reactors can change state is by reacting to
- * actions.  To update staet, Reactor's dispatch actions to
+ * messages.  To update staet, Reactor's dispatch messages to
  * all registered cores, and the core returns it's new
- * state based on the action
+ * state based on the message
  */
 class Reactor {
   constructor() {
@@ -29,24 +30,18 @@ class Reactor {
     this.reactorCores = {}
 
     /**
-     * Queues an action object to be handled
-     * on the next cycle
-     */
-    this.actionQueue = []
-
-    /**
-     * Actions are written to this input stream and flushed
+     * messages are written to this input stream and flushed
      * whenever the `react` method is called
      */
-    this.inputStream = stream(action => {
-      this.actionQueue.push(action)
+    this.inputStream = through(msg => {
+      this.cycle(msg)
     })
 
     /**
      * Output stream that emits the state of the reactor cluster anytime
      * a cycle happens
      */
-    this.outputStream = stream()
+    this.outputStream = through()
   }
 
   /**
@@ -68,24 +63,25 @@ class Reactor {
   }
 
   /**
-   * Executes all the actions in the action queue and emits the new
+   * Executes all the messages in the message queue and emits the new
    * state of the cluster on the output stream
+   * @param {array} messages
    */
-  react() {
+  cycle(messages) {
+    messages = coerceArray(messages)
     var state = this.state
-    var actionQueue = this.actionQueue
     var cores = this.reactorCores
 
     this.state = mutate(state, state => {
-      while (actionQueue.length > 0) {
-        var action = actionQueue.shift()
+      while (messages.length > 0) {
+        var message = messages.shift()
         each(cores, (core, id) => {
           // dont let the reactor mutate by reference
           var reactorState = state.get(id).asImmutable()
           var newState = core.react(
             state.get(id),
-            action.type,
-            action.payload
+            message.type,
+            message.payload
           )
           state.set(id, newState)
         })
@@ -102,7 +98,7 @@ class Reactor {
    * and the core's initial state is returned.
    *
    * Anytime a Reactor.react happens all of the cores are passed
-   * the action have the opportunity to return a "new state" to
+   * the message have the opportunity to return a "new state" to
    * the Reactor
    *
    * @param {string} id

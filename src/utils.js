@@ -24,3 +24,15 @@ exports.keyPath = function(val) {
     return val.split('.')
   }
 }
+
+/**
+ * Ensures that the inputted value is an array
+ * @param {*} val
+ * @return {array}
+ */
+exports.coerceArray = function(val) {
+  if (!exports.isArray(val)) {
+    return [val]
+  }
+  return val
+}
