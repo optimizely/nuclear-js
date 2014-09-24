@@ -63,7 +63,7 @@ function mutate(state, fn) {
  * Can be called on any type
  */
 function toJS(arg) {
-  return (typeof arg === 'object' && arg.toJS)
+  return (isImmutable(arg))
     ? arg.toJS()
     : arg;
 }

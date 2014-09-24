@@ -8,7 +8,7 @@ var remove = require('../src/immutable-helpers').remove
 var mutate = require('../src/immutable-helpers').mutate
 var update = require('../src/immutable-helpers').update
 
-describe('ReactorCore', () => {
+describe('Reactor', () => {
   var exp1 = { id: 1, proj_id: 10 }
   var exp2 = { id: 2, proj_id: 10 }
   var exp3 = { id: 3, proj_id: 11 }
@@ -63,6 +63,16 @@ describe('ReactorCore', () => {
 
       var results = reactor.getImmutable('ExperimentCore.experiments').toVector().toJS()
       expect(experiments).toEqual(results)
+    })
+  })
+
+  describe('#get', () => {
+    it("should not throw an error when called on a `null` value", () => {
+      reactor.state = Immutable.Map({
+        foo: null
+      })
+
+      expect(reactor.get('foo')).toBe(null)
     })
   })
 })
