@@ -6,6 +6,7 @@ var coerceKeyPath = require('./utils').keyPath
 var coerceArray = require('./utils').coerceArray
 var each = require('./utils').each
 var Immutable = require('immutable')
+var logging = require('./logging')
 
 var ReactorCore = require('./ReactorCore')
 
@@ -75,16 +76,23 @@ class Reactor {
     this.state = mutate(state, state => {
       while (messages.length > 0) {
         var message = messages.shift()
+
+        logging.cycleStart(message)
+
         each(cores, (core, id) => {
           // dont let the reactor mutate by reference
           var reactorState = state.get(id).asImmutable()
           var newState = core.react(
-            state.get(id),
+            reactorState,
             message.type,
             message.payload
           )
           state.set(id, newState)
+
+          logging.coreReact(id, reactorState, newState)
         })
+
+        logging.cycleEnd(state)
       }
     })
 
