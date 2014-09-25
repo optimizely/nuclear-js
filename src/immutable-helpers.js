@@ -63,7 +63,8 @@ function mutate(state, fn) {
  * Can be called on any type
  */
 function toJS(arg) {
-  return (isImmutable(arg))
+  // arg instanceof Immutable.Sequence is unreleable
+  return ((arg instanceof Object) && arg.toJS)
     ? arg.toJS()
     : arg;
 }

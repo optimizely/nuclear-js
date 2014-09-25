@@ -2,6 +2,7 @@ var through = require('through')
 var get = require('./immutable-helpers').get
 var toJS = require('./immutable-helpers').toJS
 var mutate = require('./immutable-helpers').mutate
+var isImmutable = require('./immutable-helpers').isImmutable
 var coerceKeyPath = require('./utils').keyPath
 var coerceArray = require('./utils').coerceArray
 var each = require('./utils').each
@@ -119,8 +120,8 @@ class Reactor {
     if (!(core instanceof ReactorCore)) {
       core = new Core()
     }
-    var initialState = core.initialize() || Immutable.Map()
-    this.state = this.state.set(id, initialState)
+    var initialState = core.initialize() || {}
+    this.state = this.state.set(id, Immutable.fromJS(initialState))
     this.reactorCores[id] = core
   }
 
