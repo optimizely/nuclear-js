@@ -1,8 +1,6 @@
-var Immutable = require('immutable')
 var through = require('through')
 var isArray = require('./utils').isArray
-var each = require('./utils').each
-var Reactor = require('./Reactor')
+var Reactor = require('./reactor')
 var getChanges = require('./get-changes')
 var coerceKeyPath = require('./utils').keyPath
 

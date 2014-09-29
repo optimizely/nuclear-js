@@ -8,6 +8,7 @@ var coerceArray = require('./utils').coerceArray
 var each = require('./utils').each
 var Immutable = require('immutable')
 var logging = require('./logging')
+var ChangeObserver = require('./change-observer')
 
 var ReactorCore = require('./ReactorCore')
 
@@ -30,14 +31,6 @@ class Reactor {
      * Holds a map of id => reactor instance
      */
     this.reactorCores = {}
-
-    /**
-     * messages are written to this input stream and flushed
-     * whenever the `react` method is called
-     */
-    this.inputStream = through(msg => {
-      this.cycle(msg)
-    })
 
     /**
      * Output stream that emits the state of the reactor cluster anytime
@@ -127,6 +120,18 @@ class Reactor {
 
   unattachCore(id) {
     delete this.reactorCores[id]
+  }
+
+  /**
+   * Creates an instance of the ChangeObserver for this reactor
+   *
+   * Allows the creation of changeHandlers for a keyPath on this reactor,
+   * while providing a single method call to destroy and cleanup
+   *
+   * @return {ChangeOBserver}
+   */
+  createChangeObserver() {
+    return new ChangeObserver(this)
   }
 }
 

@@ -1,78 +1,60 @@
 var through = require('through')
-var createTransformStream = require('./create-transform-stream')
-var Immutable = require('immutable')
+var isArray = require('./utils').isArray
+var getChanges = require('./get-changes')
 var coerceKeyPath = require('./utils').keyPath
+var toJS = require('./immutable-helpers').toJS
 
 class ChangeObserver {
-  constructor(changeStream) {
-    this.prevState = Immutable.Map({})
-    changeStream.pipe(through(state => {
-      console.log('handling state change', state.toString())
-      this.__tick(this.prevState, state)
-      this.prevState = state
-    }))
-    this.__subscribers = []
+  constructor(initialState, changeStream) {
+    this.__changeHandlers = []
+    // cache the current state
+    this.__prevState = initialState
+
+    this.changeStream = changeStream
+
+    // outputStream emits anytime state is changed
+    // iterate through the change handlers and execute
+    // if any of the dependencies changed
+    this.__changeHandlerStream = through((currState) => {
+      this.__changeHandlers.forEach(entry => {
+        // if any dependency changed getChanges returns
+        // an array of values for each keyPath in the map
+        var changes = getChanges(
+          this.__prevState,
+          currState,
+          entry.deps
+        )
+        if (changes) {
+          entry.handler.apply(null, changes.map(toJS))
+        }
+      })
+      this.__prevState = currState
+    })
+
+    changeStream.pipe(this.__changeHandlerStream)
   }
 
   /**
-   * @param {array.<string>} keyPaths array of 'StoreId.keypart1.keypart2'
+   * Specify an array of keyPaths as dependencies and
+   * a changeHandler fn
+   * @param {array<string|array>} deps
+   * @param {Function} changeHandler
    */
-  subscribe(keyPaths) {
-    var stream = createTransformStream()
-    var keyPaths = keyPaths.map(coerceKeyPath)
-    this.__subscribers.push({
-      keyPaths: keyPaths,
-      stream: stream
-    })
-
-    var values = keyPaths.map(path => {
-      return this.prevState.getIn(path)
-    })
-    var isReady = values.every(v => {
-      v !== undefined
-    })
-    if (isReady) {
-      console.log('notifying subscribers', paths)
-      stream.write(values)
+  onChange(deps, changeHandler) {
+    if (!isArray(deps)) {
+      throw new Error("onChange must be called with an array of deps")
     }
-    return stream
+    this.__changeHandlers.push({
+      deps: deps.map(coerceKeyPath),
+      handler: changeHandler
+    })
   }
 
   /**
-   * Unpipes all the streams that are routed to this watcher
+   * Clean up
    */
   destroy() {
-    for (storeId in this.__watchedStores) {
-      this.__subscribers[storeId].stream.end()
-    }
-  }
-
-  __tick(prevState, currState) {
-    this.__notifySubscribers(prevState, currState)
-  }
-
-  __notifySubscribers(prevState, currState) {
-    this.__subscribers.forEach(subscriber => {
-      var paths = subscriber.keyPaths
-      var prevValues = this.__resolvePathValues(prevState, paths)
-      var currValues = this.__resolvePathValues(currState, paths)
-      var hasChanged = prevValues.some((val, ind) => {
-        return val !== currValues[ind]
-      })
-      var notUndefined = currValues.every(x => {
-        return x !== undefined
-      })
-      if (hasChanged && notUndefined) {
-        console.log('notifying subscribers', paths)
-        subscriber.stream.write(currValues)
-      }
-    })
-  }
-
-  __resolvePathValues(state, paths) {
-    return paths.map(path => {
-      return state.getIn(path)
-    })
+    this.changeStream.unpipe(this.__changeHandlerStream)
   }
 }
 
