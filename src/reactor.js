@@ -9,7 +9,7 @@ var each = require('./utils').each
 var Immutable = require('immutable')
 var logging = require('./logging')
 
-var ReactorCore = require('./ReactorCore')
+var ReactorCore = require('./reactor-core')
 
 /**
  * In Nuclear Reactors are where state is stored.  Reactors

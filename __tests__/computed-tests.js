@@ -4,7 +4,7 @@ var Immutable = require('immutable')
 var remove = require('../src/immutable-helpers').remove
 
 var calculateComputed = require('../src/calculate-computed')
-var ComputedEntry = require('../src/ComputedEntry')
+var ComputedEntry = require('../src/computed-entry')
 
 describe('calculating a computed', () => {
   var exp1 = { id: 1, proj_id: 10 }

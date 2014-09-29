@@ -1,7 +1,7 @@
 jest.autoMockOff()
 
 var Immutable = require('immutable')
-var ReactorCore = require('../src/ReactorCore')
+var ReactorCore = require('../src/reactor-core')
 var remove = require('../src/immutable-helpers').remove
 var mutate = require('../src/immutable-helpers').mutate
 var update = require('../src/immutable-helpers').update
