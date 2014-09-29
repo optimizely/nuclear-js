@@ -18,11 +18,10 @@ exports.keyPath = function(val) {
     // null is a valid keypath, returns whole map/seq
     return val
   }
-  if (exports.isArray(val)) {
-    return val.map(String)
-  } else {
+  if (!exports.isArray(val)) {
     return val.split('.')
   }
+  return val
 }
 
 /**

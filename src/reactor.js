@@ -1,5 +1,4 @@
 var through = require('through')
-var get = require('./immutable-helpers').get
 var toJS = require('./immutable-helpers').toJS
 var mutate = require('./immutable-helpers').mutate
 var isImmutable = require('./immutable-helpers').isImmutable
@@ -61,7 +60,7 @@ class Reactor {
    * @return {*}
    */
   getImmutable(keyPath) {
-    return get(this.state, coerceKeyPath(keyPath))
+    return this.state.getIn(coerceKeyPath(keyPath))
   }
 
   /**

@@ -66,6 +66,46 @@ describe('Reactor', () => {
   })
 
   describe('#get', () => {
+    it('should return the value if passed a string', () => {
+      reactor.state = Immutable.fromJS({
+        foo: {
+          bar: 'baz'
+        }
+      })
+
+      expect(reactor.get('foo.bar')).toBe('baz')
+    })
+
+    it('should return the value if passed an array', () => {
+      reactor.state = Immutable.fromJS({
+        foo: {
+          bar: 'baz'
+        }
+      })
+
+      expect(reactor.get(['foo', 'bar'])).toBe('baz')
+    })
+
+    it('should respect numbers if passed an array', () => {
+      var inner = Immutable.Map([[123, 'baz']])
+
+      reactor.state = Immutable.Map({
+        foo: inner
+      })
+
+      expect(reactor.get(['foo', 123])).toBe('baz')
+    })
+
+    it('should not coerce to numbers if passed a string', () => {
+      var inner = Immutable.Map([[123, 'baz']])
+
+      reactor.state = Immutable.Map({
+        foo: inner
+      })
+
+      expect(reactor.get('foo.123')).toBe(undefined)
+    })
+
     it("should not throw an error when called on a `null` value", () => {
       reactor.state = Immutable.Map({
         foo: null
