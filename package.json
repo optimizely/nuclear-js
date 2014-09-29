@@ -12,14 +12,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "jstransform-loader": "^0.1.1",
-    "webpack": "^1.4.0-beta4",
-    "jstransform": "^6.2.0",
     "through": "^2.3.4",
     "immutable": "^2.0.17",
     "underscore": "^1.7.0"
   },
   "devDependencies": {
+    "jstransform": "^6.2.0",
+    "webpack": "^1.4.0-beta4",
+    "jstransform-loader": "^0.1.1",
     "jest": "^0.1.37",
     "jasmine": "^2.0.1"
   }
