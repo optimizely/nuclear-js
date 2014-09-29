@@ -1,6 +1,6 @@
-var ReactorCore = require('./ReactorCore')
+var ReactorCore = require('./reactor-core')
 var extend = require('./utils').extend
-var ComputedReactor = require('./ComputedReactor')
+var ComputedReactor = require('./computed-reactor')
 
 /**
  * @return {Reactor}

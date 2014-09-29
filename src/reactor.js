@@ -1,5 +1,4 @@
 var through = require('through')
-var get = require('./immutable-helpers').get
 var toJS = require('./immutable-helpers').toJS
 var mutate = require('./immutable-helpers').mutate
 var isImmutable = require('./immutable-helpers').isImmutable
@@ -10,7 +9,7 @@ var Immutable = require('immutable')
 var logging = require('./logging')
 var ChangeObserver = require('./change-observer')
 
-var ReactorCore = require('./ReactorCore')
+var ReactorCore = require('./reactor-core')
 
 /**
  * In Nuclear Reactors are where state is stored.  Reactors
@@ -54,7 +53,7 @@ class Reactor {
    * @return {*}
    */
   getImmutable(keyPath) {
-    return get(this.state, coerceKeyPath(keyPath))
+    return this.state.getIn(coerceKeyPath(keyPath))
   }
 
   /**

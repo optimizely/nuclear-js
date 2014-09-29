@@ -25,7 +25,7 @@ describe('ComputedReactor', () => {
 
     reactor.onChange('SelectedElement.foo', mockFn)
 
-    reactor.inputStream.write({
+    reactor.cycle({
       type: 'selectElement',
       payload: {
         foo: 'bar'
