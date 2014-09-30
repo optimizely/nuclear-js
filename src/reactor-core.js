@@ -41,8 +41,6 @@ class ReactorCore {
    * @param {array|string} keyPath to register the computed
    * @param {array} deps to calculate the computed
    * @param {function} computeFn handed the deps and returns the computed value
-   *
-   * @return {Immutable.Map}
    */
   computed(keyPath, deps, computeFn) {
     var keyPathString = coerceKeyPath(keyPath).join('.')

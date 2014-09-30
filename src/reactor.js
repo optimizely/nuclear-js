@@ -7,6 +7,8 @@ var each = require('./utils').each
 var Immutable = require('immutable')
 var logging = require('./logging')
 var ChangeObserver = require('./change-observer')
+var calculateComputed = require('./calculate-computed')
+var ComputedEntry = require('./computed-entry')
 
 var ReactorCore = require('./reactor-core')
 
@@ -26,15 +28,18 @@ class Reactor {
      */
     this.state = Immutable.Map({})
     /**
-     * Holds a map of id => reactor instance
-     */
-    this.reactorCores = {}
-
-    /**
      * Output stream that emits the state of the reactor cluster anytime
      * a cycle happens
      */
     this.outputStream = through()
+    /**
+     * Holds a map of id => reactor instance
+     */
+    this.__reactorCores = {}
+    /**
+     * Holds a map of stringified keyPaths => ComputedEntry
+     */
+    this.__computeds = {}
   }
 
   /**
@@ -62,17 +67,16 @@ class Reactor {
    */
   cycle(messages) {
     messages = coerceArray(messages)
-    var state = this.state
-    var cores = this.reactorCores
+    var prevState = this.state
 
-    this.state = state.withMutations(state => {
+    this.state = this.state.withMutations(state => {
       while (messages.length > 0) {
         var message = messages.shift()
 
         logging.cycleStart(message)
 
         // let each core handle the message
-        each(cores, (core, id) => {
+        each(this.__reactorCores, (core, id) => {
           // dont let the reactor mutate by reference
           var reactorState = state.get(id).asImmutable()
           var newState = core.react(
@@ -87,6 +91,12 @@ class Reactor {
 
         logging.cycleEnd(state)
       }
+
+      // execute the computed after the cores have reacted
+      each(this.__computeds, entry => {
+        calculateComputed(prevState, state, entry)
+      })
+
       return state
     })
 
@@ -107,7 +117,7 @@ class Reactor {
    * @param {ReactorCore} Core
    */
   attachCore(id, core) {
-    if (this.reactorCores[id]) {
+    if (this.__reactorCores[id]) {
       throw new Error("Only one reactor can be registered per id")
     }
     if (!(core instanceof ReactorCore)) {
@@ -117,11 +127,11 @@ class Reactor {
     // execute the computeds after initialization since no react() takes place
     initialState = core.executeComputeds(Immutable.Map(), initialState)
     this.state = this.state.set(id, initialState)
-    this.reactorCores[id] = core
+    this.__reactorCores[id] = core
   }
 
   unattachCore(id) {
-    delete this.reactorCores[id]
+    delete this.__reactorCores[id]
   }
 
   /**
@@ -134,6 +144,22 @@ class Reactor {
    */
   createChangeObserver() {
     return new ChangeObserver(this)
+  }
+
+  /**
+   * Registers a computed with at a certain keyPath
+   * @param {array|string} keyPath to register the computed
+   * @param {array} deps to calculate the computed
+   * @param {function} computeFn handed the deps and returns the computed value
+   */
+  computed(keyPath, deps, computeFn) {
+    var keyPathString = coerceKeyPath(keyPath).join('.')
+
+    if (this.__computeds[keyPathString]) {
+      throw new Error("Already a computed at " + keyPathString)
+    }
+
+    this.__computeds[keyPathString] = new ComputedEntry(keyPath, deps, computeFn)
   }
 }
 
