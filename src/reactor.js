@@ -1,7 +1,6 @@
 var through = require('through')
 var toJS = require('./immutable-helpers').toJS
-var mutate = require('./immutable-helpers').mutate
-var isImmutable = require('./immutable-helpers').isImmutable
+var toImmutable = require('./immutable-helpers').toImmutable
 var coerceKeyPath = require('./utils').keyPath
 var coerceArray = require('./utils').coerceArray
 var each = require('./utils').each
@@ -66,12 +65,13 @@ class Reactor {
     var state = this.state
     var cores = this.reactorCores
 
-    this.state = mutate(state, state => {
+    this.state = state.withMutations(state => {
       while (messages.length > 0) {
         var message = messages.shift()
 
         logging.cycleStart(message)
 
+        // let each core handle the message
         each(cores, (core, id) => {
           // dont let the reactor mutate by reference
           var reactorState = state.get(id).asImmutable()
@@ -87,6 +87,7 @@ class Reactor {
 
         logging.cycleEnd(state)
       }
+      return state
     })
 
     // write the new state to the output stream
@@ -110,10 +111,12 @@ class Reactor {
       throw new Error("Only one reactor can be registered per id")
     }
     if (!(core instanceof ReactorCore)) {
-      core = new Core()
+      core = new core()
     }
-    var initialState = core.initialize() || {}
-    this.state = this.state.set(id, Immutable.fromJS(initialState))
+    var initialState = toImmutable(core.initialize() || {})
+    // execute the computeds after initialization since no react() takes place
+    initialState = core.executeComputeds(Immutable.Map(), initialState)
+    this.state = this.state.set(id, initialState)
     this.reactorCores[id] = core
   }
 

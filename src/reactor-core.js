@@ -1,8 +1,7 @@
 var Immutable = require('immutable')
 var coerceKeyPath = require('./utils').keyPath
 var each = require('./utils').each
-var mutate = require('./immutable-helpers').mutate
-var isImmutable = require('./immutable-helpers').isImmutable
+var toImmutable = require('./immutable-helpers').toImmutable
 var calculateComputed = require('./calculate-computed')
 var ComputedEntry = require('./computed-entry')
 
@@ -19,6 +18,13 @@ class ReactorCore {
     this.__computeds = {}
   }
 
+  /**
+   * This method is overriden by extending classses to setup message handlers
+   * via `this.on` and to set up the initial state
+   *
+   * Anything returned from this function will be coerced into an ImmutableJS value
+   * and set as the initial state for the part of the ReactorCore
+   */
   initialize() {
     // extending classes implement to setup action handlers
   }
@@ -53,22 +59,27 @@ class ReactorCore {
    * does the reaction and returns the new state
    */
   react(state, type, payload) {
-    var prevState = state
     var handler = this.__handlers[type];
 
     if (typeof handler === 'function') {
-      state = handler.call(this, state, payload, type);
-      if (!isImmutable(state)) {
-        // cast to immutable object
-        state = Immutable.fromJS(state)
-      }
+      var newState = toImmutable(handler.call(this, state, payload, type))
+      return this.executeComputeds(state, newState)
     }
 
-    // calculate computeds
-    return mutate(state, state => {
-      each(this.__computeds, (entry) => {
+    return state
+  }
+
+  /**
+   * Executes the registered computeds on a passed in state object
+   * @param {Immutable.Map}
+   * @return {Immutable.Map}
+   */
+  executeComputeds(prevState, state) {
+    return state.withMutations(state => {
+      each(this.__computeds, entry => {
         calculateComputed(prevState, state, entry)
       })
+      return state
     })
   }
 }

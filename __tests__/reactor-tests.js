@@ -5,7 +5,6 @@ var Immutable = require('immutable')
 var ReactorCore = require('../src/reactor-core')
 var Reactor = require('../src/reactor')
 var remove = require('../src/immutable-helpers').remove
-var mutate = require('../src/immutable-helpers').mutate
 var update = require('../src/immutable-helpers').update
 
 describe('Reactor', () => {
@@ -15,20 +14,21 @@ describe('Reactor', () => {
 
   var onExperimentAdd = function(state, payload) {
     var data = payload.data
-    return mutate(state, state => {
+
+    return state.withMutations(state => {
       data.forEach(item => {
-        update(state, ['experiments', item.id], item)
+        state.updateIn(['experiments', item.id], x => item)
       })
+      return state
     })
   }
 
   var onExperimentRemove = function(state, payload) {
-    var idToRemove = payload.id
     return remove(state, ['experiments', payload.id])
   }
 
   var onCurrentProjectChange = function(state, payload) {
-    return update(state, ['id'], payload.id)
+    return state.set('id', payload.id)
   }
 
   var ExperimentCore
@@ -62,6 +62,26 @@ describe('Reactor', () => {
 
       var results = reactor.getImmutable('ExperimentCore.experiments').toVector().toJS()
       expect(experiments).toEqual(results)
+    })
+  })
+
+  describe("when attaching a core with computeds", () => {
+    beforeEach(() => {
+      var computedCore = new ReactorCore()
+      computedCore.initialize = function() {
+        return {
+          foo: 'bar'
+        }
+      }
+      computedCore.computed('baz', ['foo'], (val) => {
+        return val + 'baz'
+      })
+
+      reactor.attachCore('computed', computedCore)
+    })
+
+    it("should initialize with the computed", () => {
+      expect(reactor.get('computed.baz')).toBe('barbaz')
     })
   })
 

@@ -3,7 +3,6 @@ jest.autoMockOff()
 var Immutable = require('immutable')
 var ReactorCore = require('../src/reactor-core')
 var remove = require('../src/immutable-helpers').remove
-var mutate = require('../src/immutable-helpers').mutate
 var update = require('../src/immutable-helpers').update
 
 describe('ReactorCore', () => {
@@ -13,10 +12,11 @@ describe('ReactorCore', () => {
 
   var onExperimentAdd = function(state, payload) {
     var data = payload.data
-    return mutate(state, state => {
+    return state.withMutations(state => {
       data.forEach(item => {
         update(state, ['experiments', item.id], item)
       })
+      return state
     })
   }
 

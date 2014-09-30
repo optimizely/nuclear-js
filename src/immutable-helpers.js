@@ -15,15 +15,6 @@ function isImmutable(obj) {
 }
 
 /**
- * Gets the state at a keypath
- * @param {string|array} keyPath
- * @return {Immutable.Map}
- */
-function get(state, keyPath) {
-  return state.getIn(coerceKeyPath(keyPath))
-}
-
-/**
  * Removes an item in the map by keyPath
  * @param {array|string} key
  */
@@ -50,28 +41,28 @@ function update(state, key, val) {
 }
 
 /**
- * Helper function to do state.withMutations
- * @param {Immutable.Seq}
- * @param {Function} fn
- */
-function mutate(state, fn) {
-  return state.withMutations(fn)
-}
-
-/**
  * Converts an Immutable Sequence to JS object
  * Can be called on any type
  */
 function toJS(arg) {
   // arg instanceof Immutable.Sequence is unreleable
-  return ((arg instanceof Object) && arg.toJS)
+  return (isImmutable(arg))
     ? arg.toJS()
     : arg;
 }
 
-exports.mutate = mutate
+/**
+ * Converts a JS object to an Immutable object, if it's
+ * already Immutable its a no-op
+ */
+function toImmutable(arg) {
+  return (isImmutable(arg))
+    ? arg
+    : Immutable.fromJS(arg)
+}
+
 exports.remove = remove
 exports.update = update
-exports.get = get
 exports.toJS = toJS
+exports.toImmutable = toImmutable
 exports.isImmutable = isImmutable

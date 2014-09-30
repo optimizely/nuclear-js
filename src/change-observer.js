@@ -4,13 +4,23 @@ var getChanges = require('./get-changes')
 var coerceKeyPath = require('./utils').keyPath
 var toJS = require('./immutable-helpers').toJS
 
+/**
+ * ChangeObserver is an object that contains a set of subscriptions
+ * to changes for keyPaths on a reactor
+ *
+ * Packaging the handlers together allows for easier cleanup
+ */
 class ChangeObserver {
+  /**
+   * @param {Immutable.Map} initialState
+   * @param {Stream} changeStream
+   */
   constructor(initialState, changeStream) {
     this.__changeHandlers = []
     // cache the current state
     this.__prevState = initialState
 
-    this.changeStream = changeStream
+    this.__changeStream = changeStream
 
     // outputStream emits anytime state is changed
     // iterate through the change handlers and execute
@@ -54,7 +64,7 @@ class ChangeObserver {
    * Clean up
    */
   destroy() {
-    this.changeStream.unpipe(this.__changeHandlerStream)
+    this.__changeStream.unpipe(this.__changeHandlerStream)
   }
 }
 
