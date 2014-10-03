@@ -20,6 +20,14 @@ describe('ChangeObserver', () => {
   })
 
   describe('registering change handlers', () => {
+    it('should allow registration of a single string key', () => {
+      var mockFn = jest.genMockFn()
+      observer.onChange('foo', mockFn)
+
+      changeStream.write(initialState.updateIn(['foo', 'bar'], x => 2))
+
+      expect(mockFn.mock.calls[0][0]).toEqual({'bar': 2})
+    })
     it('should allow registration of a non-deep string key', () => {
       var mockFn = jest.genMockFn()
       observer.onChange(['foo'], mockFn)

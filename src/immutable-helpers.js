@@ -1,5 +1,6 @@
 var coerceKeyPath = require('./utils').keyPath
 var isFunction = require('./utils').isFunction
+var clone = require('./utils').clone
 var Immutable = require('immutable')
 
 /**
@@ -19,7 +20,8 @@ function isImmutable(obj) {
  * @param {array|string} key
  */
 function remove(state, key) {
-  var keyPath = coerceKeyPath(key)
+  // clone the keypath since .splice() mutates
+  var keyPath = clone(coerceKeyPath(key))
   var removeKey = keyPath.splice(keyPath.length - 1, 1)[0]
   //console.log('removing', state.toString(), keyPath, removeKey)
   return state.updateIn(keyPath, toRemove => {

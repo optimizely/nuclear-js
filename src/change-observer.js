@@ -2,6 +2,7 @@ var through = require('through')
 var isArray = require('./utils').isArray
 var getChanges = require('./get-changes')
 var coerceKeyPath = require('./utils').keyPath
+var coerceArray = require('./utils').coerceArray
 var toJS = require('./immutable-helpers').toJS
 
 /**
@@ -35,6 +36,8 @@ class ChangeObserver {
           entry.deps
         )
         if (changes) {
+          // if the keyPaths changed then invoke the handler function with the
+          // values (coerced to JS objects)
           entry.handler.apply(null, changes.map(toJS))
         }
       })
@@ -51,9 +54,7 @@ class ChangeObserver {
    * @param {Function} changeHandler
    */
   onChange(deps, changeHandler) {
-    if (!isArray(deps)) {
-      throw new Error("onChange must be called with an array of deps")
-    }
+    deps = coerceArray(deps)
     this.__changeHandlers.push({
       deps: deps.map(coerceKeyPath),
       handler: changeHandler

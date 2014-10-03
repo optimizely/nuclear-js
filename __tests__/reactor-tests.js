@@ -17,7 +17,7 @@ describe('Reactor', () => {
 
     return state.withMutations(state => {
       data.forEach(item => {
-        state.updateIn(['experiments', item.id], x => item)
+        state.updateIn(['experiments', item.id], x => Immutable.fromJS(item))
       })
       return state
     })
@@ -132,6 +132,49 @@ describe('Reactor', () => {
       })
 
       expect(reactor.get('foo')).toBe(null)
+    })
+  })
+
+  describe('#computed', () => {
+    it.only('should create a computed based on two cores', () => {
+      reactor.computed(
+        'currentProjectExperiments',
+        ['ExperimentCore.experiments', 'CurrentProjectCore.id'],
+        (experiments, id) => {
+          return experiments.toVector().filter(exp => {
+            return exp.get('proj_id') === id
+          })
+        }
+      )
+
+      var experiments = [exp1, exp2, exp3]
+
+      reactor.cycle({
+        type: 'addExperiments',
+        payload: {
+          data: experiments
+        }
+      })
+
+      expect(reactor.get('currentProjectExperiments')).toBe(undefined)
+
+      reactor.cycle({
+        type: 'changeCurrentProject',
+        payload: {
+          id: 10
+        }
+      })
+
+      expect(reactor.get('currentProjectExperiments')).toEqual([exp1, exp2])
+
+      reactor.cycle({
+        type: 'changeCurrentProject',
+        payload: {
+          id: 11
+        }
+      })
+
+      expect(reactor.get('currentProjectExperiments')).toEqual([exp3])
     })
   })
 })

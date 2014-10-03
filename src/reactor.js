@@ -94,7 +94,7 @@ class Reactor {
 
       // execute the computed after the cores have reacted
       each(this.__computeds, entry => {
-        calculateComputed(prevState, state, entry)
+        state = calculateComputed(prevState, state, entry)
       })
 
       return state

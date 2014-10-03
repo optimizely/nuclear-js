@@ -27,12 +27,5 @@ module.exports = function calculateComputed(prevState, currState, entry) {
     return remove(currState, keyPath)
   }
 
-  currState.cursor(keyPath, (newValue, oldValue, path) => {
-    newState = newValue
-    //console.log('changs', newValue.toString(), oldValue.toString(), path)
-    // update function
-  }).update(x => {
-    return computeFn.apply(null, changes)
-  })
-  return newState
+  return currState.updateIn(keyPath, x => computeFn.apply(null, changes))
 }

@@ -1,12 +1,12 @@
 var ReactorCore = require('./reactor-core')
 var extend = require('./utils').extend
-var ComputedReactor = require('./computed-reactor')
+var Reactor = require('./reactor')
 
 /**
  * @return {Reactor}
  */
 exports.createReactor = function() {
-  return new ComputedReactor()
+  return new Reactor()
 }
 
 /**
