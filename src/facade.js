@@ -14,9 +14,12 @@ exports.createReactor = function() {
  * @return {ReactorCore}
  */
 exports.createCore = function(spec) {
-  var core = new ReactorCore()
-  extend(core, spec)
-  return core
+  function Core() {
+    ReactorCore.call(this)
+  }
+  Core.prototype = Object.create(ReactorCore.prototype)
+  extend(Core.prototype, spec)
+  return Core
 }
 
 exports.immutableHelpers = require('./immutable-helpers')
