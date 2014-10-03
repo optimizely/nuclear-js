@@ -6,6 +6,8 @@ exports.extend = _.extend
 
 exports.each = _.each
 
+exports.partial = _.partial
+
 exports.isArray = _.isArray
 
 exports.isFunction = _.isFunction

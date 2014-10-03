@@ -136,7 +136,7 @@ describe('Reactor', () => {
   })
 
   describe('#computed', () => {
-    it.only('should create a computed based on two cores', () => {
+    it('should create a computed based on two cores', () => {
       reactor.computed(
         'currentProjectExperiments',
         ['ExperimentCore.experiments', 'CurrentProjectCore.id'],

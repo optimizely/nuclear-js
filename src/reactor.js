@@ -4,6 +4,7 @@ var toImmutable = require('./immutable-helpers').toImmutable
 var coerceKeyPath = require('./utils').keyPath
 var coerceArray = require('./utils').coerceArray
 var each = require('./utils').each
+var partial = require('./utils').partial
 var Immutable = require('immutable')
 var logging = require('./logging')
 var ChangeObserver = require('./change-observer')
@@ -40,6 +41,10 @@ class Reactor {
      * Holds a map of stringified keyPaths => ComputedEntry
      */
     this.__computeds = {}
+    /**
+     * Holds a map of action group names => action functions
+     */
+    this.__actions = {}
   }
 
   /**
@@ -160,6 +165,32 @@ class Reactor {
     }
 
     this.__computeds[keyPathString] = new ComputedEntry(keyPath, deps, computeFn)
+  }
+
+  /**
+   * Binds a map of actions to this specific reactor
+   * can be invoked via reactor.action(name).createItem(...)
+   */
+  bindActions(name, actions) {
+    if (this.__actions[name]) {
+      throw new Error("Actions already defined for " + name)
+    }
+    var actionGroup = {}
+
+    each(actions, (fn, fnName) => {
+      actionGroup[fnName] = partial(fn, this)
+    })
+    this.__actions[name] = actionGroup
+  }
+
+  /**
+   * Invokes a registered actionGroup's action
+   */
+  action(group) {
+    if (!this.__actions[group]) {
+      throw new Error("Actions not defined for " + group)
+    }
+    return this.__actions[group]
   }
 }
 
