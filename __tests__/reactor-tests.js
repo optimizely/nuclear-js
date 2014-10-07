@@ -5,7 +5,6 @@ var Immutable = require('immutable')
 var ReactorCore = require('../src/reactor-core')
 var Reactor = require('../src/reactor')
 var remove = require('../src/immutable-helpers').remove
-var update = require('../src/immutable-helpers').update
 
 describe('Reactor', () => {
   var exp1 = { id: 1, proj_id: 10 }
@@ -175,6 +174,25 @@ describe('Reactor', () => {
       })
 
       expect(reactor.get('currentProjectExperiments')).toEqual([exp3])
+    })
+  })
+
+  describe('#createChangeObserver', () => {
+    it("should create a ChangeObserver object", () => {
+      var mockFn = jest.genMockFn()
+      var changeObserver = reactor.createChangeObserver()
+      changeObserver.onChange('ExperimentCore.experiments', mockFn)
+
+      var experiments = [exp1, exp2, exp3]
+      reactor.cycle({
+        type: 'addExperiments',
+        payload: {
+          data: experiments
+        }
+      })
+
+      var expected = reactor.get('ExperimentCore.experiments')
+      expect(mockFn.mock.calls[0][0]).toEqual(expected)
     })
   })
 })

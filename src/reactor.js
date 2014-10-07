@@ -148,7 +148,7 @@ class Reactor {
    * @return {ChangeOBserver}
    */
   createChangeObserver() {
-    return new ChangeObserver(this)
+    return new ChangeObserver(this.state, this.outputStream)
   }
 
   /**
