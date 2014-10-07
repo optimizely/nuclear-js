@@ -1,5 +1,7 @@
 Nuclear is a way to model all of your state and business logic in complex systems.
 
+**[Plans for 0.4](./NEXT.md)**
+
 #### TL;DR
 
 - **Flux-like** - One-way data flow, state can only be read, and actions are the only things
