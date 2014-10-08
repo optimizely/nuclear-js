@@ -45,6 +45,8 @@ class Reactor {
      * Holds a map of action group names => action functions
      */
     this.__actions = {}
+
+    this.initialized = false
   }
 
   /**
@@ -66,11 +68,27 @@ class Reactor {
   }
 
   /**
+   * Dispatches a single message
+   * @param {string} messageType
+   * @param {object|undefined} payload
+   */
+  dispatch(messageType, payload) {
+    this.cycle({
+      type: type,
+      payload: payload
+    })
+  }
+
+  /**
    * Executes all the messages in the message queue and emits the new
    * state of the cluster on the output stream
    * @param {array} messages
    */
   cycle(messages) {
+    if (!this.initialized) {
+      throw new Error("Reactor must be initialized")
+    }
+
     messages = coerceArray(messages)
     var prevState = this.state
 
@@ -110,6 +128,43 @@ class Reactor {
   }
 
   /**
+   * Initializes a reactor, at this point no more Cores can be attached.
+   * The initial state is either determined from getting all the initial state
+   * of the cores or by the passed in initialState
+   *
+   * @param {Immutable.Map?}
+   */
+  initialize(initialState) {
+    this.state = this.state.withMutations(state => {
+      if (!initialState) {
+        each(this.__reactorCores, (core, id) => {
+          var coreState = toImmutable(core.initialize() || {})
+          state.set(id, coreState)
+        })
+      } else {
+        state = initialState
+        state.asMutable()
+      }
+
+      // calculate core computeds
+      each(this.__reactorCores, (core, id) => {
+        var computedCoreState = core.executeComputeds(Immutable.Map(), state.get(id))
+        state.set(id, computedCoreState)
+      })
+
+      var blankState = Immutable.Map()
+      each(this.__computeds, entry => {
+        // use a blank state for initialization
+        calculateComputed(blankState, state, entry)
+      })
+
+      return state
+    })
+
+    this.initialized = true
+  }
+
+  /**
    * Cores represent distinct "silos" in your Reactor state
    * When a core is attached the `initialize` method is called
    * and the core's initial state is returned.
@@ -128,10 +183,6 @@ class Reactor {
     if (!(core instanceof ReactorCore)) {
       core = new core()
     }
-    var initialState = toImmutable(core.initialize() || {})
-    // execute the computeds after initialization since no react() takes place
-    initialState = core.executeComputeds(Immutable.Map(), initialState)
-    this.state = this.state.set(id, initialState)
     this.__reactorCores[id] = core
   }
 
@@ -163,7 +214,6 @@ class Reactor {
     if (this.__computeds[keyPathString]) {
       throw new Error("Already a computed at " + keyPathString)
     }
-
     this.__computeds[keyPathString] = new ComputedEntry(keyPath, deps, computeFn)
   }
 
