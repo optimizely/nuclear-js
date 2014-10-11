@@ -44,7 +44,7 @@ class ChangeObserver {
       this.__prevState = currState
     })
 
-    changeStream.pipe(this.__changeHandlerStream)
+    this.__changeStream.pipe(this.__changeHandlerStream)
   }
 
   /**
@@ -65,6 +65,7 @@ class ChangeObserver {
    * Clean up
    */
   destroy() {
+    console.log('changestream', this.__changeStream)
     this.__changeStream.unpipe(this.__changeHandlerStream)
   }
 }

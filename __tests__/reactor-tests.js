@@ -1,198 +1,128 @@
-
 jest.autoMockOff()
 
 var Immutable = require('immutable')
+var through = require('through')
+var Nuclear = require('../src/facade')
 var ReactorCore = require('../src/reactor-core')
 var Reactor = require('../src/reactor')
 var remove = require('../src/immutable-helpers').remove
 
-describe('Reactor', () => {
-  var exp1 = { id: 1, proj_id: 10 }
-  var exp2 = { id: 2, proj_id: 10 }
-  var exp3 = { id: 3, proj_id: 11 }
+// reactor cores
+var MapCore = Nuclear.createCore({
+  initialize() {
+    this.on('set', (state, payload) => {
+      return state.set(payload.key, payload.value)
+    })
 
-  var onExperimentAdd = function(state, payload) {
-    var data = payload.data
+    return {}
+  }
+})
 
-    return state.withMutations(state => {
-      data.forEach(item => {
-        state.updateIn(['experiments', item.id], x => Immutable.fromJS(item))
+// the aggregate core takes values via the 'push' message
+// and computes the total
+var AggregateCore = Nuclear.createCore({
+  initialize() {
+    this.on('push', (state, payload) => {
+      return state.update('values', vect => {
+        return vect.push(payload.value)
       })
-      return state
+    })
+
+    this.computed('total', ['values'], values => {
+      return values.reduce((value, total) => total + value, 0)
+    })
+
+    return {
+      values: [],
+    }
+  }
+})
+
+var basicActions = {
+  setMap(reactor, key, val) {
+    reactor.dispatch('set', {
+      key: key,
+      value: val,
+    })
+  },
+
+  pushValue(reactor, val) {
+    reactor.dispatch('push', {
+      value: val,
     })
   }
+}
 
-  var onExperimentRemove = function(state, payload) {
-    return remove(state, ['experiments', payload.id])
-  }
-
-  var onCurrentProjectChange = function(state, payload) {
-    return state.set('id', payload.id)
-  }
-
-  var ExperimentCore
-  var CurrentProjectCore
-
+describe('Reactor', () => {
   var reactor
 
-  beforeEach(() => {
-    ExperimentCore = new ReactorCore()
-    ExperimentCore.on('addExperiments', onExperimentAdd)
-    ExperimentCore.on('removeExperiment', onExperimentRemove)
-
-    CurrentProjectCore = new ReactorCore()
-    CurrentProjectCore.on('changeCurrentProject', onCurrentProjectChange)
-
-    reactor = new Reactor()
-    reactor.attachCore('ExperimentCore', ExperimentCore)
-    reactor.attachCore('CurrentProjectCore', CurrentProjectCore)
-  })
-
-  describe('writing actions to the inputStream', () => {
-    it("should successfully read 'ExperimentCore.experiments'", () => {
-      var experiments = [exp1, exp2, exp3]
-
-      reactor.cycle({
-        type: 'addExperiments',
-        payload: {
-          data: experiments
-        }
-      })
-
-      var results = reactor.getImmutable('ExperimentCore.experiments').toVector().toJS()
-      expect(experiments).toEqual(results)
-    })
-  })
-
-  describe("when attaching a core with computeds", () => {
+  describe("Basic - no initial state, no computeds", () => {
     beforeEach(() => {
-      var computedCore = new ReactorCore()
-      computedCore.initialize = function() {
-        return {
-          foo: 'bar'
-        }
-      }
-      computedCore.computed('baz', ['foo'], (val) => {
-        return val + 'baz'
-      })
+      reactor = Nuclear.createReactor()
+      reactor.attachCore('aggregate', AggregateCore)
 
-      reactor.attachCore('computed', computedCore)
+      reactor.bindActions('basic', basicActions)
+
+      reactor.initialize()
     })
 
-    it("should initialize with the computed", () => {
-      expect(reactor.get('computed.baz')).toBe('barbaz')
-    })
-  })
-
-  describe('#get', () => {
-    it('should return the value if passed a string', () => {
-      reactor.state = Immutable.fromJS({
-        foo: {
-          bar: 'baz'
-        }
-      })
-
-      expect(reactor.get('foo.bar')).toBe('baz')
+    it("should initialize with the core level computeds", () => {
+      expect(reactor.get('aggregate.total')).toBe(0)
     })
 
-    it('should return the value if passed an array', () => {
-      reactor.state = Immutable.fromJS({
-        foo: {
-          bar: 'baz'
-        }
-      })
+    it("should update when dispatching a relevant action", () => {
+      reactor.action('basic').pushValue(123)
 
-      expect(reactor.get(['foo', 'bar'])).toBe('baz')
+      expect(reactor.get('aggregate.total')).toEqual(123)
+      expect(Immutable.is(reactor.get('aggregate.values'), Immutable.Vector(123)))
+      // js tests
+      expect(reactor.getJS('aggregate.total')).toEqual(123)
+      expect(reactor.getJS('aggregate.values')).toEqual([123])
     })
 
-    it('should respect numbers if passed an array', () => {
-      var inner = Immutable.Map([[123, 'baz']])
-
-      reactor.state = Immutable.Map({
-        foo: inner
-      })
-
-      expect(reactor.get(['foo', 123])).toBe('baz')
-    })
-
-    it('should not coerce to numbers if passed a string', () => {
-      var inner = Immutable.Map([[123, 'baz']])
-
-      reactor.state = Immutable.Map({
-        foo: inner
-      })
-
-      expect(reactor.get('foo.123')).toBe(undefined)
-    })
-
-    it("should not throw an error when called on a `null` value", () => {
-      reactor.state = Immutable.Map({
-        foo: null
-      })
-
-      expect(reactor.get('foo')).toBe(null)
-    })
-  })
-
-  describe('#computed', () => {
-    it('should create a computed based on two cores', () => {
-      reactor.computed(
-        'currentProjectExperiments',
-        ['ExperimentCore.experiments', 'CurrentProjectCore.id'],
-        (experiments, id) => {
-          return experiments.toVector().filter(exp => {
-            return exp.get('proj_id') === id
-          })
-        }
-      )
-
-      var experiments = [exp1, exp2, exp3]
-
-      reactor.cycle({
-        type: 'addExperiments',
-        payload: {
-          data: experiments
-        }
-      })
-
-      expect(reactor.get('currentProjectExperiments')).toBe(undefined)
-
-      reactor.cycle({
-        type: 'changeCurrentProject',
-        payload: {
-          id: 10
-        }
-      })
-
-      expect(reactor.get('currentProjectExperiments')).toEqual([exp1, exp2])
-
-      reactor.cycle({
-        type: 'changeCurrentProject',
-        payload: {
-          id: 11
-        }
-      })
-
-      expect(reactor.get('currentProjectExperiments')).toEqual([exp3])
-    })
-  })
-
-  describe('#createChangeObserver', () => {
-    it("should create a ChangeObserver object", () => {
+    it("should emit the state of the reactor on the outputStream", () => {
       var mockFn = jest.genMockFn()
-      var changeObserver = reactor.createChangeObserver()
-      changeObserver.onChange('ExperimentCore.experiments', mockFn)
+      reactor.outputStream.pipe(through(mockFn))
 
-      var experiments = [exp1, exp2, exp3]
-      reactor.cycle({
-        type: 'addExperiments',
-        payload: {
-          data: experiments
+      reactor.action('basic').pushValue(1)
+
+      var expected = Immutable.fromJS({
+        aggregate: {
+          values: [1],
+          total: 1,
         }
       })
 
-      var expected = reactor.get('ExperimentCore.experiments')
-      expect(mockFn.mock.calls[0][0]).toEqual(expected)
+      var firstCallArg = mockFn.mock.calls[0][0]
+
+      expect(mockFn.mock.calls.length).toEqual(1)
+      expect(Immutable.is(firstCallArg, expected))
+    })
+
+    it("should not emit to the outputStream if state does not change after a dispatch", () => {
+      var mockFn = jest.genMockFn()
+      reactor.outputStream.pipe(through(mockFn))
+
+      reactor.action('basic').setMap('val', 123)
+
+      expect(mockFn.mock.calls.length).toEqual(0)
+    })
+
+    it("should create a ChangeObserver properly", () => {
+      var mockFn = jest.genMockFn()
+
+      var changeObserver = reactor.createChangeObserver()
+      changeObserver.onChange('aggregate.total', mockFn)
+
+      reactor.action('basic').pushValue(69)
+
+      expect(mockFn.mock.calls.length).toEqual(1)
+      expect(mockFn.mock.calls[0][0]).toEqual(69)
+
+      changeObserver.destroy()
+
+      reactor.action('basic').pushValue(1)
+      expect(mockFn.mock.calls.length).toEqual(1)
     })
   })
 })

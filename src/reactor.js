@@ -1,6 +1,7 @@
 var through = require('through')
 var toJS = require('./immutable-helpers').toJS
 var toImmutable = require('./immutable-helpers').toImmutable
+var isImmutable = require('./immutable-helpers').isImmutable
 var coerceKeyPath = require('./utils').keyPath
 var coerceArray = require('./utils').coerceArray
 var each = require('./utils').each
@@ -50,21 +51,21 @@ class Reactor {
   }
 
   /**
-   * Gets the coerced state (to JS object) of the reactor by keyPath
-   * @param {array|string} keyPath
-   * @return {*}
-   */
-  get(keyPath) {
-    return toJS(this.getImmutable(keyPath))
-  }
-
-  /**
    * Gets the Immutable state at the keyPath
    * @param {array|string} keyPath
    * @return {*}
    */
-  getImmutable(keyPath) {
+  get(keyPath) {
     return this.state.getIn(coerceKeyPath(keyPath))
+  }
+
+  /**
+   * Gets the coerced state (to JS object) of the reactor by keyPath
+   * @param {array|string} keyPath
+   * @return {*}
+   */
+  getJS(keyPath) {
+    return toJS(this.get(keyPath))
   }
 
   /**
@@ -73,58 +74,35 @@ class Reactor {
    * @param {object|undefined} payload
    */
   dispatch(messageType, payload) {
-    this.cycle({
-      type: type,
-      payload: payload
-    })
-  }
-
-  /**
-   * Executes all the messages in the message queue and emits the new
-   * state of the cluster on the output stream
-   * @param {array} messages
-   */
-  cycle(messages) {
-    if (!this.initialized) {
-      throw new Error("Reactor must be initialized")
-    }
-
-    messages = coerceArray(messages)
     var prevState = this.state
 
     this.state = this.state.withMutations(state => {
-      while (messages.length > 0) {
-        var message = messages.shift()
+      logging.dispatchStart(messageType, payload)
 
-        logging.cycleStart(message)
+      // let each core handle the message
+      each(this.__reactorCores, (core, id) => {
+        // dont let the reactor mutate by reference
+        var reactorState = state.get(id).asImmutable()
+        var newState = core.react(reactorState, messageType, payload)
+        state.set(id, newState)
 
-        // let each core handle the message
-        each(this.__reactorCores, (core, id) => {
-          // dont let the reactor mutate by reference
-          var reactorState = state.get(id).asImmutable()
-          var newState = core.react(
-            reactorState,
-            message.type,
-            message.payload
-          )
-          state.set(id, newState)
-
-          logging.coreReact(id, reactorState, newState)
-        })
-
-        logging.cycleEnd(state)
-      }
+        logging.coreReact(id, reactorState, newState)
+      })
 
       // execute the computed after the cores have reacted
       each(this.__computeds, entry => {
-        state = calculateComputed(prevState, state, entry)
+        calculateComputed(prevState, state, entry)
       })
+
+      logging.dispatchEnd(state)
 
       return state
     })
 
-    // write the new state to the output stream
-    this.outputStream.write(this.state)
+    // write the new state to the output stream if changed
+    if (this.state !== prevState) {
+      this.outputStream.write(this.state)
+    }
   }
 
   /**
@@ -135,26 +113,29 @@ class Reactor {
    * @param {Immutable.Map?}
    */
   initialize(initialState) {
+    if (initialState && !isImmutable(initialState)) {
+      throw new Error("Initial state must be an ImmutableJS object")
+    }
+
     this.state = this.state.withMutations(state => {
       if (!initialState) {
         each(this.__reactorCores, (core, id) => {
-          var coreState = toImmutable(core.initialize() || {})
-          state.set(id, coreState)
+          state.set(id, toImmutable(core.initialize() || {}))
         })
       } else {
-        state = initialState
-        state.asMutable()
+        state = initialState.asMutable()
       }
+
+      var blankState = Immutable.Map()
 
       // calculate core computeds
       each(this.__reactorCores, (core, id) => {
-        var computedCoreState = core.executeComputeds(Immutable.Map(), state.get(id))
+        var computedCoreState = core.executeComputeds(blankState, state.get(id))
         state.set(id, computedCoreState)
       })
 
-      var blankState = Immutable.Map()
+      // initialize the reactor level computeds
       each(this.__computeds, entry => {
-        // use a blank state for initialization
         calculateComputed(blankState, state, entry)
       })
 
