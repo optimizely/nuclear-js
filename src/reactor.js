@@ -117,30 +117,37 @@ class Reactor {
       throw new Error("Initial state must be an ImmutableJS object")
     }
 
-    this.state = this.state.withMutations(state => {
-      if (!initialState) {
-        each(this.__reactorCores, (core, id) => {
-          state.set(id, toImmutable(core.initialize() || {}))
-        })
-      } else {
-        state = initialState.asMutable()
-      }
+    var state
 
-      var blankState = Immutable.Map()
-
-      // calculate core computeds
-      each(this.__reactorCores, (core, id) => {
-        var computedCoreState = core.executeComputeds(blankState, state.get(id))
-        state.set(id, computedCoreState)
-      })
-
-      // initialize the reactor level computeds
-      each(this.__computeds, entry => {
-        calculateComputed(blankState, state, entry)
-      })
-
-      return state
+    each(this.__reactorCores, (core, id) => {
+      core.initialize()
     })
+
+    if (initialState) {
+      state = initialState
+    } else {
+      state = Immutable.Map()
+      each(this.__reactorCores, (core, id) => {
+        state = state.set(id, toImmutable(core.getInitialState()))
+      })
+    }
+
+    var blankState = Immutable.Map()
+
+    // calculate core computeds
+    each(this.__reactorCores, (core, id) => {
+      var computedCoreState = core.executeComputeds(blankState, state.get(id))
+      console.log('computed core state', computedCoreState.toString())
+      state = state.set(id, computedCoreState)
+    })
+
+    // initialize the reactor level computeds
+    each(this.__computeds, entry => {
+      console.log('executing reactor computed', entry, state.toString())
+      state = calculateComputed(blankState, state, entry)
+    })
+
+    this.state = state
 
     this.initialized = true
   }

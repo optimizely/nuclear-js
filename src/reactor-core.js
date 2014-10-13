@@ -29,6 +29,10 @@ class ReactorCore {
     // extending classes implement to setup action handlers
   }
 
+  getInitialState() {
+    return Immutable.Map()
+  }
+
   /**
    * Binds an action type => handler
    */
