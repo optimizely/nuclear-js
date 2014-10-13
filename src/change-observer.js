@@ -65,7 +65,6 @@ class ChangeObserver {
    * Clean up
    */
   destroy() {
-    console.log('changestream', this.__changeStream)
     this.__changeStream.unpipe(this.__changeHandlerStream)
   }
 }

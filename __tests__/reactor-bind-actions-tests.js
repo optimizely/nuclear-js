@@ -10,11 +10,8 @@ describe('reactor#bindActions', () => {
     reactor = Nuclear.createReactor()
     actionGroup = {
       doit(reactor, id) {
-        reactor.cycle({
-          type: 'type',
-          payload: {
-            id: id
-          }
+        reactor.dispatch('type', {
+          id: id
         })
       }
     }
@@ -23,15 +20,10 @@ describe('reactor#bindActions', () => {
   })
 
   it('should partial every action with the reactor', () => {
-    spyOn(reactor, 'cycle')
+    spyOn(reactor, 'dispatch')
 
     reactor.action('group').doit(123)
 
-    expect(reactor.cycle).toHaveBeenCalledWith({
-      type: 'type',
-      payload: {
-        id: 123
-      }
-    })
+    expect(reactor.dispatch).toHaveBeenCalledWith('type', { id: 123 })
   })
 })
