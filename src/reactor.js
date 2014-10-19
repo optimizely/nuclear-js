@@ -2,7 +2,6 @@ var toJS = require('./immutable-helpers').toJS
 var toImmutable = require('./immutable-helpers').toImmutable
 var isImmutable = require('./immutable-helpers').isImmutable
 var coerceKeyPath = require('./utils').keyPath
-var coerceArray = require('./utils').coerceArray
 var each = require('./utils').each
 var partial = require('./utils').partial
 var Immutable = require('immutable')
@@ -120,7 +119,7 @@ class Reactor {
 
     var state
 
-    each(this.__reactorCores, (core, id) => {
+    each(this.__reactorCores, core => {
       core.initialize()
     })
 
@@ -138,13 +137,11 @@ class Reactor {
     // calculate core computeds
     each(this.__reactorCores, (core, id) => {
       var computedCoreState = core.executeComputeds(blankState, state.get(id))
-      console.log('computed core state', computedCoreState.toString())
       state = state.set(id, computedCoreState)
     })
 
     // initialize the reactor level computeds
     each(this.__computeds, entry => {
-      console.log('executing reactor computed', entry, state.toString())
       state = calculateComputed(blankState, state, entry)
     })
 

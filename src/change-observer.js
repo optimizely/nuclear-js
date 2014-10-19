@@ -1,8 +1,6 @@
-var isArray = require('./utils').isArray
 var getChanges = require('./get-changes')
 var coerceKeyPath = require('./utils').keyPath
 var coerceArray = require('./utils').coerceArray
-var toJS = require('./immutable-helpers').toJS
 
 /**
  * ChangeObserver is an object that contains a set of subscriptions

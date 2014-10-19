@@ -1,5 +1,5 @@
 var jstransform = require('jstransform');
-var _ = require('underscore');
+var _ = require('lodash');
 var concat = require('concat-stream')
 var through = require('through')
 

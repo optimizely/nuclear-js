@@ -12,9 +12,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "through": "^2.3.4",
-    "immutable": "^2.0.17",
-    "underscore": "^1.7.0"
+    "immutable": "^2.5.x",
+    "lodash": "^2.4.1"
   },
   "devDependencies": {
     "jstransform": "^6.2.0",

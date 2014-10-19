@@ -27,7 +27,7 @@ class ChangeEmitter extends EventEmitter {
    * Removes a change listener by fn
    */
   removeChangeListener(fn) {
-    emitter.removeListener(CHANGE_EVENT, fn)
+    this.removeListener(CHANGE_EVENT, fn)
   }
 }
 

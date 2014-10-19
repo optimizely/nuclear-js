@@ -126,10 +126,10 @@ describe('Reactor', () => {
       expect(mockFn.mock.calls[0][0]).toEqual(69)
 
       // this isn't working yet
-      //changeObserver.destroy()
+      changeObserver.destroy()
 
-      //reactor.action('basic').pushValue(1)
-      //expect(mockFn.mock.calls.length).toEqual(1)
+      reactor.action('basic').pushValue(1)
+      expect(mockFn.mock.calls.length).toEqual(1)
     })
   })
 
@@ -179,7 +179,6 @@ describe('Reactor', () => {
         'multipliedTotal',
         ['aggregate.total', 'multi.multiplier'],
         (total, multi) => {
-          console.log('inside computed', total, multi)
           return total * multi
         }
       )
@@ -197,8 +196,6 @@ describe('Reactor', () => {
       })
 
       reactor.initialize(initialState)
-
-      console.log("what", reactor.state.toString(), reactor.initialized)
 
       expect(reactor.get('multipliedTotal')).toBe(20)
     })
