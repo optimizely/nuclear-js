@@ -1,4 +1,3 @@
-var through = require('through')
 var toJS = require('./immutable-helpers').toJS
 var toImmutable = require('./immutable-helpers').toImmutable
 var isImmutable = require('./immutable-helpers').isImmutable
@@ -11,6 +10,8 @@ var logging = require('./logging')
 var ChangeObserver = require('./change-observer')
 var calculateComputed = require('./calculate-computed')
 var ComputedEntry = require('./computed-entry')
+var ChangeEmitter = require('./change-emitter')
+
 
 var ReactorCore = require('./reactor-core')
 
@@ -30,10 +31,10 @@ class Reactor {
      */
     this.state = Immutable.Map({})
     /**
-     * Output stream that emits the state of the reactor cluster anytime
-     * a cycle happens
+     * Event bus that emits a change event anytime the state
+     * of the system changes
      */
-    this.outputStream = through()
+    this.changeEmitter = new ChangeEmitter()
     /**
      * Holds a map of id => reactor instance
      */
@@ -101,7 +102,7 @@ class Reactor {
 
     // write the new state to the output stream if changed
     if (this.state !== prevState) {
-      this.outputStream.write(this.state)
+      this.changeEmitter.emitChange(this.state, messageType, payload)
     }
   }
 
@@ -187,7 +188,7 @@ class Reactor {
    * @return {ChangeOBserver}
    */
   createChangeObserver() {
-    return new ChangeObserver(this.state, this.outputStream)
+    return new ChangeObserver(this.state, this.changeEmitter)
   }
 
   /**

@@ -1,22 +1,25 @@
 jest.autoMockOff()
 
+
+var ChangeEmitter = require('../src/change-emitter')
 var ChangeObserver = require('../src/change-observer')
 var Immutable = require('immutable')
-var through = require('through')
+var Map = require('immutable').Map
 
 describe('ChangeObserver', () => {
   var observer
-  var changeStream
+  var changeEmitter
   var initialState
 
   beforeEach(() => {
-    changeStream = through()
+    changeEmitter = new ChangeEmitter()
+
     initialState = Immutable.fromJS({
       'foo': {
         'bar': 1
       }
     })
-    observer = new ChangeObserver(initialState, changeStream)
+    observer = new ChangeObserver(initialState, changeEmitter)
   })
 
   describe('registering change handlers', () => {
@@ -24,37 +27,44 @@ describe('ChangeObserver', () => {
       var mockFn = jest.genMockFn()
       observer.onChange('foo', mockFn)
 
-      changeStream.write(initialState.updateIn(['foo', 'bar'], x => 2))
+      changeEmitter.emitChange(initialState.updateIn(['foo', 'bar'], x => 2))
 
-      expect(mockFn.mock.calls[0][0]).toEqual({'bar': 2})
+      var mockCallArg = mockFn.mock.calls[0][0]
+      var expected = Map({'bar': 2})
+
+      expect(Immutable.is(mockCallArg, expected))
     })
     it('should allow registration of a non-deep string key', () => {
       var mockFn = jest.genMockFn()
       observer.onChange(['foo'], mockFn)
 
-      changeStream.write(initialState.updateIn(['foo', 'bar'], x => 2))
+      changeEmitter.emitChange(initialState.updateIn(['foo', 'bar'], x => 2))
 
-      expect(mockFn.mock.calls[0][0]).toEqual({'bar': 2})
+      var mockCallArg = mockFn.mock.calls[0][0]
+      var expected = Map({'bar': 2})
+
+      expect(Immutable.is(mockCallArg, expected))
     })
     it('should allow registration of a deep string key', () => {
       var mockFn = jest.genMockFn()
       observer.onChange(['foo.bar'], mockFn)
 
-      changeStream.write(initialState.updateIn(['foo', 'bar'], x => {
+      changeEmitter.emitChange(initialState.updateIn(['foo', 'bar'], x => {
         return {
           'baz': 2
         }
       }))
 
-      expect(mockFn.mock.calls[0][0]).toEqual({
-        baz: 2
-      })
+      var mockCallArg = mockFn.mock.calls[0][0]
+      var expected = Map({'baz': 2})
+
+      expect(Immutable.is(mockCallArg, expected))
     })
     it('should not call the handler if another part of the map changes', () => {
       var mockFn = jest.genMockFn()
       observer.onChange(['foo'], mockFn)
 
-      changeStream.write(initialState.set('baz', x => 2))
+      changeEmitter.emitChange(initialState.set('baz', x => 2))
 
       expect(mockFn.mock.calls.length).toBe(0)
     })

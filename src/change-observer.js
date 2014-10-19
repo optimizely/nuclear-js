@@ -1,4 +1,3 @@
-var through = require('through')
 var isArray = require('./utils').isArray
 var getChanges = require('./get-changes')
 var coerceKeyPath = require('./utils').keyPath
@@ -14,19 +13,15 @@ var toJS = require('./immutable-helpers').toJS
 class ChangeObserver {
   /**
    * @param {Immutable.Map} initialState
-   * @param {Stream} changeStream
+   * @param {EventEmitter} changeEmitter
    */
-  constructor(initialState, changeStream) {
+  constructor(initialState, changeEmitter) {
     this.__changeHandlers = []
     // cache the current state
     this.__prevState = initialState
 
-    this.__changeStream = changeStream
-
-    // outputStream emits anytime state is changed
-    // iterate through the change handlers and execute
-    // if any of the dependencies changed
-    this.__changeHandlerStream = through((currState) => {
+    // add the change listener and store the unlisten function
+    this.__unlistenFn = changeEmitter.addChangeListener(currState => {
       this.__changeHandlers.forEach(entry => {
         // if any dependency changed getChanges returns
         // an array of values for each keyPath in the map
@@ -36,15 +31,11 @@ class ChangeObserver {
           entry.deps
         )
         if (changes) {
-          // if the keyPaths changed then invoke the handler function with the
-          // values (coerced to JS objects)
-          entry.handler.apply(null, changes.map(toJS))
+          entry.handler.apply(null, changes)
         }
       })
       this.__prevState = currState
     })
-
-    this.__changeStream.pipe(this.__changeHandlerStream)
   }
 
   /**
@@ -65,7 +56,7 @@ class ChangeObserver {
    * Clean up
    */
   destroy() {
-    this.__changeStream.unpipe(this.__changeHandlerStream)
+    this.__unlistenFn()
   }
 }
 

@@ -1,7 +1,6 @@
 jest.autoMockOff()
 
 var Immutable = require('immutable')
-var through = require('through')
 var Nuclear = require('../src/facade')
 var ReactorCore = require('../src/reactor-core')
 var Reactor = require('../src/reactor')
@@ -89,7 +88,7 @@ describe('Reactor', () => {
 
     it("should emit the state of the reactor on the outputStream", () => {
       var mockFn = jest.genMockFn()
-      reactor.outputStream.pipe(through(mockFn))
+      reactor.changeEmitter.addChangeListener(mockFn)
 
       reactor.action('basic').pushValue(1)
 
@@ -108,7 +107,7 @@ describe('Reactor', () => {
 
     it("should not emit to the outputStream if state does not change after a dispatch", () => {
       var mockFn = jest.genMockFn()
-      reactor.outputStream.pipe(through(mockFn))
+      reactor.changeEmitter.addChangeListener(mockFn)
 
       reactor.action('basic').setMultiplier(123)
 
