@@ -37,11 +37,11 @@ class Reactor {
     /**
      * Holds a map of id => reactor instance
      */
-    this.__reactorCores = {}
+    this.__reactorCores = Immutable.Map({})
     /**
      * Holds a map of stringified keyPaths => ComputedEntry
      */
-    this.__computeds = {}
+    this.__computeds = Immutable.Map({})
     /**
      * Holds a map of action group names => action functions
      */
@@ -80,19 +80,28 @@ class Reactor {
       logging.dispatchStart(messageType, payload)
 
       // let each core handle the message
-      each(this.__reactorCores, (core, id) => {
+      this.__reactorCores.forEach(core, keyPath) {
         // dont let the reactor mutate by reference
-        var reactorState = state.get(id).asImmutable()
+        var reactorState = state.getIn(keyPath)
         var newState = core.react(reactorState, messageType, payload)
-        state.set(id, newState)
+        state.updateIn(keyPath, oldState => newState)
 
         logging.coreReact(id, reactorState, newState)
-      })
+      }
 
       // execute the computed after the cores have reacted
       each(this.__computeds, entry => {
         calculateComputed(prevState, state, entry)
       })
+
+      this.__computeds.forEach(getter, keyPath) {
+        var changes = getChanges(prevState, state, getter.deps)
+        if (changes) {
+          state.updateIn(keyPath, oldState => {
+            getter.compute.apply(null, changes)
+          })
+        }
+      }
 
       logging.dispatchEnd(state)
 
@@ -119,7 +128,7 @@ class Reactor {
 
     var state
 
-    each(this.__reactorCores, core => {
+    this.__reactorCores.forEach(core => {
       core.initialize()
     })
 
@@ -127,7 +136,7 @@ class Reactor {
       state = initialState
     } else {
       state = Immutable.Map()
-      each(this.__reactorCores, (core, id) => {
+      this.__reactorCores.forEach((core, id) => {
         state = state.set(id, toImmutable(core.getInitialState()))
       })
     }
@@ -135,14 +144,14 @@ class Reactor {
     var blankState = Immutable.Map()
 
     // calculate core computeds
-    each(this.__reactorCores, (core, id) => {
+    this.__reactorCores.forEach((core, id) => {
       var computedCoreState = core.executeComputeds(blankState, state.get(id))
-      state = state.set(id, computedCoreState)
+      state.set(id, computedCoreState)
     })
 
     // initialize the reactor level computeds
-    each(this.__computeds, entry => {
-      state = calculateComputed(blankState, state, entry)
+    this.__computeds.forEach((getter, keyPath) => {
+      state.set(keyPath, getter.evaluate(state))
     })
 
     this.state = state
@@ -159,21 +168,18 @@ class Reactor {
    * the message have the opportunity to return a "new state" to
    * the Reactor
    *
-   * @param {string} id
+   * @param {string|array} path
    * @param {ReactorCore} Core
    */
-  attachCore(id, core) {
-    if (this.__reactorCores[id]) {
-      throw new Error("Only one reactor can be registered per id")
+  attachCore(path, core) {
+    var keyPath = coerceKeyPath(path)
+    if (this.__reactorCores.get(keyPath)) {
+      throw new Error("Already a ReactorCore registered at " + keyPath)
     }
     if (!(core instanceof ReactorCore)) {
       core = new core()
     }
-    this.__reactorCores[id] = core
-  }
-
-  unattachCore(id) {
-    delete this.__reactorCores[id]
+    this.__reactorCores.set(keyPath, core)
   }
 
   /**
@@ -191,16 +197,14 @@ class Reactor {
   /**
    * Registers a computed with at a certain keyPath
    * @param {array|string} keyPath to register the computed
-   * @param {array} deps to calculate the computed
-   * @param {function} computeFn handed the deps and returns the computed value
+   * @param {GetterRecord} getter to calculate the computed
    */
-  computed(keyPath, deps, computeFn) {
-    var keyPathString = coerceKeyPath(keyPath).join('.')
-
-    if (this.__computeds[keyPathString]) {
-      throw new Error("Already a computed at " + keyPathString)
+  computed(path, getter) {
+    var keyPath = coerceKeyPath(path)
+    if (this.__computeds.get(keyPath)) {
+      throw new Error("Already a computed at " + keyPath)
     }
-    this.__computeds[keyPathString] = new ComputedEntry(keyPath, deps, computeFn)
+    this.__computeds.set(keyPath, getter)
   }
 
   /**
