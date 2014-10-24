@@ -1,9 +1,7 @@
 var Immutable = require('immutable')
 var coerceKeyPath = require('./utils').keyPath
-var each = require('./utils').each
 var toImmutable = require('./immutable-helpers').toImmutable
 var calculateComputed = require('./calculate-computed')
-var ComputedEntry = require('./computed-entry')
 
 /**
  * In Nuclear.js ReactorCore's are the only parts of the system
@@ -15,7 +13,7 @@ var ComputedEntry = require('./computed-entry')
 class ReactorCore {
   constructor() {
     this.__handlers = {}
-    this.__computeds = {}
+    this.__computeds = Immutable.Map({})
   }
 
   /**
@@ -41,19 +39,23 @@ class ReactorCore {
   }
 
   /**
-   * Registers a computed with at a certain keyPath
-   * @param {array|string} keyPath to register the computed
-   * @param {array} deps to calculate the computed
-   * @param {function} computeFn handed the deps and returns the computed value
+   * Registers a local computed to this component.
+   * These computeds are calculated after every react happens on this Core.
+   *
+   * These computeds keyPaths are relative to the local Core state passed to react,
+   * not the entire app state.
+   *
+   * @param {array|string} path to register the computed
+   * @param {GetterRecord} getter to calculate the computed
    */
-  computed(keyPath, deps, computeFn) {
-    var keyPathString = coerceKeyPath(keyPath).join('.')
-
-    if (this.__computeds[keyPathString]) {
+  computed(path, getter) {
+    var keyPath = coerceKeyPath(path)
+    if (this.__computeds.get(keyPath)) {
       throw new Error("Already a computed at " + keyPathString)
     }
 
-    this.__computeds[keyPathString] = new ComputedEntry(keyPath, deps, computeFn)
+    this.__computeds = this.__computeds.set(keyPath, getter)
+
   }
 
   /**
@@ -78,8 +80,8 @@ class ReactorCore {
    */
   executeComputeds(prevState, state) {
     return state.withMutations(state => {
-      each(this.__computeds, entry => {
-        calculateComputed(prevState, state, entry)
+      this.__computeds.forEach((getter, keyPath) => {
+        calculateComputed(prevState, state, keyPath, getter)
       })
       return state
     })

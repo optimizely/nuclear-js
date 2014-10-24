@@ -1,6 +1,7 @@
 jest.autoMockOff()
 
 var Immutable = require('immutable')
+var Getter = require('../src/getter')
 var ReactorCore = require('../src/reactor-core')
 var remove = require('../src/immutable-helpers').remove
 var update = require('../src/immutable-helpers').update
@@ -33,11 +34,14 @@ describe('ReactorCore', () => {
     core = new ReactorCore()
     core.on('addExperiments', onExperimentAdd)
     core.on('removeExperiment', onExperimentRemove)
-    core.computed('project10', ['experiments'], function(exps) {
-      return exps.filter(exp => {
-        return exp.get('proj_id') === 10
-      })
-    })
+    core.computed('project10', Getter({
+      deps: ['experiments'],
+      compute(exps) {
+        return exps.filter(exp => {
+          return exp.get('proj_id') === 10
+        })
+      }
+    }))
   })
 
   it('should react to addExperiments', function() {

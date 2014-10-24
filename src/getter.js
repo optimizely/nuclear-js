@@ -1,9 +1,9 @@
 var coerceKeyPath = require('./utils').keyPath
 var Immutable = require('immutable')
 var Record = Immutable.Record
-
 var BaseGetterRecord = Record({
   deps: null,
+  flatDeps: null,
   compute: null,
 })
 
@@ -20,6 +20,29 @@ class GetterRecord extends BaseGetterRecord {
 }
 
 /**
+ * Recursive function to flatten deps of a getter
+ * @param {array<array<string>|GetterRecord>} deps
+ * @return {array<array<string>>} unique flatten deps
+ */
+function flattenDeps(deps) {
+  var accum = Immutable.Set()
+
+  accum = accum.withMutations(accum => {
+    deps.forEach((dep) => {
+      if (dep instanceof GetterRecord) {
+        accum.union(flattenDeps(dep.deps))
+      } else {
+        accum = accum.add(dep)
+      }
+    })
+
+    return accum
+  })
+
+  return accum
+}
+
+/**
  * Wrap the GetterRecord in a function that coerces args
  */
 function Getter(args) {
@@ -31,8 +54,13 @@ function Getter(args) {
     return coerceKeyPath(dep)
   })
 
+  // compute the flatten deps, and cache since deps are immutable
+  // once they enter the record
+  var flatDeps = flattenDeps(deps).valueSeq().toJS()
+
   return new GetterRecord({
     deps: deps,
+    flatDeps: flatDeps,
     compute: args.compute
   });
 }

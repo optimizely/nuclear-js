@@ -1,5 +1,5 @@
-var getChanges = require('./get-changes')
-var coerceKeyPath = require('./utils').keyPath
+var Getter = require('./getter')
+var hasChanged = require('./has-changed')
 var coerceArray = require('./utils').coerceArray
 
 /**
@@ -20,16 +20,11 @@ class ChangeObserver {
 
     // add the change listener and store the unlisten function
     this.__unlistenFn = changeEmitter.addChangeListener(currState => {
-      this.__changeHandlers.forEach(entry => {
-        // if any dependency changed getChanges returns
-        // an array of values for each keyPath in the map
-        var changes = getChanges(
-          this.__prevState,
-          currState,
-          entry.deps
-        )
-        if (changes) {
-          entry.handler.apply(null, changes)
+      this.__changeHandlers.forEach(getter => {
+        // use a getter here to store dependencies and the evaluate function
+        // takes the values dep values and calls a function that causes side effects
+        if (hasChanged(this.__prevState, currState, getter.deps)) {
+          getter.evaluate(currState)
         }
       })
       this.__prevState = currState
@@ -39,15 +34,15 @@ class ChangeObserver {
   /**
    * Specify an array of keyPaths as dependencies and
    * a changeHandler fn
-   * @param {array<string|array>} deps
+   * @param {array<array<string>|string>} deps
    * @param {Function} changeHandler
    */
   onChange(deps, changeHandler) {
     deps = coerceArray(deps)
-    this.__changeHandlers.push({
-      deps: deps.map(coerceKeyPath),
-      handler: changeHandler
-    })
+    this.__changeHandlers.push(Getter({
+      deps: deps,
+      compute: changeHandler
+    }))
   }
 
   /**

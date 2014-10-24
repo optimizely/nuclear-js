@@ -2,7 +2,6 @@ jest.autoMockOff()
 
 var Immutable = require('immutable')
 var Getter = require('../src/getter')
-//var GetterRecord = require('../src/getter').GetterRecord
 
 describe('Getters', () => {
   it('should create an Immutable GetterRecord with coerced deps', () => {
@@ -35,13 +34,7 @@ describe('Getters', () => {
     expect(result).toBe(3)
   })
 
-  it("should recursively evaluate", () => {
-    var state = Immutable.Map({
-      dep1: 1,
-      dep2: 2,
-      multi: 3,
-    })
-
+  describe("recurive getters", () => {
     var getter1 = Getter({
       deps: ['dep1', 'dep2'],
       compute(val1, val2) {
@@ -56,8 +49,20 @@ describe('Getters', () => {
       }
     })
 
-    var result = getter2.evaluate(state)
+    it("should recursively evaluate", () => {
+      var state = Immutable.Map({
+        dep1: 1,
+        dep2: 2,
+        multi: 3,
+      })
 
-    expect(result).toBe(9)
+      var result = getter2.evaluate(state)
+
+      expect(result).toBe(9)
+    })
+
+    it('#flattenDeps', () => {
+      expect(getter2.flatDeps).toEqual([['dep1'], ['dep2'], ['multi']])
+    })
   })
 })

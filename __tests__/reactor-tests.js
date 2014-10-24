@@ -4,7 +4,7 @@ var Immutable = require('immutable')
 var Nuclear = require('../src/facade')
 var ReactorCore = require('../src/reactor-core')
 var Reactor = require('../src/reactor')
-var remove = require('../src/immutable-helpers').remove
+var Getter = require('../src/getter')
 
 // reactor cores
 var MultiplierCore = Nuclear.createCore({
@@ -17,7 +17,8 @@ var MultiplierCore = Nuclear.createCore({
 
   getInitialState() {
     return {
-      multiplier: 1
+      multiplier: 1,
+      power: 2
     }
   }
 })
@@ -32,16 +33,34 @@ var AggregateCore = Nuclear.createCore({
       })
     })
 
-    this.computed('total', ['values'], values => {
-      return values.reduce((value, total) => total + value, 0)
-    })
-
+    this.computed('total', Getter({
+      deps: ['values'],
+      compute(values) {
+        return values.reduce((value, total) => total + value, 0)
+      }
+   }))
   },
 
   getInitialState() {
     return {
       values: [],
     }
+  }
+})
+
+var getMultipliedTotal = Getter({
+  deps: ['aggregate.total', 'multi.multiplier'],
+  compute(total, multi) {
+    return total * multi
+  }
+})
+
+// getter that depends on a getter
+var getPowerTotal = Getter({
+  deps: [getMultipliedTotal, 'multi.power'],
+  compute(total, power) {
+    console.log('get power total', total, power)
+    return Math.pow(total, power)
   }
 })
 
@@ -141,13 +160,8 @@ describe('Reactor', () => {
 
       reactor.bindActions('basic', basicActions)
 
-      reactor.computed(
-        'multipliedTotal',
-        ['aggregate.total', 'multi.multiplier'],
-        (total, multi) => {
-          return total * multi
-        }
-      )
+      reactor.computed('multipliedTotal', getMultipliedTotal)
+      reactor.computed('powerTotal', getPowerTotal)
 
       reactor.initialize()
     })
@@ -157,13 +171,15 @@ describe('Reactor', () => {
     })
 
     it('should recompute after a dependency changes', () => {
-      reactor.action('basic').pushValue(100)
+      reactor.action('basic').pushValue(10)
 
-      expect(reactor.get('multipliedTotal')).toBe(100)
+      expect(reactor.get('multipliedTotal')).toBe(10)
+      expect(reactor.get('powerTotal')).toBe(100)
 
       reactor.action('basic').setMultiplier(2)
 
-      expect(reactor.get('multipliedTotal')).toBe(200)
+      expect(reactor.get('multipliedTotal')).toBe(20)
+      expect(reactor.get('powerTotal')).toBe(400)
     })
   })
 
@@ -175,19 +191,15 @@ describe('Reactor', () => {
 
       reactor.bindActions('basic', basicActions)
 
-      reactor.computed(
-        'multipliedTotal',
-        ['aggregate.total', 'multi.multiplier'],
-        (total, multi) => {
-          return total * multi
-        }
-      )
+      reactor.computed('multipliedTotal', getMultipliedTotal)
+      reactor.computed('powerTotal', getPowerTotal)
     })
 
-    it('should initialize with some initialState and execute the computeds', () => {
+    it.only('should initialize with some initialState and execute the computeds', () => {
       var initialState = Immutable.fromJS({
         multi: {
-          multiplier: 2
+          multiplier: 2,
+          power: 2
         },
 
         aggregate: {
@@ -198,6 +210,7 @@ describe('Reactor', () => {
       reactor.initialize(initialState)
 
       expect(reactor.get('multipliedTotal')).toBe(20)
+      expect(reactor.get('powerTotal')).toBe(400)
     })
   })
 })

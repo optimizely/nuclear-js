@@ -8,9 +8,7 @@ var Immutable = require('immutable')
 var logging = require('./logging')
 var ChangeObserver = require('./change-observer')
 var calculateComputed = require('./calculate-computed')
-var ComputedEntry = require('./computed-entry')
 var ChangeEmitter = require('./change-emitter')
-
 
 var ReactorCore = require('./reactor-core')
 
@@ -39,13 +37,13 @@ class Reactor {
      */
     this.__reactorCores = Immutable.Map({})
     /**
-     * Holds a map of stringified keyPaths => ComputedEntry
+     * Holds a map of stringified keyPaths => GetterRecords
      */
     this.__computeds = Immutable.Map({})
     /**
      * Holds a map of action group names => action functions
      */
-    this.__actions = {}
+    this.__actions = Immutable.Map({})
 
     this.initialized = false
   }
@@ -80,28 +78,19 @@ class Reactor {
       logging.dispatchStart(messageType, payload)
 
       // let each core handle the message
-      this.__reactorCores.forEach(core, keyPath) {
+      this.__reactorCores.forEach((core, keyPath) => {
         // dont let the reactor mutate by reference
         var reactorState = state.getIn(keyPath)
         var newState = core.react(reactorState, messageType, payload)
         state.updateIn(keyPath, oldState => newState)
 
-        logging.coreReact(id, reactorState, newState)
-      }
-
-      // execute the computed after the cores have reacted
-      each(this.__computeds, entry => {
-        calculateComputed(prevState, state, entry)
+        logging.coreReact(keyPath, reactorState, newState)
       })
 
-      this.__computeds.forEach(getter, keyPath) {
-        var changes = getChanges(prevState, state, getter.deps)
-        if (changes) {
-          state.updateIn(keyPath, oldState => {
-            getter.compute.apply(null, changes)
-          })
-        }
-      }
+      // execute the computed after the cores have reacted
+      this.__computeds.forEach((getter, keyPath) => {
+        calculateComputed(prevState, state, keyPath, getter)
+      })
 
       logging.dispatchEnd(state)
 
@@ -136,22 +125,23 @@ class Reactor {
       state = initialState
     } else {
       state = Immutable.Map()
-      this.__reactorCores.forEach((core, id) => {
-        state = state.set(id, toImmutable(core.getInitialState()))
+      this.__reactorCores.forEach((core, keyPath) => {
+        var coreInitialState = toImmutable(core.getInitialState())
+        state = state.updateIn(keyPath, curr => coreInitialState)
       })
     }
 
     var blankState = Immutable.Map()
 
     // calculate core computeds
-    this.__reactorCores.forEach((core, id) => {
-      var computedCoreState = core.executeComputeds(blankState, state.get(id))
-      state.set(id, computedCoreState)
+    this.__reactorCores.forEach((core, keyPath) => {
+      var computedCoreState = core.executeComputeds(blankState, state.getIn(keyPath))
+      state = state.updateIn(keyPath, oldState => computedCoreState)
     })
 
     // initialize the reactor level computeds
     this.__computeds.forEach((getter, keyPath) => {
-      state.set(keyPath, getter.evaluate(state))
+      state = state.updateIn(keyPath, curr => getter.evaluate(state))
     })
 
     this.state = state
@@ -179,7 +169,7 @@ class Reactor {
     if (!(core instanceof ReactorCore)) {
       core = new core()
     }
-    this.__reactorCores.set(keyPath, core)
+    this.__reactorCores = this.__reactorCores.set(keyPath, core)
   }
 
   /**
@@ -204,7 +194,7 @@ class Reactor {
     if (this.__computeds.get(keyPath)) {
       throw new Error("Already a computed at " + keyPath)
     }
-    this.__computeds.set(keyPath, getter)
+    this.__computeds = this.__computeds.set(keyPath, getter)
   }
 
   /**
@@ -212,25 +202,25 @@ class Reactor {
    * can be invoked via reactor.action(name).createItem(...)
    */
   bindActions(name, actions) {
-    if (this.__actions[name]) {
+    if (this.__actions.get(name)) {
       throw new Error("Actions already defined for " + name)
     }
     var actionGroup = {}
-
     each(actions, (fn, fnName) => {
       actionGroup[fnName] = partial(fn, this)
     })
-    this.__actions[name] = actionGroup
+
+    this.__actions = this.__actions.set(name, actionGroup)
   }
 
   /**
    * Invokes a registered actionGroup's action
    */
   action(group) {
-    if (!this.__actions[group]) {
+    if (!this.__actions.get(group)) {
       throw new Error("Actions not defined for " + group)
     }
-    return this.__actions[group]
+    return this.__actions.get(group)
   }
 }
 
