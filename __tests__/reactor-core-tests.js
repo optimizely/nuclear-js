@@ -3,8 +3,6 @@ jest.autoMockOff()
 var Immutable = require('immutable')
 var Getter = require('../src/getter')
 var ReactorCore = require('../src/reactor-core')
-var remove = require('../src/immutable-helpers').remove
-var update = require('../src/immutable-helpers').update
 
 describe('ReactorCore', () => {
   var exp1 = { id: 1, proj_id: 10 }
@@ -15,15 +13,17 @@ describe('ReactorCore', () => {
     var data = payload.data
     return state.withMutations(state => {
       data.forEach(item => {
-        update(state, ['experiments', item.id], item)
+        var immutableExp = Immutable.Map(item)
+        state.updateIn(['experiments', item.id], old => immutableExp);
       })
       return state
     })
   }
 
   var onExperimentRemove = function(state, payload) {
-    var idToRemove = payload.id
-    return remove(state, ['experiments', payload.id])
+    return state.update('experiments', exps => {
+      return exps.remove(payload.id)
+    })
   }
 
   var initial = Immutable.Map({})

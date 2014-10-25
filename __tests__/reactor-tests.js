@@ -59,7 +59,6 @@ var getMultipliedTotal = Getter({
 var getPowerTotal = Getter({
   deps: [getMultipliedTotal, 'multi.power'],
   compute(total, power) {
-    console.log('get power total', total, power)
     return Math.pow(total, power)
   }
 })

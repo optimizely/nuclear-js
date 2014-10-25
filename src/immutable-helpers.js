@@ -1,6 +1,3 @@
-var coerceKeyPath = require('./utils').keyPath
-var isFunction = require('./utils').isFunction
-var clone = require('./utils').clone
 var Immutable = require('immutable')
 
 /**
@@ -14,34 +11,6 @@ var Immutable = require('immutable')
 function isImmutable(obj) {
   return (obj instanceof Immutable.Sequence)
 }
-
-/**
- * Removes an item in the map by keyPath
- * @param {array|string} key
- */
-function remove(state, key) {
-  // clone the keypath since .splice() mutates
-  var keyPath = clone(coerceKeyPath(key))
-  var removeKey = keyPath.splice(keyPath.length - 1, 1)[0]
-  //console.log('removing', state.toString(), keyPath, removeKey)
-  return state.updateIn(keyPath, toRemove => {
-    return toRemove.remove(removeKey)
-  })
-}
-
-/**
- * Sets a property on the state
- * @param {array|string|number} keyPathOrFn
- * @param {any} val
- */
-function update(state, key, val) {
-  var keyPath = coerceKeyPath(key)
-  var updateFn = (isFunction(val)) ? val : function(data) {
-    return Immutable.fromJS(val)
-  }
-  return state.updateIn(keyPath, updateFn)
-}
-
 /**
  * Converts an Immutable Sequence to JS object
  * Can be called on any type
@@ -63,8 +32,6 @@ function toImmutable(arg) {
     : Immutable.fromJS(arg)
 }
 
-exports.remove = remove
-exports.update = update
 exports.toJS = toJS
 exports.toImmutable = toImmutable
 exports.isImmutable = isImmutable
