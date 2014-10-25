@@ -1,5 +1,6 @@
 var helpers = require('./immutable-helpers')
 var ReactorCore = require('./reactor-core')
+var Getter = require('./getter')
 var extend = require('./utils').extend
 var Reactor = require('./reactor')
 
@@ -22,6 +23,8 @@ exports.createCore = function(spec) {
   extend(Core.prototype, spec)
   return Core
 }
+
+exports.Getter = Getter
 
 exports.toJS = helpers.toJS
 exports.toImmutable = helpers.toImmutable
