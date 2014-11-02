@@ -161,7 +161,7 @@ class Reactor {
    * @param {string|array} path
    * @param {ReactorCore} Core
    */
-  attachCore(path, core) {
+  defineState(path, core) {
     var keyPath = coerceKeyPath(path)
     if (this.__reactorCores.get(keyPath)) {
       throw new Error("Already a ReactorCore registered at " + keyPath)
@@ -189,7 +189,7 @@ class Reactor {
    * @param {array|string} keyPath to register the computed
    * @param {GetterRecord} getter to calculate the computed
    */
-  computed(path, getter) {
+  defineComputed(path, getter) {
     var keyPath = coerceKeyPath(path)
     if (this.__computeds.get(keyPath)) {
       throw new Error("Already a computed at " + keyPath)

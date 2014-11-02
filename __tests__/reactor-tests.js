@@ -12,7 +12,6 @@ var MultiplierCore = Nuclear.createCore({
     this.on('setMulti', (state, payload) => {
       return state.set('multiplier', payload.value)
     })
-
   },
 
   getInitialState() {
@@ -83,7 +82,7 @@ describe('Reactor', () => {
   describe("Basic - no initial state, no computeds", () => {
     beforeEach(() => {
       reactor = Nuclear.createReactor()
-      reactor.attachCore('aggregate', AggregateCore)
+      reactor.defineState('aggregate', AggregateCore)
 
       reactor.bindActions('basic', basicActions)
 
@@ -154,13 +153,12 @@ describe('Reactor', () => {
   describe("Reactor level computed", () => {
     beforeEach(() => {
       reactor = Nuclear.createReactor()
-      reactor.attachCore('aggregate', AggregateCore)
-      reactor.attachCore('multi', MultiplierCore)
+      reactor.defineState('aggregate', AggregateCore)
+      reactor.defineState('multi', MultiplierCore)
+      reactor.defineComputed('multipliedTotal', getMultipliedTotal)
+      reactor.defineComputed('powerTotal', getPowerTotal)
 
       reactor.bindActions('basic', basicActions)
-
-      reactor.computed('multipliedTotal', getMultipliedTotal)
-      reactor.computed('powerTotal', getPowerTotal)
 
       reactor.initialize()
     })
@@ -185,13 +183,12 @@ describe('Reactor', () => {
   describe("Reactor level computed + initial state", () => {
     beforeEach(() => {
       reactor = Nuclear.createReactor()
-      reactor.attachCore('aggregate', AggregateCore)
-      reactor.attachCore('multi', MultiplierCore)
+      reactor.defineState('aggregate', AggregateCore)
+      reactor.defineState('multi', MultiplierCore)
+      reactor.defineComputed('multipliedTotal', getMultipliedTotal)
+      reactor.defineComputed('powerTotal', getPowerTotal)
 
       reactor.bindActions('basic', basicActions)
-
-      reactor.computed('multipliedTotal', getMultipliedTotal)
-      reactor.computed('powerTotal', getPowerTotal)
     })
 
     it.only('should initialize with some initialState and execute the computeds', () => {
