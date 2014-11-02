@@ -1,6 +1,7 @@
 var Immutable = require('immutable')
 var coerceKeyPath = require('./utils').keyPath
 var toImmutable = require('./immutable-helpers').toImmutable
+var isImmutable = require('./immutable-helpers').isImmutable
 var calculateComputed = require('./calculate-computed')
 
 /**
@@ -55,7 +56,6 @@ class ReactorCore {
     }
 
     this.__computeds = this.__computeds.set(keyPath, getter)
-
   }
 
   /**
@@ -79,12 +79,19 @@ class ReactorCore {
    * @return {Immutable.Map}
    */
   executeComputeds(prevState, state) {
-    return state.withMutations(state => {
+    if (isImmutable(state)) {
+      return state.withMutations(state => {
+        this.__computeds.forEach((getter, keyPath) => {
+          calculateComputed(prevState, state, keyPath, getter)
+        })
+        return state
+      })
+    } else {
       this.__computeds.forEach((getter, keyPath) => {
         calculateComputed(prevState, state, keyPath, getter)
       })
       return state
-    })
+    }
   }
 }
 
