@@ -1,11 +1,13 @@
-NuclearJS: A framework to decouple app state and UI.
+# NuclearJS
 
-#### Define what your app state looks like and how it reacts to events over time.
+A framework to decouple app state and UI.
+
+**Define how a piece of your application state behaves**
 
 ```js
 var Immutable = require('immutable')
 var Nuclear = require('nuclear-js')
-var uuid = require('uuid')
+var __id = 1;
 
 var todoItems = Nuclear.createCore({
   getInitialState: function() {
@@ -20,7 +22,7 @@ var todoItems = Nuclear.createCore({
       // and returns a new state
       // push a new item record
       return state.push(Immutable.Map({
-        id: uuid(),
+        id: __id++,
         title: payload.title,
         isCompleted: false
       }))
@@ -44,10 +46,14 @@ var todoItems = Nuclear.createCore({
     })
   }
 })
+```
 
+```js
+var Nuclear = require('nuclear-js')
+var todoItems = require('./todo-items')
 
 var reactor = Nuclear.createReactor()
-// bind a section of your app state `'items'` to the `todoItems` ReactorCore
+// bind the todoItems state to the 'items' key in our app state
 reactor.defineState('items', todoItems)
 
 // start the reactor
