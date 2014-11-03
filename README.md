@@ -2,7 +2,7 @@
 
 A framework to decouple app state and UI.
 
-**Define how a piece of your application state behaves**
+**Define a Core, which describes how a piece of your application state behaves**
 
 ```js
 var Immutable = require('immutable')
@@ -48,6 +48,8 @@ var todoItems = Nuclear.createCore({
 })
 ```
 
+**Register that core as a key on the app state map**
+
 ```js
 var Nuclear = require('nuclear-js')
 var todoItems = require('./todo-items')
@@ -71,6 +73,68 @@ console.log(reactor.get('items'))
 // Vector [ Map { id: 1, title: 'hey', isCompleted: false }]
 ```
 
+**Define Computed State**
+
+One of the major sources of complexity in front end development is needed to have your 
+application state in a different format to properly display it in the UI. Keeping stateful
+instances of your application objects in the UI where it doesn't belong leads to headache.
+
+NuclearJS solves this by allowing you to define computed properties on your app state.  Since
+data structure in NuclearJS are immutable, these computeds are lazy and only get evaluated when
+another part of the system needs to consume the value.
+
+This allows your to describe the entire logic of your system in a performant manner.
+
+**Lets add another Core to our system**
+
+```js
+var Nuclear = require('nuclear-js')
+var todoItems = require('./todo-items')
+
+var reactor = Nuclear.createReactor()
+// bind the todoItems state to the 'items' key in our app state
+reactor.defineState('items', todoItems)
+
+reactor.defineState('filterValue', Nuclear.createCore({
+  getInitialState: function() {
+    return 'all'
+  },
+
+  initialize: function() {
+    this.on('changeFilter', function(state, filterValue) {
+      // return the new state of `filterValue`
+      return filterValue
+    })
+  },
+}))
+
+// A getter defines some array of dependencies (app state keyPaths or other Getters)
+// and a compute function that is passed the values of the deps
+var shownItems = Nuclear.Getter({
+  deps: ['items', 'filterValue'],
+  compute: function(items, fitlerValue) {
+    var filterFns = {
+      'all': function(item) {
+        return true
+      },
+      'active': function(item) {
+        return !item.get('isCompleted')
+      },
+      'completed': function(item) {
+        return item.get('isCompleted')
+      },
+    }
+    var filterFn = filterFns[filterValue] || filterFns['all']
+
+    return items.filter(filterFn).toVector()
+  }
+})
+
+reactor.defineComputed('shownItems', shownItems)
+
+// start the reactor
+reactor.initialize()
+```
 
 **[Plans for 0.4](./NEXT.md)**
 
