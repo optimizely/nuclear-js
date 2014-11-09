@@ -1,142 +1,114 @@
 # NuclearJS
 
-A framework to decouple app state and UI.
+One-way, immutable state modelling.
 
-**Define a Core, which describes how a piece of your application state behaves**
+**Example: Modeling the state of a shopping cart**
+
+Require Library Dependencies
 
 ```js
 var Immutable = require('immutable')
 var Nuclear = require('nuclear-js')
-var __id = 1;
+```
 
-var todoItems = Nuclear.createCore({
+Model the state the shopping cart as `ReactiveState`
+
+```js
+var itemList = Nuclear.ReactiveState({
   getInitialState: function() {
-    return Immutable.Vector()
+    return Immutable.List()
   },
 
   initialize: function() {
-    // setup what events this part of the state reacts to
-
-    this.on('addItem', function(state, payload){
-      // a handler function is passed the current state
-      // and returns a new state
-      // push a new item record
-      return state.push(Immutable.Map({
-        id: __id++,
-        title: payload.title,
-        isCompleted: false
-      }))
-    })
-
-    this.on('removeItem', function(state, payload){
-      // returns a vector of all items except ones matching payload.id
-      return state.filter(function(item) {
-        return item.get('id') !== payload.id
-      }).toVector()
-    })
-
-    this.on('completeItem', function(state, payload) {
-      // marks an the item matching payload.is as `isCompleted`
-      return state.map(function(item) {
-        if (item.get('id') === payload.id) {
-          return item.set('isCompleted', true)
-        }
-        return item
-      }).toVector()
+    this.on('addItem', function(state, item) {
+      // the current state of the itemList is passed
+      // to this handler function whenever addItem message
+      return state.push(Immutable.Map(item))
     })
   }
 })
-```
 
-**Register that core as a key on the app state map**
-
-```js
-var Nuclear = require('nuclear-js')
-var todoItems = require('./todo-items')
-
-var reactor = Nuclear.createReactor()
-// bind the todoItems state to the 'items' key in our app state
-reactor.defineState('items', todoItems)
-
-// start the reactor
-reactor.initialize()
-
-console.log(reactor.get('items'))
-// Vector []
-
-// Mutate state by dispatching actions into the reactor
-reactor.dispatch('addItem', {
-  title: 'hey',
-})
-
-console.log(reactor.get('items'))
-// Vector [ Map { id: 1, title: 'hey', isCompleted: false }]
-```
-
-**Define Computed State**
-
-One of the major sources of complexity in front end development is needed to have your 
-application state in a different format to properly display it in the UI. Keeping stateful
-instances of your application objects in the UI where it doesn't belong leads to headache.
-
-NuclearJS solves this by allowing you to define computed properties on your app state.  Since
-data structure in NuclearJS are immutable, these computeds are lazy and only get evaluated when
-another part of the system needs to consume the value.
-
-This allows your to describe the entire logic of your system in a performant manner.
-
-**Lets add another Core to our system**
-
-```js
-var Nuclear = require('nuclear-js')
-var todoItems = require('./todo-items')
-
-var reactor = Nuclear.createReactor()
-// bind the todoItems state to the 'items' key in our app state
-reactor.defineState('items', todoItems)
-
-reactor.defineState('filterValue', Nuclear.createCore({
+var taxPercent = Nuclear.ReactiveState({
   getInitialState: function() {
-    return 'all'
+    return 0
   },
 
   initialize: function() {
-    this.on('changeFilter', function(state, filterValue) {
-      // return the new state of `filterValue`
-      return filterValue
+    this.on('setTaxPercent', function(state, percent) {
+      return percent
     })
-  },
-}))
-
-// A getter defines some array of dependencies (app state keyPaths or other Getters)
-// and a compute function that is passed the values of the deps
-var shownItems = Nuclear.Getter({
-  deps: ['items', 'filterValue'],
-  compute: function(items, fitlerValue) {
-    var filterFns = {
-      'all': function(item) {
-        return true
-      },
-      'active': function(item) {
-        return !item.get('isCompleted')
-      },
-      'completed': function(item) {
-        return item.get('isCompleted')
-      },
-    }
-    var filterFn = filterFns[filterValue] || filterFns['all']
-
-    return items.filter(filterFn).toVector()
   }
 })
 
-reactor.defineComputed('shownItems', shownItems)
-
-// start the reactor
-reactor.initialize()
 ```
 
-**[Plans for 0.4](./NEXT.md)**
+`subtotal`, `tax` and `total` are all computable from `items` and `taxPercent`
+
+```js
+var subtotal = Nuclear.Computed(
+  // dependencies
+  ['items'],
+  // this function is called whenever any dependency
+  //is updated with the dependency's value
+  function(items) {
+    return items.reduce(function(total, item) {
+      total + item.get('price')
+    }, 0)
+  }
+)
+
+var tax = Nuclear.Computed(
+  // computeds can have other computeds as dependencies
+  [subtotal, 'taxPercent'],
+  function(subtotal, taxPercent) {
+    return (subtotal * (taxPercent / 100))
+  }
+)
+
+var total = Nuclear.Computed(
+  [subtotal, tax],
+  function(subtotal, tax) {
+    return subtotal + tax
+  }
+)
+```
+
+Putting it all together.
+
+```js
+var shoppingCart = Nuclear.Reactor({
+  // define the system state as a mapping of
+  // keys to ReactiveState or Computeds
+  state: {
+    items: itemList,
+    taxPercent: taxPercent,
+    subtotal: subtotal,
+    tax: tax,
+    total: total,
+  }
+})
+
+shoppingCart.initialize()
+
+shoppingCart.get('total') // 0
+shoppingCart.get('items') // Vector []
+
+shoppingCart.dispatch('addItem', {
+  name: 'sandwhich',
+  price: 10
+})
+
+shoppingCart.get('items') // Vector [ Map { name: 'sandwhich' price: 10 }]
+shoppingCart.get('subtotal') // 10
+shoppingCart.get('tax') // 0
+shoppingCart.get('total') // 10
+
+shoppingCart.dispatch('setTaxPercent', 5)
+
+shoppingCart.get('subtotal') // 10
+shoppingCart.get('tax') // 0.5
+shoppingCart.get('total') // 10.5
+```
 
 #### TL;DR
 
@@ -160,6 +132,6 @@ the UI layer simply a representation of the state and binds UI events to Nuclear
 in the simplest form possible.  Use computeds to transform pure state into something consummable by the
 UI layer
 
-- **Convenience APIs** - Provide a framework API that makes building UIs on top of Nuclear seamless and beautiful.
+- **UI Interchangable** - NuclearJS should compliment, not replace existing UI frameworks as a way to model state.
 
 **more documentation coming soon**
