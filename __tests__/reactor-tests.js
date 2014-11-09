@@ -3,7 +3,7 @@ jest.autoMockOff()
 var Immutable = require('immutable')
 var Map = require('immutable').Map
 var List = require('immutable').List
-var Nuclear = require('../src/facade')
+var Nuclear = require('../src/main')
 
 var itemsState = Nuclear.ReactiveState({
   getInitialState() {

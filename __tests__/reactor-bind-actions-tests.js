@@ -1,6 +1,6 @@
 jest.autoMockOff()
 
-var Nuclear = require('../src/facade')
+var Nuclear = require('../src/main')
 
 describe('reactor#bindActions', () => {
   var reactor

@@ -15,6 +15,9 @@ exports.ReactiveState = require('./reactive-state')
  */
 exports.Computed = require('./computed')
 
+// export the immutable library
+exports.Immutable = require('immutable')
+
 // expose helper functions
 exports.toJS = helpers.toJS
 exports.toImmutable = helpers.toImmutable

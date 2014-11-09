@@ -5,7 +5,6 @@ var hasChanged = require('./has-changed')
 var coerceKeyPath = require('./utils').keyPath
 var each = require('./utils').each
 var toImmutable = require('./immutable-helpers').toImmutable
-var isImmutable = require('./immutable-helpers').isImmutable
 
 /**
  * In Nuclear.js ReactorCore's are the only parts of the system

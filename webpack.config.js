@@ -1,15 +1,41 @@
-module.exports = {
-  entry: './src/facade.js',
-  output: {
-    filename: './dist/nuclear.js'
+var webpack = require('webpack');
+
+var genFilename = function(isMin) {
+  return [
+    './dist/nuclear',
+    (isMin ? '.min' : ''),
+    '.js'
+  ].join('');
+}
+
+var uglifyJsPlugin = new webpack.optimize.UglifyJsPlugin();
+
+module.exports = [
+  {
+    entry: './src/main.js',
+    output: {
+      library: 'Nuclear',
+      libraryTarget: 'umd',
+      filename: genFilename(false),
+    },
+    module: {
+      loaders: [
+        { test: /\.js$/, loader: 'jstransform-loader' }
+      ]
+    },
   },
-  module: {
-    loaders: [
-      { test: /\.js$/, loader: 'jstransform-loader' }
-    ]
-  },
-  resolve: {
-    // you can now require('file') instead of require('file.coffee')
-    extensions: ['', '.js', '.json', '.coffee'] 
+  {
+    entry: './src/main.js',
+    output: {
+      library: 'arrayUpdater',
+      libraryTarget: 'umd',
+      filename: genFilename(true),
+    },
+    module: {
+      loaders: [
+        { test: /\.js$/, loader: 'jstransform-loader' }
+      ]
+    },
+    plugins: [uglifyJsPlugin],
   }
-};
+];
