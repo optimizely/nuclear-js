@@ -1,212 +1,229 @@
 jest.autoMockOff()
 
 var Immutable = require('immutable')
+var Map = require('immutable').Map
+var List = require('immutable').List
 var Nuclear = require('../src/facade')
-var ReactorCore = require('../src/reactor-core')
-var Reactor = require('../src/reactor')
-var Getter = require('../src/getter')
 
-// reactor cores
-var MultiplierCore = Nuclear.createCore({
-  initialize() {
-    this.on('setMulti', (state, payload) => {
-      return state.set('multiplier', payload.value)
-    })
-  },
-
+var itemsState = Nuclear.ReactiveState({
   getInitialState() {
     return {
-      multiplier: 1,
-      power: 2
+      all: [],
     }
-  }
-})
+  },
 
-// the aggregate core takes values via the 'push' message
-// and computes the total
-var AggregateCore = Nuclear.createCore({
   initialize() {
-    this.on('push', (state, payload) => {
-      return state.update('values', vect => {
-        return vect.push(payload.value)
+    this.on('addItem', (state, payload) => {
+      return state.update('all', items => {
+        return items.push(Map({
+          name: payload.name,
+          price: payload.price,
+        }))
       })
     })
 
-    this.computed('total', Getter({
-      deps: ['values'],
-      compute(values) {
-        return values.reduce((value, total) => total + value, 0)
-      }
-   }))
+    this.computed('subtotal', ['all'], (items) => {
+      return items.reduce((total, item) => {
+        return total + item.get('price')
+      }, 0)
+    })
   },
+})
 
+var taxPercentageState = Nuclear.ReactiveState({
   getInitialState() {
-    return {
-      values: [],
-    }
+    return 0
+  },
+
+  initialize() {
+    this.on('setTax', (state, payload) => {
+      return payload
+    })
   }
 })
 
-var getMultipliedTotal = Getter({
-  deps: ['aggregate.total', 'multi.multiplier'],
-  compute(total, multi) {
-    return total * multi
+var taxComputed = Nuclear.Computed(
+  ['items.subtotal', 'taxPercent'],
+  (subtotal, taxPercent) => {
+    return (subtotal * (taxPercent / 100))
   }
-})
+)
 
-// getter that depends on a getter
-var getPowerTotal = Getter({
-  deps: [getMultipliedTotal, 'multi.power'],
-  compute(total, power) {
-    return Math.pow(total, power)
+var totalComputed = Nuclear.Computed(
+  ['items.subtotal', taxComputed],
+  (subtotal, tax) => {
+    var total = subtotal + tax
+    return Math.round(total, 2)
   }
-})
+)
 
-var basicActions = {
-  setMultiplier(reactor, val) {
-    reactor.dispatch('setMulti', {
-      value: val,
+var checkoutActions = {
+  addItem(reactor, name, price) {
+    reactor.dispatch('addItem', {
+      name: name,
+      price: price
     })
   },
 
-  pushValue(reactor, val) {
-    reactor.dispatch('push', {
-      value: val,
-    })
+  setTaxPercent(reactor, percent) {
+    reactor.dispatch('setTax', percent)
   }
 }
+
+var reactorConfig = {
+  state: {
+    items: itemsState,
+    taxPercent: taxPercentageState,
+
+    tax: taxComputed,
+    total: totalComputed,
+  },
+
+  actions: {
+    checkout: checkoutActions
+  }
+}
+
+
 
 describe('Reactor', () => {
   var reactor
 
-  describe("Basic - no initial state, no computeds", () => {
+  describe('Reactor with no initial state', () => {
     beforeEach(() => {
-      reactor = Nuclear.createReactor()
-      reactor.defineState('aggregate', AggregateCore)
-
-      reactor.bindActions('basic', basicActions)
-
+      reactor = Nuclear.Reactor(reactorConfig)
       reactor.initialize()
     })
 
-    it("should initialize with the core level computeds", () => {
-      expect(reactor.get('aggregate.total')).toBe(0)
+    describe('initialization', () => {
+      it('should initialize with the core level computeds', () => {
+        expect(reactor.getJS('items.all')).toEqual([])
+
+        expect(reactor.get('items.subtotal')).toBe(0)
+        expect(reactor.get('taxPercent')).toEqual(0)
+        expect(reactor.get('tax')).toEqual(0)
+        expect(reactor.get('total')).toEqual(0)
+      })
     })
 
-    it("should update when dispatching a relevant action", () => {
-      reactor.action('basic').pushValue(123)
+    describe('when dispatching a relevant action', () => {
+      var item = {
+        name: 'item 1',
+        price: 10,
+      }
 
-      expect(reactor.get('aggregate.total')).toEqual(123)
-      expect(Immutable.is(reactor.get('aggregate.values'), Immutable.Vector(123)))
-      // js tests
-      expect(reactor.getJS('aggregate.total')).toEqual(123)
-      expect(reactor.getJS('aggregate.values')).toEqual([123])
-    })
+      it('should update all state', () => {
+        reactor.action('checkout').addItem(item.name, item.price)
+        expect(reactor.getJS('items.all')).toEqual([item])
 
-    it("should emit the state of the reactor on the outputStream", () => {
-      var mockFn = jest.genMockFn()
-      reactor.changeEmitter.addChangeListener(mockFn)
-
-      reactor.action('basic').pushValue(1)
-
-      var expected = Immutable.fromJS({
-        aggregate: {
-          values: [1],
-          total: 1,
-        }
+        expect(reactor.get('items.subtotal')).toBe(10)
+        expect(reactor.get('taxPercent')).toEqual(0)
+        expect(reactor.get('tax')).toEqual(0)
+        expect(reactor.get('total')).toEqual(10)
       })
 
-      var firstCallArg = mockFn.mock.calls[0][0]
+      it('should update all computed after another action', () => {
+        reactor.action('checkout').addItem(item.name, item.price)
+        reactor.action('checkout').setTaxPercent(10)
 
-      expect(mockFn.mock.calls.length).toEqual(1)
-      expect(Immutable.is(firstCallArg, expected))
-    })
+        expect(reactor.getJS('items.all')).toEqual([item])
 
-    it("should not emit to the outputStream if state does not change after a dispatch", () => {
-      var mockFn = jest.genMockFn()
-      reactor.changeEmitter.addChangeListener(mockFn)
+        expect(reactor.get('items.subtotal')).toBe(10)
+        expect(reactor.get('taxPercent')).toEqual(10)
+        expect(reactor.get('tax')).toEqual(1)
+        expect(reactor.get('total')).toEqual(11)
+      })
 
-      reactor.action('basic').setMultiplier(123)
+      it("should emit the state of the reactor on the outputStream", () => {
+        var mockFn = jest.genMockFn()
+        reactor.changeEmitter.addChangeListener(mockFn)
 
-      expect(mockFn.mock.calls.length).toEqual(0)
-    })
+        reactor.action('checkout').addItem(item.name, item.price)
+
+        var expected = Immutable.fromJS({
+          items: {
+            all: [
+              item
+            ],
+            subtotal: 10
+          },
+          taxPercent: 0,
+          tax: 0,
+          total: 10,
+        })
+
+        var firstCallArg = mockFn.mock.calls[0][0]
+
+        expect(mockFn.mock.calls.length).toEqual(1)
+        expect(Immutable.is(firstCallArg, expected))
+      })
+
+      it("should not emit to the outputStream if state does not change after a dispatch", () => {
+        var mockFn = jest.genMockFn()
+        reactor.changeEmitter.addChangeListener(mockFn)
+
+        reactor.dispatch('noop', {})
+
+        expect(mockFn.mock.calls.length).toEqual(0)
+      })
+    }) // when dispatching a relevant action
 
     it("should create a ChangeObserver properly", () => {
       var mockFn = jest.genMockFn()
 
       var changeObserver = reactor.createChangeObserver()
-      changeObserver.onChange('aggregate.total', mockFn)
+      changeObserver.onChange('items.subtotal', mockFn)
 
-      reactor.action('basic').pushValue(69)
+      reactor.action('checkout').addItem('item', 10)
 
       expect(mockFn.mock.calls.length).toEqual(1)
-      expect(mockFn.mock.calls[0][0]).toEqual(69)
+      expect(mockFn.mock.calls[0][0]).toEqual(10)
 
-      // this isn't working yet
       changeObserver.destroy()
 
-      reactor.action('basic').pushValue(1)
+      reactor.action('checkout').addItem('item 2', 20)
       expect(mockFn.mock.calls.length).toEqual(1)
     })
-  })
-
-  describe("Reactor level computed", () => {
-    beforeEach(() => {
-      reactor = Nuclear.createReactor()
-      reactor.defineState('aggregate', AggregateCore)
-      reactor.defineState('multi', MultiplierCore)
-      reactor.defineComputed('multipliedTotal', getMultipliedTotal)
-      reactor.defineComputed('powerTotal', getPowerTotal)
-
-      reactor.bindActions('basic', basicActions)
-
-      reactor.initialize()
-    })
-
-    it('should initialize the reactor level computed after initialization', () => {
-      expect(reactor.get('multipliedTotal')).toBe(0)
-    })
-
-    it('should recompute after a dependency changes', () => {
-      reactor.action('basic').pushValue(10)
-
-      expect(reactor.get('multipliedTotal')).toBe(10)
-      expect(reactor.get('powerTotal')).toBe(100)
-
-      reactor.action('basic').setMultiplier(2)
-
-      expect(reactor.get('multipliedTotal')).toBe(20)
-      expect(reactor.get('powerTotal')).toBe(400)
-    })
-  })
+  }) // Reactor with no initial state
 
   describe("Reactor level computed + initial state", () => {
-    beforeEach(() => {
-      reactor = Nuclear.createReactor()
-      reactor.defineState('aggregate', AggregateCore)
-      reactor.defineState('multi', MultiplierCore)
-      reactor.defineComputed('multipliedTotal', getMultipliedTotal)
-      reactor.defineComputed('powerTotal', getPowerTotal)
+    var initialState = Map({
+      items: Map({
+        all: List([
+          Map({
+            name: 'item 1',
+            price: 10,
+          }),
+          Map({
+            name: 'item 2',
+            price: 90,
+          }),
+        ]),
+      }),
 
-      reactor.bindActions('basic', basicActions)
+      taxPercent: 20
     })
 
-    it.only('should initialize with some initialState and execute the computeds', () => {
-      var initialState = Immutable.fromJS({
-        multi: {
-          multiplier: 2,
-          power: 2
-        },
+    beforeEach(() => {
+      reactor = Nuclear.Reactor(reactorConfig)
+      reactor.initialize(initialState)
+    })
 
-        aggregate: {
-          values: [1, 2, 3, 4]
-        }
+    it('should initialize with some initialState and execute the computeds', () => {
+      var expected = Immutable.fromJS({
+        items: {
+          all: [
+            { name: 'item 1', price: 10 },
+            { name: 'item 2', price: 90 },
+          ],
+          subtotal: 100
+        },
+        taxPercent: 20,
+        tax: 20,
+        total: 120,
       })
 
-      reactor.initialize(initialState)
-
-      expect(reactor.get('multipliedTotal')).toBe(20)
-      expect(reactor.get('powerTotal')).toBe(400)
+      expect(Immutable.is(reactor.state, expected)).toBe(true)
     })
   })
 })

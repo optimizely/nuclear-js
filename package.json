@@ -1,7 +1,7 @@
 {
   "name": "nuclear-js",
-  "version": "0.4.0-rc4",
-  "description": "A stream based immutable data system",
+  "version": "0.4.0-rc5",
+  "description": "One-way Immutable State Modelling",
   "main": "src/facade.js",
   "scripts": {
     "test": "jest"
@@ -9,10 +9,10 @@
   "jest": {
     "scriptPreprocessor": "jestPreprocessor.js"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Jordan Garcia",
+  "license": "MIT",
   "dependencies": {
-    "immutable": "^2.5.x",
+    "immutable": "^3.0.x",
     "lodash": "^2.4.1"
   },
   "devDependencies": {

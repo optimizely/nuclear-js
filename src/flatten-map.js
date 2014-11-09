@@ -24,20 +24,21 @@ var each = require('./utils').each
  * instance of ReactiveState or ComputedState
  *
  * @param {object} config
+ * @param {function} pred values that return true are put into flat map and not recurred
  * @param {Immutable.List?} keyAccum key accumulator for recursion
  * @param {Immutable.Map?} flatMap accumulator for the flattened map
  *
  * @return {Immutable.Map}
  */
-function flattenMap(config, keyAccum, flatMap) {
+function flattenMap(config, pred, keyAccum, flatMap) {
   var keyAccum = keyAccum || List()
   var flatMap = flatMap || Map()
 
   each(config, (val, key) => {
-    if (typeof val === "object") {
-      flatMap = flattenMap(val, keyAccum.push(key), flatMap)
-    } else {
+    if (pred(val)) {
       flatMap = flatMap.set(keyAccum.push(key), val)
+    } else {
+      flatMap = flattenMap(val, pred, keyAccum.push(key), flatMap)
     }
   })
 

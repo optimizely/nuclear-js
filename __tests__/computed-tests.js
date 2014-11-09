@@ -1,66 +1,73 @@
 jest.autoMockOff()
 
 var Immutable = require('immutable')
+var Computed = require('../src/computed')
 
-var calculateComputed = require('../src/calculate-computed')
-var Getter = require('../src/getter')
-
-describe('calculating a computed', () => {
-  var computeMock
-  var simpleGetter
-  var simpleState
-  var blankState = Immutable.Map({})
-
-  beforeEach(() => {
-    computeMock = jest.genMockFn()
-
-    simpleGetter = Getter({
-      deps: ['val1', 'val2'],
-      compute(val1, val2) {
-        computeMock()
-
-        return val1 + val2
+describe('Computed', () => {
+  it('should create an Immutable Computed Record with coerced deps', () => {
+    var computed = Computed(
+      ['dep1', 'dep2.val'],
+      (val1, val2) => {
+        return val1 + val2;
       }
-    })
+    )
 
-    simpleState = Immutable.Map({
-      val1: 1,
-      val2: 2,
-    })
+    var expected = [['dep1'], ['dep2', 'val']]
+    expect(Immutable.is(computed.deps, expected))
   })
 
-  it('should calculate when the inital values are undefined', () => {
-    var keyPath = ['total']
-
-    var newState = calculateComputed(blankState, simpleState, keyPath, simpleGetter)
-
-    expect(newState.get('total')).toBe(3)
-  })
-
-  it('should not recompute if the dep values dont change', () => {
-    var sameState = Immutable.Map({
-      val1: 1,
-      val2: 2,
+  it("should properly evaluate", () => {
+    var state = Immutable.Map({
+      dep1: 1,
+      dep2: 2,
     })
 
-    var keyPath = ['total']
+    var computed = Computed(
+      ['dep1', 'dep2'],
+      (val1, val2) => {
+        return val1 + val2;
+      }
+    )
 
-    var newState = calculateComputed(simpleState, sameState, keyPath, simpleGetter)
+    var result = Computed.evaluate(state, computed)
 
-    expect(computeMock.mock.calls.length).toBe(0)
+    expect(result).toBe(3)
   })
 
-  it('should recompute when the value of the deps change', () => {
-    var updatedState = Immutable.Map({
-      val1: 2,
-      val2: 2,
+  describe("recurive getters", () => {
+    var getter1
+    var getter2
+
+    beforeEach(() => {
+      getter1 = Computed(
+        ['dep1', 'dep2'],
+        (val1, val2) => {
+          return val1 + val2;
+        }
+      )
+
+      getter2 = Computed(
+        [getter1, 'multi'],
+        (total, multi) => {
+          return multi * total
+        }
+      )
     })
 
-    var keyPath = ['total']
+    it.only("should recursively evaluate", () => {
+      var state = Immutable.Map({
+        dep1: 1,
+        dep2: 2,
+        multi: 3,
+      })
 
-    var newState = calculateComputed(simpleState, updatedState, keyPath, simpleGetter)
+      var result = Computed.evaluate(state, getter2)
 
-    expect(newState.get('total')).toBe(4)
-    expect(computeMock.mock.calls.length).toBe(1)
+      expect(result).toBe(9)
+    })
+
+    it('#flattenDeps', () => {
+      expect(getter2.flatDeps).toEqual([['dep1'], ['dep2'], ['multi']])
+    })
   })
 })

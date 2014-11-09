@@ -14,7 +14,9 @@ describe('flattenMap', () => {
       key3: 3,
     }
 
-    var result = flattenMap(testMap)
+    var result = flattenMap(testMap, function(val) {
+      return (typeof val !== 'object')
+    })
     var expected = Map([
       [List(['key1']), 1],
       [List(['key2']), 2],
@@ -27,7 +29,9 @@ describe('flattenMap', () => {
   it('should return an empty map', () => {
     var testMap = {}
 
-    var result = flattenMap(testMap)
+    var result = flattenMap(testMap, function(val) {
+      return (typeof val !== 'object')
+    })
     var expected = Map()
 
     expect(Immutable.is(result, expected)).toBe(true)
@@ -43,7 +47,9 @@ describe('flattenMap', () => {
       }
     }
 
-    var result = flattenMap(testMap)
+    var result = flattenMap(testMap, function(val) {
+      return (typeof val !== 'object')
+    })
     var expected = Map([
       [List(['lev1', 'lev2', 'lev3Key']), 3],
       [List(['lev1', 'lev2Key']), 2],

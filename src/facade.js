@@ -1,31 +1,21 @@
 var helpers = require('./immutable-helpers')
-var ReactorCore = require('./reactor-core')
-var Getter = require('./getter')
-var extend = require('./utils').extend
-var Reactor = require('./reactor')
 
 /**
  * @return {Reactor}
  */
-exports.createReactor = function() {
-  return new Reactor()
-}
+exports.Reactor = require('./reactor')
 
 /**
- * @param {object} spec
- * @return {ReactorCore}
+ * @return {ReactorState}
  */
-exports.createCore = function(spec) {
-  function Core() {
-    ReactorCore.call(this)
-  }
-  Core.prototype = Object.create(ReactorCore.prototype)
-  extend(Core.prototype, spec)
-  return Core
-}
+exports.ReactiveState = require('./reactive-state')
 
-exports.Getter = Getter
+/**
+ * @return {ComputedRecord}
+ */
+exports.Computed = require('./computed')
 
+// expose helper functions
 exports.toJS = helpers.toJS
 exports.toImmutable = helpers.toImmutable
 exports.isImmutable = helpers.isImmutable

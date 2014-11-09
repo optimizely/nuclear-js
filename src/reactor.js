@@ -1,16 +1,20 @@
+var Immutable = require('immutable')
+var logging = require('./logging')
+var flattenMap = require('./flatten-map')
+var ChangeObserver = require('./change-observer')
+var ChangeEmitter = require('./change-emitter')
+var ReactiveState = require('./reactive-state')
+var Computed = require('./computed')
+var hasChanged = require('./has-changed')
+
+// helper fns
 var toJS = require('./immutable-helpers').toJS
 var toImmutable = require('./immutable-helpers').toImmutable
 var isImmutable = require('./immutable-helpers').isImmutable
 var coerceKeyPath = require('./utils').keyPath
 var each = require('./utils').each
 var partial = require('./utils').partial
-var Immutable = require('immutable')
-var logging = require('./logging')
-var ChangeObserver = require('./change-observer')
-var calculateComputed = require('./calculate-computed')
-var ChangeEmitter = require('./change-emitter')
 
-var ReactorCore = require('./reactor-core')
 
 /**
  * In Nuclear Reactors are where state is stored.  Reactors
@@ -22,7 +26,11 @@ var ReactorCore = require('./reactor-core')
  * state based on the message
  */
 class Reactor {
-  constructor() {
+  constructor(config) {
+    if (!(this instanceof Reactor)) {
+      return new Reactor(config)
+    }
+
     /**
      * The state for the whole cluster
      */
@@ -35,7 +43,7 @@ class Reactor {
     /**
      * Holds a map of id => reactor instance
      */
-    this.__reactorCores = Immutable.Map({})
+    this.__stateHandlers = Immutable.Map({})
     /**
      * Holds a map of stringified keyPaths => GetterRecords
      */
@@ -45,7 +53,9 @@ class Reactor {
      */
     this.__actions = Immutable.Map({})
 
-    this.initialized = false
+    // parse the config, which populates the __stateHandlers,
+    // __computeds and __actions
+    this.__parseConfig(config)
   }
 
   /**
@@ -78,18 +88,19 @@ class Reactor {
       logging.dispatchStart(messageType, payload)
 
       // let each core handle the message
-      this.__reactorCores.forEach((core, keyPath) => {
-        // dont let the reactor mutate by reference
-        var reactorState = state.getIn(keyPath)
-        var newState = core.react(reactorState, messageType, payload)
-        state.updateIn(keyPath, oldState => newState)
+      this.__stateHandlers.forEach((handler, keyPath) => {
+        var currState = state.getIn(keyPath)
+        var newState = handler.react(currState, messageType, payload)
+        state.setIn(keyPath, newState)
 
-        logging.coreReact(keyPath, reactorState, newState)
+        logging.coreReact(keyPath, currState, newState)
       })
 
       // execute the computed after the cores have reacted
-      this.__computeds.forEach((getter, keyPath) => {
-        calculateComputed(prevState, state, keyPath, getter)
+      this.__computeds.forEach((computed, keyPath) => {
+        if (hasChanged(prevState, state, computed.flatDeps)) {
+          state.setIn(keyPath, Computed.evaluate(state, computed))
+        }
       })
 
       logging.dispatchEnd(state)
@@ -115,61 +126,40 @@ class Reactor {
       throw new Error("Initial state must be an ImmutableJS object")
     }
 
+    // reset the state
+    this.state = Immutable.Map()
+
     var state
 
-    this.__reactorCores.forEach(core => {
-      core.initialize()
+    this.__stateHandlers.forEach(handler => {
+      handler.initialize()
     })
 
     if (initialState) {
       state = initialState
     } else {
+      // create the initial state by populating from the ReactiveState definitions
       state = Immutable.Map()
-      this.__reactorCores.forEach((core, keyPath) => {
-        var coreInitialState = toImmutable(core.getInitialState())
-        state = state.updateIn(keyPath, curr => coreInitialState)
+      this.__stateHandlers.forEach((handler, keyPath) => {
+        var handlerState = toImmutable(handler.getInitialState())
+        state = state.setIn(keyPath, handlerState)
       })
     }
 
     var blankState = Immutable.Map()
 
-    // calculate core computeds
-    this.__reactorCores.forEach((core, keyPath) => {
-      var computedCoreState = core.executeComputeds(blankState, state.getIn(keyPath))
-      state = state.updateIn(keyPath, oldState => computedCoreState)
+    // calculate ReactiveState level computeds
+    this.__stateHandlers.forEach((handler, keyPath) => {
+      var computedState = handler.executeComputeds(blankState, state.getIn(keyPath))
+      state = state.setIn(keyPath, computedState)
     })
 
     // initialize the reactor level computeds
-    this.__computeds.forEach((getter, keyPath) => {
-      state = state.updateIn(keyPath, curr => getter.evaluate(state))
+    this.__computeds.forEach((computed, keyPath) => {
+      state = state.setIn(keyPath, Computed.evaluate(state, computed))
     })
 
     this.state = state
-
-    this.initialized = true
-  }
-
-  /**
-   * Cores represent distinct "silos" in your Reactor state
-   * When a core is attached the `initialize` method is called
-   * and the core's initial state is returned.
-   *
-   * Anytime a Reactor.react happens all of the cores are passed
-   * the message have the opportunity to return a "new state" to
-   * the Reactor
-   *
-   * @param {string|array} path
-   * @param {ReactorCore} Core
-   */
-  defineState(path, core) {
-    var keyPath = coerceKeyPath(path)
-    if (this.__reactorCores.get(keyPath)) {
-      throw new Error("Already a ReactorCore registered at " + keyPath)
-    }
-    if (!(core instanceof ReactorCore)) {
-      core = new core()
-    }
-    this.__reactorCores = this.__reactorCores.set(keyPath, core)
   }
 
   /**
@@ -185,23 +175,64 @@ class Reactor {
   }
 
   /**
-   * Registers a computed with at a certain keyPath
-   * @param {array|string} keyPath to register the computed
-   * @param {GetterRecord} getter to calculate the computed
+   * Parses the constructor config for a reactor.
+   *
+   * The config has the schema of:
+   *
+   * Reactor({
+   *   state: {
+   *     stateKey: <ReactiveState|Computed>,
+   *     substate: {
+   *       substateKey: <ReactiveState|Computed>
+   *     }
+   *   },
+   *
+   *   actions: {
+   *     actionGroupName: <Object>
+   *   }
+   * })
+   *
+   * State can be nested within a map
+   *
+   * @param {object} config
    */
-  defineComputed(path, getter) {
-    var keyPath = coerceKeyPath(path)
-    if (this.__computeds.get(keyPath)) {
-      throw new Error("Already a computed at " + keyPath)
+  __parseConfig(config) {
+    // flatten a deep state map into a flat map of <List of keys> => <ReactiveState|Computed>
+    var flatState = flattenMap(config.state, (val) => {
+      return (
+        ReactiveState.isReactiveState(val) ||
+        Computed.isComputed(val)
+      )
+    })
+
+    var stateHandlers = this.__stateHandlers.asMutable()
+    var computeds = this.__computeds.asMutable()
+
+    flatState.forEach((val, keyPath) => {
+      if (ReactiveState.isReactiveState(val)) {
+        stateHandlers.set(keyPath.toJS(), val)
+      } else if (Computed.isComputed(val)) {
+        computeds.set(keyPath.toJS(), val)
+      } else {
+        throw new Error("State definitions must be instances of " +
+                        "ReactiveState or Computed")
+      }
+    })
+
+    this.__stateHandlers = stateHandlers.asImmutable()
+    this.__computeds = computeds.asImmutable()
+
+    if (config.actions) {
+      // register the actions for this reactor
+      each(config.actions, this.__bindActions.bind(this))
     }
-    this.__computeds = this.__computeds.set(keyPath, getter)
   }
 
   /**
    * Binds a map of actions to this specific reactor
    * can be invoked via reactor.action(name).createItem(...)
    */
-  bindActions(name, actions) {
+  __bindActions(actions, name) {
     if (this.__actions.get(name)) {
       throw new Error("Actions already defined for " + name)
     }

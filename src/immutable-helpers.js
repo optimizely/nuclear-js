@@ -9,7 +9,7 @@ var Immutable = require('immutable')
  * @return {boolean}
  */
 function isImmutable(obj) {
-  return (obj instanceof Immutable.Sequence)
+  return Immutable.Iterable.isIterable(obj)
 }
 /**
  * Converts an Immutable Sequence to JS object

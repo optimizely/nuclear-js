@@ -4,11 +4,9 @@ var Nuclear = require('../src/facade')
 
 describe('reactor#bindActions', () => {
   var reactor
-  var actionGroup
 
   beforeEach(() => {
-    reactor = Nuclear.createReactor()
-    actionGroup = {
+    var actionGroup = {
       doit(reactor, id) {
         reactor.dispatch('type', {
           id: id
@@ -16,7 +14,12 @@ describe('reactor#bindActions', () => {
       }
     }
 
-    reactor.bindActions('group', actionGroup)
+    reactor = Nuclear.Reactor({
+      state: {},
+      actions: {
+        'group': actionGroup
+      }
+    })
   })
 
   it('should partial every action with the reactor', () => {
