@@ -112,73 +112,121 @@ shoppingCart.get('total') // 10.5
 
 ## API Documentation
 
-**Nuclear.Reactor(config: object)**
-Returns a `Reactor` instance for the specified config.
+#### Nuclear.Reactor(config: object) : Reactor
 
-Config Schema:
+Reactors models your application state in NuclearJS.  Reactors utilize message passing to update state.
 
-**config.state** - a mapping of state key paths to either a ReactiveState or Computed instance
+**initialize(initialState : Immutable.Map?) : void**
+
+Initializes a Reactor by either loading the `initialState` passed in or generating initial state from the registered `ReactiveState`.  
+
+**dispatch(messageType : string, payload : any) : void**
+
+Dispatches a message to all registered ReactiveState. Dispatches happen syncronously, and once it is done the Reactor will emit the new state on the `reactor.changeEmitter`
+
+ex: `reactor.dispatch('addUser', { name: 'jordan' })`
+
+**get(keyPath : string|array) : any**
+
+Gets a read-only value for some keyPath in the reactor state. Returns `undefined` if a keyPath doesnt have a value.
+
+ex: `reactor.get('users.active')` or `reactor.get(['users', 'active'])`
+
+**actions(groupName : string) : any**
+
+Returns an action group that was registered on `groupName`
+
+ex: `reactor.actions('users').createUser({ name: 'jordan' })`
+
+
+#### Nuclear.ReactiveState(config: object) : ReactiveState
+
 ```js
-{
-  items: itemList, // of type ReactiveState
-  subtotal: subtotalComputed // of type Computed
-
-  // the state map can be arbitraliy deep
-  users: {
-    active: activeUsers
-  }
-}
-```
-
-**Getting state value**
-
-```js
-var reactor = Nuclear.Reactor({
-  state: {
-    users: {
-      active: activeUsers
+var itemList = Nuclear.ReactiveState({
+  getInitialState: function() {
+    return Immutable.Map({
+      items: Immutable.List(),
+    })
+  },
+  
+  initialize() {
+    this.on('addItem', function(state, item) {
+      return state.update('items', function(items) {
+        return items.push(item)
+      })
     }
+    this.computed('active', ['items'], function(items) {
+      return items.filter(function(item) {
+        return item.get('isActive')
+      })
+    })
   }
 })
-var activeUsers = reactor.get('users.active')
-// or
-var activeUsers = reactor.get(['users', 'active'])
 ```
 
-**config.actions** - a mapping of action names => actions
+ReactiveState is the basic building block of state modelling in NuclearJS.  All state should be described as ReactiveState.
+
+**getInitialState() : any**
+
+Use this function to declare what the structure of the initial state should be.  This should be a pure function, referencing no ouside values or making any sort of AJAX calls.  A Nuclear.Reactor will coerce the return value of `getInitialState` into an ImmutableJS data structure.
+
+**initialize() : void**
+
+Function is called when during `Reactor.initialize()`, it sets up all of the message listeners and any computed state.
+
+The following functions can be used within `initialize` 
+
+`this.on(messageType : string, handler(state : any, payload: any) : function)` - Adds a message handler for a specific `messageType`.  There can only be one handler per message type per ReactiveState.
+
+`this.computed(keyPath : string, deps : array, computeFn : function)` - Sets up a computed value that whose dependencies are 
+relative keyPaths to the ReactiveState.  Any time any dependency value changes after a dispatch the computed is re-evaluated.
+
+#### Nuclear.Computed(deps : array, computeFn : function) : Computed
+
+Defines a computed unit, where the `deps` are an array of keyPaths on a Nuclear.Reactor or other Nuclear.Computed instances (that's right Computeds can be composed of other Computeds).
+
+Computed by themselves are immutable, stateless and simply describe some sort of computed data in your system.  The real power is when you hook them up to a Nuclear.Reactor and compose them togehter.
+
+```js
+var subtotal = Nuclear.Computed(
+  ['items'],
+  function(items) {
+    return items.reduce(function(total, item) {
+      return total + item.get('price')
+    }, 0)
+  })
+var total = Nuclear.Computed(
+  [subtotal, 'taxPercent'],
+  function(subtotal, taxPercent) {
+    return subtotal + (subtotal * (taxPercent / 100))
+  })
+```
+  
+
+#### Connecting all the pieces
 
 ```js
 var reactor = Nuclear.Reactor({
   state: {
-    users: {
-      active: activeUsers
-    }
+    items: itemList, // of type ReactiveState
+    subtotal: subtotal,
+    total: total
   },
-
   actions: {
-    user: {
-      addUser: function(reactor, user) {
-        reactor.dispatch('addUser', user)
+    items: {
+      addItem: function(reactor, item) {
+        reactor.dispatch('addItem', item)
       }
     }
   }
 })
+
+// invoking actions
+reactor.actions('items').addItem({ name: 'banana', price: 1 })
 ```
 
-Actions are simply objects of functions that are passed a reactor instance as the
-first argument.  Actions are used as semantic methods for doing some write or state
-change to the system.
 
-#### TL;DR
 
-- **Flux-like** - One-way data flow, state can only be read, and actions are the only things
-that are allowed to change the state of the system
-
-- **Self-managing state** - State objects (**cores**) react to messages passed to them, they are the only ones
-that know how to react to that message.  Cores do not know about any
-
-- **UI Agnostic** - Completely abstract all business logic and state into **Cores** and **Actions**.  This makes
-the UI layer simply a representation of the state and binds UI events to Nuclear Actions
 
 
 #### The following prinicples drive its development
@@ -193,4 +241,4 @@ UI layer
 
 - **UI Interchangable** - NuclearJS should compliment, not replace existing UI frameworks as a way to model state.
 
-**more documentation coming soon**
+

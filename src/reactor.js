@@ -175,6 +175,16 @@ class Reactor {
   }
 
   /**
+   * Invokes a registered actionGroup's action
+   */
+  actions(group) {
+    if (!this.__actions.get(group)) {
+      throw new Error("Actions not defined for " + group)
+    }
+    return this.__actions.get(group)
+  }
+
+  /**
    * Parses the constructor config for a reactor.
    *
    * The config has the schema of:
@@ -242,16 +252,6 @@ class Reactor {
     })
 
     this.__actions = this.__actions.set(name, actionGroup)
-  }
-
-  /**
-   * Invokes a registered actionGroup's action
-   */
-  actions(group) {
-    if (!this.__actions.get(group)) {
-      throw new Error("Actions not defined for " + group)
-    }
-    return this.__actions.get(group)
   }
 }
 
