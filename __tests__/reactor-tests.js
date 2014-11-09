@@ -113,7 +113,7 @@ describe('Reactor', () => {
       }
 
       it('should update all state', () => {
-        reactor.action('checkout').addItem(item.name, item.price)
+        reactor.actions('checkout').addItem(item.name, item.price)
         expect(reactor.getJS('items.all')).toEqual([item])
 
         expect(reactor.get('items.subtotal')).toBe(10)
@@ -123,8 +123,8 @@ describe('Reactor', () => {
       })
 
       it('should update all computed after another action', () => {
-        reactor.action('checkout').addItem(item.name, item.price)
-        reactor.action('checkout').setTaxPercent(10)
+        reactor.actions('checkout').addItem(item.name, item.price)
+        reactor.actions('checkout').setTaxPercent(10)
 
         expect(reactor.getJS('items.all')).toEqual([item])
 
@@ -138,7 +138,7 @@ describe('Reactor', () => {
         var mockFn = jest.genMockFn()
         reactor.changeEmitter.addChangeListener(mockFn)
 
-        reactor.action('checkout').addItem(item.name, item.price)
+        reactor.actions('checkout').addItem(item.name, item.price)
 
         var expected = Immutable.fromJS({
           items: {
@@ -174,14 +174,14 @@ describe('Reactor', () => {
       var changeObserver = reactor.createChangeObserver()
       changeObserver.onChange('items.subtotal', mockFn)
 
-      reactor.action('checkout').addItem('item', 10)
+      reactor.actions('checkout').addItem('item', 10)
 
       expect(mockFn.mock.calls.length).toEqual(1)
       expect(mockFn.mock.calls[0][0]).toEqual(10)
 
       changeObserver.destroy()
 
-      reactor.action('checkout').addItem('item 2', 20)
+      reactor.actions('checkout').addItem('item 2', 20)
       expect(mockFn.mock.calls.length).toEqual(1)
     })
   }) // Reactor with no initial state

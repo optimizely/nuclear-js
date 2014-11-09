@@ -25,7 +25,7 @@ describe('reactor#bindActions', () => {
   it('should partial every action with the reactor', () => {
     spyOn(reactor, 'dispatch')
 
-    reactor.action('group').doit(123)
+    reactor.actions('group').doit(123)
 
     expect(reactor.dispatch).toHaveBeenCalledWith('type', { id: 123 })
   })

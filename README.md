@@ -110,6 +110,65 @@ shoppingCart.get('tax') // 0.5
 shoppingCart.get('total') // 10.5
 ```
 
+## API Documentation
+
+**Nuclear.Reactor(config: object)**
+Returns a `Reactor` instance for the specified config.
+
+Config Schema:
+
+**config.state** - a mapping of state key paths to either a ReactiveState or Computed instance
+```js
+{
+  items: itemList, // of type ReactiveState
+  subtotal: subtotalComputed // of type Computed
+
+  // the state map can be arbitraliy deep
+  users: {
+    active: activeUsers
+  }
+}
+```
+
+**Getting state value**
+
+```js
+var reactor = Nuclear.Reactor({
+  state: {
+    users: {
+      active: activeUsers
+    }
+  }
+})
+var activeUsers = reactor.get('users.active')
+// or
+var activeUsers = reactor.get(['users', 'active'])
+```
+
+**config.actions** - a mapping of action names => actions
+
+```js
+var reactor = Nuclear.Reactor({
+  state: {
+    users: {
+      active: activeUsers
+    }
+  },
+
+  actions: {
+    user: {
+      addUser: function(reactor, user) {
+        reactor.dispatch('addUser', user)
+      }
+    }
+  }
+})
+```
+
+Actions are simply objects of functions that are passed a reactor instance as the
+first argument.  Actions are used as semantic methods for doing some write or state
+change to the system.
+
 #### TL;DR
 
 - **Flux-like** - One-way data flow, state can only be read, and actions are the only things

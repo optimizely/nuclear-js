@@ -247,7 +247,7 @@ class Reactor {
   /**
    * Invokes a registered actionGroup's action
    */
-  action(group) {
+  actions(group) {
     if (!this.__actions.get(group)) {
       throw new Error("Actions not defined for " + group)
     }
