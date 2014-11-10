@@ -110,36 +110,36 @@ shoppingCart.get('tax') // 0.5
 shoppingCart.get('total') // 10.5
 ```
 
-## API Documentation
+# API Documentation
 
-#### Nuclear.Reactor(config: object) : Reactor
+## `Nuclear.Reactor(config)`
 
-Reactors models your application state in NuclearJS.  Reactors utilize message passing to update state.
+Reactors model your application state in NuclearJS.  Writes are down via message passing to the `dispatch` function and reads are done via `get(keyPath)`
 
-**initialize(initialState : Immutable.Map?) : void**
+#### `Reactor#initialize(initialState)`
 
 Initializes a Reactor by either loading the `initialState` passed in or generating initial state from the registered `ReactiveState`.  
 
-**dispatch(messageType : string, payload : any) : void**
+#### `Reactor#dispatch(messageType, messagePayload)`
 
-Dispatches a message to all registered ReactiveState. Dispatches happen syncronously, and once it is done the Reactor will emit the new state on the `reactor.changeEmitter`
+Dispatches a message to all registered ReactiveState. This process is done syncronously, all registered `ReactiveState` are passed this message and all computeds are re-evaluated (efficiently).  After a dispatch, a Reactor will emit the new state on the `reactor.changeEmitter`
 
 ex: `reactor.dispatch('addUser', { name: 'jordan' })`
 
-**get(keyPath : string|array) : any**
+#### `Reactor#get(keyPath)`
 
 Gets a read-only value for some keyPath in the reactor state. Returns `undefined` if a keyPath doesnt have a value.
 
 ex: `reactor.get('users.active')` or `reactor.get(['users', 'active'])`
 
-**actions(groupName : string) : any**
+#### `Reactor#actions(actionGroup)`
 
 Returns an action group that was registered on `groupName`
 
 ex: `reactor.actions('users').createUser({ name: 'jordan' })`
 
 
-#### Nuclear.ReactiveState(config: object) : ReactiveState
+## `Nuclear.ReactiveState(config)`
 
 ```js
 var itemList = Nuclear.ReactiveState({
@@ -164,26 +164,44 @@ var itemList = Nuclear.ReactiveState({
 })
 ```
 
-ReactiveState is the basic building block of state modelling in NuclearJS.  All state should be described as ReactiveState.
+ReactiveState is the basic building block in NuclearJS.  Anything stateful must be represented as `ReactiveState`
 
-**getInitialState() : any**
+#### `getInitialState()`
 
 Use this function to declare what the structure of the initial state should be.  This should be a pure function, referencing no ouside values or making any sort of AJAX calls.  A Nuclear.Reactor will coerce the return value of `getInitialState` into an ImmutableJS data structure.
 
-**initialize() : void**
+#### `initialize()`
 
-Function is called when during `Reactor.initialize()`, it sets up all of the message listeners and any computed state.
+Override this function to set up message handlers and computeds.
 
-The following functions can be used within `initialize` 
+### The following functions can be used within `initialize`
 
-`this.on(messageType : string, handler(state : any, payload: any) : function)` - Adds a message handler for a specific `messageType`.  There can only be one handler per message type per ReactiveState.
+#### `this.on(messageType, handlerFn)`
 
-`this.computed(keyPath : string, deps : array, computeFn : function)` - Sets up a computed value that whose dependencies are 
-relative keyPaths to the ReactiveState.  Any time any dependency value changes after a dispatch the computed is re-evaluated.
+Adds a message handler for a specific `messageType`.  There can only be one handler per message type per ReactiveState.  The `handlerFn` is passed three arguments `state` `messagePayload` and `messageType` and must return the new state of the `ReactiveState`
 
-#### Nuclear.Computed(deps : array, computeFn : function) : Computed
+```js
+Nuclear.ReactiveState({
+  getInitialState: function() {
+    return Immutable.List()
+  },
+  initialize: function() {
+    this.on('addItem', function(state, payload, messageType) {
+      console.log('handling', messageType)
+      // returned state becomes the new app state for this ReactiveState
+      return state.push(payload.item)
+    })
+  }
+})
+```
 
-Defines a computed unit, where the `deps` are an array of keyPaths on a Nuclear.Reactor or other Nuclear.Computed instances (that's right Computeds can be composed of other Computeds).
+#### `this.computed(keyPath, deps, computeFn)`
+
+Sets a computed property at `keyPath` (relative to the ReactiveState).  This computed is re-evaluated anytime any of its `deps` change.  
+
+## `Reactor.Computed(deps, computeFn)`
+
+Defines a computed unit, where the `deps` are an array of keyPaths on a Nuclear.Reactor or other Nuclear.Computed instances (that's right Computeds can be composed of other Computeds). The `computeFn` takes the value of each dependency as arguments.
 
 Computed by themselves are immutable, stateless and simply describe some sort of computed data in your system.  The real power is when you hook them up to a Nuclear.Reactor and compose them togehter.
 
@@ -203,42 +221,23 @@ var total = Nuclear.Computed(
 ```
   
 
-#### Connecting all the pieces
+## Design Philosophy
 
-```js
-var reactor = Nuclear.Reactor({
-  state: {
-    items: itemList, // of type ReactiveState
-    subtotal: subtotal,
-    total: total
-  },
-  actions: {
-    items: {
-      addItem: function(reactor, item) {
-        reactor.dispatch('addItem', item)
-      }
-    }
-  }
-})
+- **Simple over Easy** - The purpose of NuclearJS isn't to write the most expressive TodoMVC anyone's ever seen.  The goal of NuclearJS is to provide a way to model data that is easy to reason and decouple at very large scale.
 
-// invoking actions
-reactor.actions('items').addItem({ name: 'banana', price: 1 })
-```
+- **Immutable** - A means for less defensive programming, more predictability and better performance
 
+- **Functional** - The framework should be implemented functionally wherever appropriate.  This reduces incidental complexity and pairs well with Immutability
 
+- **Smallest Amount of State Possible** - Using Nuclear should encourage the modelling of your application state in the most minimal way possible.
 
+- **Decoupled** - A NuclearJS system should be able to function without any sort of UI or frontend.  It should be backend/frontend agnostic and be able to run on a NodeJS server.
 
+## Examples
 
-#### The following prinicples drive its development
+- [TodoMVC](https://github.com/jordangarcia/todomvc-nuclear-react)
+- [Tetris](https://github.com/jordangarcia/tetris)
 
-- **Immutability** - A means for safety, predictability and performance.
+## Tools / Addons
 
-- **Implement functionally** - This reduces state, improves testability and allows composability.
-
-- **Keep state minimal** - build a framework that encourages state of an application to be represented
-in the simplest form possible.  Use computeds to transform pure state into something consummable by the
-UI layer
-
-- **UI Interchangable** - NuclearJS should compliment, not replace existing UI frameworks as a way to model state.
-
-
+- [NuclearReactMixin](https://github.com/jordangarcia/nuclear-react-mixin) Keeps React components always in sync with a Nuclear.Reactor.  Uses immutability to call set state only when the data behind a component actually changes (inspired by Om).
