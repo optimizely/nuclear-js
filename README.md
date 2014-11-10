@@ -1,8 +1,8 @@
 # NuclearJS
 
-One-way, immutable state modelling.
+Reactive, immutable state modelling.
 
-**Example: Modeling the state of a shopping cart**
+## Example: Modeling the state of a shopping cart
 
 Require Library Dependencies
 
