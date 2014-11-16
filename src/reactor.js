@@ -12,7 +12,9 @@ var toJS = require('./immutable-helpers').toJS
 var toImmutable = require('./immutable-helpers').toImmutable
 var isImmutable = require('./immutable-helpers').isImmutable
 var coerceKeyPath = require('./utils').keyPath
+var coerceArray = require('./utils').coerceArray
 var each = require('./utils').each
+var isArray = require('./utils').isArray
 var partial = require('./utils').partial
 
 
@@ -39,7 +41,12 @@ class Reactor {
      * Event bus that emits a change event anytime the state
      * of the system changes
      */
-    this.changeEmitter = new ChangeEmitter()
+    this.__changeEmitter = new ChangeEmitter()
+    /**
+     * Change observer interface to observe certain keypaths
+     * It gets populated in initialize to capture initial state
+     */
+    this.__changeObsever
     /**
      * Holds a map of id => reactor instance
      */
@@ -64,6 +71,9 @@ class Reactor {
    * @return {*}
    */
   get(keyPath) {
+    if (!keyPath || (isArray(keyPath) && keyPath.length === 0)) {
+      return this.state
+    }
     return this.state.getIn(coerceKeyPath(keyPath))
   }
 
@@ -74,6 +84,42 @@ class Reactor {
    */
   getJS(keyPath) {
     return toJS(this.get(keyPath))
+  }
+
+  /**
+   * Returns a faux-reactor cursor to a specific keyPath
+   * This prefixes all `get` and `getJS` operations with a keyPath
+   *
+   * dispatch still dispatches to the entire reactor
+   */
+  cursor(keyPath) {
+    var reactor = this
+    var prefix = coerceKeyPath(keyPath)
+
+    var prefixKeyPath = function(path) {
+      path = path || []
+      return prefix.concat(coerceKeyPath(path))
+    }
+
+    return {
+      get: function(keyPath) {
+        return reactor.get(prefixKeyPath(keyPath))
+      },
+
+      getJS: reactor.getJS,
+
+      dispatch: reactor.dispatch.bind(reactor),
+
+      onChange: function(deps, handler) {
+        if (arguments.length === 1) {
+          return reactor.onChange([prefix], deps)
+        }
+        var deps = coerceArray(deps).map(prefixKeyPath)
+        return reactor.onChange(deps, handler)
+      },
+
+      createChangeObserver: reactor.createChangeObserver.bind(reactor, prefix)
+    }
   }
 
   /**
@@ -110,7 +156,7 @@ class Reactor {
 
     // write the new state to the output stream if changed
     if (this.state !== prevState) {
-      this.changeEmitter.emitChange(this.state, messageType, payload)
+      this.__changeEmitter.emitChange(this.state, messageType, payload)
     }
   }
 
@@ -160,18 +206,26 @@ class Reactor {
     })
 
     this.state = state
+
+    /**
+     * Change observer interface to observe certain keypaths
+     */
+    this.__changeObsever = this.createChangeObserver()
   }
 
   /**
-   * Creates an instance of the ChangeObserver for this reactor
-   *
-   * Allows the creation of changeHandlers for a keyPath on this reactor,
-   * while providing a single method call to destroy and cleanup
-   *
-   * @return {ChangeOBserver}
+   * Adds a change handler whenever certain deps change
+   * If only one argument is passed invoked the handler whenever
+   * the reactor state changes
+   * @param {array<array<string>|string>} deps
+   * @param {function} handler
+   * @return {function} unwatch function
    */
-  createChangeObserver() {
-    return new ChangeObserver(this.state, this.changeEmitter)
+  onChange(deps, handler) {
+    if (arguments.length === 1) {
+      return this.__changeEmitter.addChangeListener(deps)
+    }
+    return this.__changeObsever.onChange(deps, handler)
   }
 
   /**
@@ -182,6 +236,18 @@ class Reactor {
       throw new Error("Actions not defined for " + group)
     }
     return this.__actions.get(group)
+  }
+
+  /**
+   * Creates an instance of the ChangeObserver for this reactor
+   *
+   * Allows the creation of changeHandlers for a keyPath on this reactor,
+   * while providing a single method call to destroy and cleanup
+   *
+   * @return {ChangeObserver}
+   */
+  createChangeObserver(prefix) {
+    return new ChangeObserver(this.state, this.__changeEmitter, prefix)
   }
 
   /**

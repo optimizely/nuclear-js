@@ -103,6 +103,37 @@ describe('Reactor', () => {
         expect(reactor.get('taxPercent')).toEqual(0)
         expect(reactor.get('tax')).toEqual(0)
         expect(reactor.get('total')).toEqual(0)
+
+      })
+
+      it('should return the whole state when calling reactor.get()', () => {
+        var state = reactor.get()
+        var expected = Map({
+          items: Map({
+            all: List(),
+            subtotal: 0,
+          }),
+          taxPercent: 0,
+          tax: 0,
+          total: 0,
+        })
+
+        expect(Immutable.is(state, expected)).toBe(true)
+      })
+
+      it.only('should return the whole state coerced to JS when calling reactor.getJS()', () => {
+        var state = reactor.getJS()
+        var expected = {
+          items: {
+            all: [],
+            subtotal: 0,
+          },
+          taxPercent: 0,
+          tax: 0,
+          total: 0,
+        }
+
+        expect(state).toEqual(expected)
       })
     })
 
@@ -134,9 +165,9 @@ describe('Reactor', () => {
         expect(reactor.get('total')).toEqual(11)
       })
 
-      it("should emit the state of the reactor on the outputStream", () => {
+      it("should emit the state of the reactor to a handler registered with onChange()", () => {
         var mockFn = jest.genMockFn()
-        reactor.changeEmitter.addChangeListener(mockFn)
+        reactor.onChange(mockFn)
 
         reactor.actions('checkout').addItem(item.name, item.price)
 
@@ -160,13 +191,33 @@ describe('Reactor', () => {
 
       it("should not emit to the outputStream if state does not change after a dispatch", () => {
         var mockFn = jest.genMockFn()
-        reactor.changeEmitter.addChangeListener(mockFn)
+        reactor.onChange(mockFn)
 
         reactor.dispatch('noop', {})
 
         expect(mockFn.mock.calls.length).toEqual(0)
       })
     }) // when dispatching a relevant action
+
+    describe('#onChange', () => {
+      it('should invoke a change handler if the specific keypath changes', () => {
+        var mockFn = jest.genMockFn()
+        reactor.onChange('taxPercent', mockFn)
+
+        reactor.actions('checkout').setTaxPercent(5)
+
+        expect(mockFn.mock.calls.length).toEqual(1)
+        expect(mockFn.mock.calls[0][0]).toBe(5)
+      })
+      it('should not invoke a change handler if another keypath changes', () => {
+        var mockFn = jest.genMockFn()
+        reactor.onChange('taxPercent', mockFn)
+
+        reactor.actions('checkout').addItem('item', 1)
+
+        expect(mockFn.mock.calls.length).toEqual(0)
+      })
+    })
 
     it("should create a ChangeObserver properly", () => {
       var mockFn = jest.genMockFn()

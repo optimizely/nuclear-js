@@ -13,7 +13,9 @@ class ChangeObserver {
    * @param {Immutable.Map} initialState
    * @param {EventEmitter} changeEmitter
    */
-  constructor(initialState, changeEmitter) {
+  constructor(initialState, changeEmitter, prefix) {
+    this.__prefix = (prefix) ? coerceKeyPath(prefix) : null;
+
     this.__changeHandlers = []
     // cache the current state
     this.__prevState = initialState
@@ -39,8 +41,14 @@ class ChangeObserver {
    * @param {Function} changeHandler
    */
   onChange(deps, changeHandler) {
+    var prefix = this.__prefix
+
     var deps = coerceArray(deps).map(dep => {
-      return coerceKeyPath(dep)
+      var dep = coerceKeyPath(dep)
+      if (prefix) {
+        return prefix.concat(dep)
+      }
+      return dep
     })
     this.__changeHandlers.push({
       deps: deps,
@@ -57,3 +65,4 @@ class ChangeObserver {
 }
 
 module.exports = ChangeObserver
+
