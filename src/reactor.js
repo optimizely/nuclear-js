@@ -118,7 +118,9 @@ class Reactor {
         return reactor.onChange(deps, handler)
       },
 
-      createChangeObserver: reactor.createChangeObserver.bind(reactor, prefix)
+      createChangeObserver: reactor.createChangeObserver.bind(reactor, prefix),
+
+      actions: reactor.actions.bind(reactor)
     }
   }
 

@@ -31,9 +31,24 @@ var itemsState = Nuclear.ReactiveState({
   },
 })
 
+var itemActions = {
+  addItem(reactor, item) {
+    reactor.dispatch('addItem', item)
+  },
+  updateItem(reactor, id, val) {
+    reactor.dispatch('updateItem', {
+      id: id,
+      val: val
+    })
+  },
+}
+
 var reactorConfig = {
   state: {
     items: itemsState,
+  },
+  actions: {
+    items: itemActions
   }
 }
 
@@ -82,6 +97,18 @@ describe('Reactor', () => {
       var item1Cursor = reactor.cursor(['items', 'all', item1.id])
 
       item1Cursor.dispatch('addItem', item3)
+
+      var result = reactor.get(['items', 'all', item3.id])
+      expect(Immutable.is(result, Map(item3))).toBe(true)
+    })
+
+    it('should keep reference to the reactors actions', () => {
+      var item3 = {
+        id: 3,
+        val: 'c'
+      }
+      var item1Cursor = reactor.cursor(['items', 'all', item1.id])
+      item1Cursor.actions('items').addItem(item3)
 
       var result = reactor.get(['items', 'all', item3.id])
       expect(Immutable.is(result, Map(item3))).toBe(true)
