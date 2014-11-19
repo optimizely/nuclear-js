@@ -114,6 +114,19 @@ describe('Reactor', () => {
       expect(Immutable.is(result, Map(item3))).toBe(true)
     })
 
+    it('should be nestable', () => {
+      var item3 = {
+        id: 3,
+        val: 'c'
+      }
+      var item3Cursor = reactor.cursor(['items', 'all', item3.id])
+      var valCursor = item3Cursor.cursor('val')
+
+      reactor.actions('items').addItem(item3)
+
+      expect(valCursor.get()).toBe('c')
+    })
+
     it('onChange should scope to the cursor prefix', () => {
       var mockFn = jest.genMockFn()
       var item1Cursor = reactor.cursor(['items', 'all', item1.id])

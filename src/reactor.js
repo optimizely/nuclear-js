@@ -120,7 +120,11 @@ class Reactor {
 
       createChangeObserver: reactor.createChangeObserver.bind(reactor, prefix),
 
-      actions: reactor.actions.bind(reactor)
+      actions: reactor.actions.bind(reactor),
+
+      cursor: function(keyPath) {
+        return reactor.cursor.call(reactor, prefixKeyPath(keyPath))
+      }
     }
   }
 
