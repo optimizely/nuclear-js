@@ -7,16 +7,14 @@ var each = require('./utils').each
 var toImmutable = require('./immutable-helpers').toImmutable
 
 /**
- * In Nuclear.js ReactorCore's are the only parts of the system
- * that can manipulate state.
- *
- * The react function takes in state, action type and payload
- * and returns a new state
+ * Stores define how a certain domain of the application should respond to actions
+ * taken on the whole system.  They manage their own section of the entire app state
+ * and have no knowledge about the other parts of the application state.
  */
-class ReactiveState {
+class Store {
   constructor(config) {
-    if (!(this instanceof ReactiveState)) {
-      return new ReactiveState(config)
+    if (!(this instanceof Store)) {
+      return new Store(config)
     }
 
     this.__handlers = Immutable.Map({})
@@ -26,6 +24,8 @@ class ReactiveState {
     each(config, (fn, prop) => {
       this[prop] = fn
     })
+
+    this.initialize()
   }
 
   /**
@@ -39,8 +39,26 @@ class ReactiveState {
     // extending classes implement to setup action handlers
   }
 
+  /**
+   * Overridable method to get the initial state for this type of store
+   */
   getInitialState() {
     return Immutable.Map()
+  }
+
+  /**
+   * Takes a current reactor state, action type and payload
+   * does the reaction and returns the new state
+   */
+  handle(state, type, payload) {
+    var handler = this.__handlers.get(type)
+
+    if (typeof handler === 'function') {
+      var newState = toImmutable(handler.call(this, state, payload, type))
+      return this.executeComputeds(state, newState)
+    }
+
+    return state
   }
 
   /**
@@ -72,21 +90,6 @@ class ReactiveState {
   }
 
   /**
-   * Takes a current reactor state, action type and payload
-   * does the reaction and returns the new state
-   */
-  react(state, type, payload) {
-    var handler = this.__handlers.get(type)
-
-    if (typeof handler === 'function') {
-      var newState = toImmutable(handler.call(this, state, payload, type))
-      return this.executeComputeds(state, newState)
-    }
-
-    return state
-  }
-
-  /**
    * Executes the registered computeds on a passed in state object
    * @param {Immutable.Map|*} prevState
    * @param {Immutable.Map|*} state
@@ -106,12 +109,49 @@ class ReactiveState {
       return state
     })
   }
+
+  /**
+   * Shortcut method to reactor.get with the store prefix
+   * @param {array|string} keyPath
+   * @return {*}
+   */
+  get(keyPath) {
+    if (!this.__reactor) {
+      throw new Error("cannot call get without a reactor")
+    }
+    return this.__reactor.get(keyPath)
+  }
+
+  /**
+   * Shortcut method to reactor.getJS with the store prefix
+   * @param {array|string} keyPath
+   * @return {*}
+   */
+  getJS(keyPath) {
+    return this.__reactor.getJS(keyPath)
+  }
+
+  /**
+   * Registers a store on a reactor
+   */
+  attach(id, reactor) {
+    this.__id = id
+    this.__reactor = reactor
+  }
+
+  /**
+   * Detaches a store from a reactor and resets to initial state
+   */
+  detach() {
+    delete this.__id
+    delete this.__reactor
+  }
 }
 
-function isReactiveState(toTest) {
-  return (toTest instanceof ReactiveState)
+function isStore(toTest) {
+  return (toTest instanceof Store)
 }
 
-module.exports = ReactiveState
+module.exports = Store
 
-module.exports.isReactiveState = isReactiveState
+module.exports.isStore = isStore

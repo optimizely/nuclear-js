@@ -1,21 +1,14 @@
 var Immutable = require('immutable')
 var logging = require('./logging')
-var flattenMap = require('./flatten-map')
 var ChangeObserver = require('./change-observer')
 var ChangeEmitter = require('./change-emitter')
-var ReactiveState = require('./reactive-state')
-var Computed = require('./computed')
-var hasChanged = require('./has-changed')
+var evaluate = require('./evaluate')
 
 // helper fns
 var toJS = require('./immutable-helpers').toJS
-var toImmutable = require('./immutable-helpers').toImmutable
-var isImmutable = require('./immutable-helpers').isImmutable
 var coerceKeyPath = require('./utils').keyPath
 var coerceArray = require('./utils').coerceArray
 var each = require('./utils').each
-var isArray = require('./utils').isArray
-var partial = require('./utils').partial
 
 
 /**
@@ -32,6 +25,7 @@ class Reactor {
     if (!(this instanceof Reactor)) {
       return new Reactor(config)
     }
+    config = config || {}
 
     /**
      * The state for the whole cluster
@@ -50,19 +44,9 @@ class Reactor {
     /**
      * Holds a map of id => reactor instance
      */
-    this.__stateHandlers = Immutable.Map({})
-    /**
-     * Holds a map of stringified keyPaths => GetterRecords
-     */
-    this.__computeds = Immutable.Map({})
-    /**
-     * Holds a map of action group names => action functions
-     */
-    this.__actions = Immutable.Map({})
+    this.__stores = Immutable.Map({})
 
-    // parse the config, which populates the __stateHandlers,
-    // __computeds and __actions
-    this.__parseConfig(config)
+    this.__initialize(config)
   }
 
   /**
@@ -71,10 +55,7 @@ class Reactor {
    * @return {*}
    */
   get(keyPath) {
-    if (!keyPath || (isArray(keyPath) && keyPath.length === 0)) {
-      return this.state
-    }
-    return this.state.getIn(coerceKeyPath(keyPath))
+    return evaluate(this.state, keyPath, this)
   }
 
   /**
@@ -103,7 +84,7 @@ class Reactor {
 
     return {
       get: function(keyPath) {
-        return reactor.get(prefixKeyPath(keyPath))
+        return evaluate(reactor.get(prefix), keyPath)
       },
 
       getJS: reactor.getJS,
@@ -119,8 +100,6 @@ class Reactor {
       },
 
       createChangeObserver: reactor.createChangeObserver.bind(reactor, prefix),
-
-      actions: reactor.actions.bind(reactor),
 
       cursor: function(keyPath) {
         return reactor.cursor.call(reactor, prefixKeyPath(keyPath))
@@ -140,19 +119,12 @@ class Reactor {
       logging.dispatchStart(messageType, payload)
 
       // let each core handle the message
-      this.__stateHandlers.forEach((handler, keyPath) => {
-        var currState = state.getIn(keyPath)
+      this.__stores.forEach((store, id) => {
+        var currState = state.get(id)
         var newState = handler.react(currState, messageType, payload)
-        state.setIn(keyPath, newState)
+        state.set(id, newState)
 
         logging.coreReact(keyPath, currState, newState)
-      })
-
-      // execute the computed after the cores have reacted
-      this.__computeds.forEach((computed, keyPath) => {
-        if (hasChanged(prevState, state, computed.flatDeps)) {
-          state.setIn(keyPath, Computed.evaluate(state, computed))
-        }
       })
 
       logging.dispatchEnd(state)
@@ -167,56 +139,31 @@ class Reactor {
   }
 
   /**
-   * Initializes a reactor, at this point no more Cores can be attached.
-   * The initial state is either determined from getting all the initial state
-   * of the cores or by the passed in initialState
-   *
-   * @param {Immutable.Map?}
+   * Attachs a store to a non-running or running nuclear reactor.  Will emit change
+   * @param {string} id
+   * @param {Store} store
+   * @param {boolean} silent whether to emit change
    */
-  initialize(initialState) {
-    if (initialState && !isImmutable(initialState)) {
-      throw new Error("Initial state must be an ImmutableJS object")
+  attachStore(id, store, silent) {
+    if (this.__stores.get(id)) {
+      throw new Error("Store already defined for id=" + id)
     }
 
-    // reset the state
-    this.state = Immutable.Map()
+    store.attach(id, this.cursor(id))
 
-    var state
+    this.__stores.set(id, store)
 
-    this.__stateHandlers.forEach(handler => {
-      handler.initialize()
-    })
+    this.state = this.state.set(id, store.getInitialState())
 
-    if (initialState) {
-      state = initialState
-    } else {
-      // create the initial state by populating from the ReactiveState definitions
-      state = Immutable.Map()
-      this.__stateHandlers.forEach((handler, keyPath) => {
-        var handlerState = toImmutable(handler.getInitialState())
-        state = state.setIn(keyPath, handlerState)
+    // save reference for reactor.experiments.get()
+    this[id] = store
+
+    if (!silent) {
+      this.__changeEmitter.emitChange(this.state, 'ATTACH_STORE', {
+        id: id,
+        store: store
       })
     }
-
-    var blankState = Immutable.Map()
-
-    // calculate ReactiveState level computeds
-    this.__stateHandlers.forEach((handler, keyPath) => {
-      var computedState = handler.executeComputeds(blankState, state.getIn(keyPath))
-      state = state.setIn(keyPath, computedState)
-    })
-
-    // initialize the reactor level computeds
-    this.__computeds.forEach((computed, keyPath) => {
-      state = state.setIn(keyPath, Computed.evaluate(state, computed))
-    })
-
-    this.state = state
-
-    /**
-     * Change observer interface to observe certain keypaths
-     */
-    this.__changeObsever = this.createChangeObserver()
   }
 
   /**
@@ -235,16 +182,6 @@ class Reactor {
   }
 
   /**
-   * Invokes a registered actionGroup's action
-   */
-  actions(group) {
-    if (!this.__actions.get(group)) {
-      throw new Error("Actions not defined for " + group)
-    }
-    return this.__actions.get(group)
-  }
-
-  /**
    * Creates an instance of the ChangeObserver for this reactor
    *
    * Allows the creation of changeHandlers for a keyPath on this reactor,
@@ -256,74 +193,23 @@ class Reactor {
     return new ChangeObserver(this.state, this.__changeEmitter, prefix)
   }
 
+
   /**
-   * Parses the constructor config for a reactor.
-   *
-   * The config has the schema of:
-   *
-   * Reactor({
-   *   state: {
-   *     stateKey: <ReactiveState|Computed>,
-   *     substate: {
-   *       substateKey: <ReactiveState|Computed>
-   *     }
-   *   },
-   *
-   *   actions: {
-   *     actionGroupName: <Object>
-   *   }
-   * })
-   *
-   * State can be nested within a map
-   *
+   * Initializes all stores
+   * This method can only be called once per reactor
    * @param {object} config
    */
-  __parseConfig(config) {
-    // flatten a deep state map into a flat map of <List of keys> => <ReactiveState|Computed>
-    var flatState = flattenMap(config.state, (val) => {
-      return (
-        ReactiveState.isReactiveState(val) ||
-        Computed.isComputed(val)
-      )
-    })
-
-    var stateHandlers = this.__stateHandlers.asMutable()
-    var computeds = this.__computeds.asMutable()
-
-    flatState.forEach((val, keyPath) => {
-      if (ReactiveState.isReactiveState(val)) {
-        stateHandlers.set(keyPath.toJS(), val)
-      } else if (Computed.isComputed(val)) {
-        computeds.set(keyPath.toJS(), val)
-      } else {
-        throw new Error("State definitions must be instances of " +
-                        "ReactiveState or Computed")
-      }
-    })
-
-    this.__stateHandlers = stateHandlers.asImmutable()
-    this.__computeds = computeds.asImmutable()
-
-    if (config.actions) {
-      // register the actions for this reactor
-      each(config.actions, this.__bindActions.bind(this))
+  __initialize(config) {
+    if (config.stores) {
+      each(config.stores, (store, id) => {
+        this.attachStore(id, store, false)
+      })
     }
-  }
 
-  /**
-   * Binds a map of actions to this specific reactor
-   * can be invoked via reactor.action(name).createItem(...)
-   */
-  __bindActions(actions, name) {
-    if (this.__actions.get(name)) {
-      throw new Error("Actions already defined for " + name)
-    }
-    var actionGroup = {}
-    each(actions, (fn, fnName) => {
-      actionGroup[fnName] = partial(fn, this)
-    })
-
-    this.__actions = this.__actions.set(name, actionGroup)
+    /**
+     * Change observer interface to observe certain keypaths
+     */
+    this.__changeObsever = this.createChangeObserver()
   }
 }
 

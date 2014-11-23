@@ -12,6 +12,10 @@ exports.isArray = _.isArray
 
 exports.isFunction = _.isFunction
 
+exports.isString = _.isString
+
+exports.isNumber = _.isNumber
+
 /**
  * Coerces a string/array into an array keypath
  */

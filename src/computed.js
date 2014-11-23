@@ -74,7 +74,7 @@ function createComputed(deps, computeFn) {
     deps: deps,
     flatDeps: flatDeps,
     compute: computeFn
-  });
+  })
 }
 
 /**
