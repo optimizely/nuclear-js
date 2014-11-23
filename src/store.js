@@ -109,43 +109,6 @@ class Store {
       return state
     })
   }
-
-  /**
-   * Shortcut method to reactor.get with the store prefix
-   * @param {array|string} keyPath
-   * @return {*}
-   */
-  get(keyPath) {
-    if (!this.__reactor) {
-      throw new Error("cannot call get without a reactor")
-    }
-    return this.__reactor.get(keyPath)
-  }
-
-  /**
-   * Shortcut method to reactor.getJS with the store prefix
-   * @param {array|string} keyPath
-   * @return {*}
-   */
-  getJS(keyPath) {
-    return this.__reactor.getJS(keyPath)
-  }
-
-  /**
-   * Registers a store on a reactor
-   */
-  attach(id, reactor) {
-    this.__id = id
-    this.__reactor = reactor
-  }
-
-  /**
-   * Detaches a store from a reactor and resets to initial state
-   */
-  detach() {
-    delete this.__id
-    delete this.__reactor
-  }
 }
 
 function isStore(toTest) {

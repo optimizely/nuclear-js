@@ -84,6 +84,7 @@ class Reactor {
 
     return {
       get: function(keyPath) {
+        //console.log('cursor get', reactor.get(prefix).toString(), prefix, keyPath)
         return evaluate(reactor.get(prefix), keyPath)
       },
 
@@ -149,14 +150,9 @@ class Reactor {
       throw new Error("Store already defined for id=" + id)
     }
 
-    store.attach(id, this.cursor(id))
-
     this.__stores.set(id, store)
 
     this.state = this.state.set(id, store.getInitialState())
-
-    // save reference for reactor.experiments.get()
-    this[id] = store
 
     if (!silent) {
       this.__changeEmitter.emitChange(this.state, 'ATTACH_STORE', {
@@ -192,7 +188,6 @@ class Reactor {
   createChangeObserver(prefix) {
     return new ChangeObserver(this.state, this.__changeEmitter, prefix)
   }
-
 
   /**
    * Initializes all stores

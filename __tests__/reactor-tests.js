@@ -5,7 +5,7 @@ var Map = require('immutable').Map
 var List = require('immutable').List
 var Nuclear = require('../src/main')
 
-var itemsState = Nuclear.ReactiveState({
+var itemStore = Nuclear.Store({
   getInitialState() {
     return {
       all: [],
@@ -30,7 +30,7 @@ var itemsState = Nuclear.ReactiveState({
   },
 })
 
-var taxPercentageState = Nuclear.ReactiveState({
+var taxPercentStore = Nuclear.Store({
   getInitialState() {
     return 0
   },
@@ -42,20 +42,21 @@ var taxPercentageState = Nuclear.ReactiveState({
   }
 })
 
-var taxComputed = Nuclear.Computed(
+var taxGetter = Nuclear.Getter(
   ['items.subtotal', 'taxPercent'],
   (subtotal, taxPercent) => {
     return (subtotal * (taxPercent / 100))
   }
 )
 
-var totalComputed = Nuclear.Computed(
-  ['items.subtotal', taxComputed],
+var totalGetter = [
+  'items.subtotal',
+  taxGetter,
   (subtotal, tax) => {
     var total = subtotal + tax
     return Math.round(total, 2)
   }
-)
+]
 
 var checkoutActions = {
   addItem(reactor, name, price) {

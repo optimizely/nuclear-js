@@ -13,7 +13,7 @@ exports.Store = functionrequire('./store')
 /**
  * @return {ComputedRecord}
  */
-exports.Computed = require('./computed')
+exports.Getter = require('./getter')
 
 // export the immutable library
 exports.Immutable = require('immutable')

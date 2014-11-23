@@ -2,9 +2,11 @@ jest.autoMockOff()
 
 var Immutable = require('immutable')
 var Map = require('immutable').Map
+var List = require('immutable').List
 
 var Store = require('../src/store');
 var Reactor = require('../src/reactor');
+var Getter = require('../src/getter');
 var evaluate = require('../src/evaluate')
 
 var store1 = Store({
@@ -66,16 +68,10 @@ describe("#get", function() {
   })
 
   describe("Non computed tests", () => {
-    it("[store1, 'foo', 'bar']", () => {
-      var getter = [store1, 'foo', 'bar']
+    it("['store1', 'foo', 'bar']", () => {
+      var getter = ['store1', 'foo', 'bar']
       var result = evaluate(state, getter)
       expect(result).toBe(1)
-    })
-
-    it("[store1]", () => {
-      var getter = [store1]
-      var result = evaluate(state, getter)
-      expect(result).toBe(store1)
     })
 
     it("['baz', 'tah']", () => {
@@ -99,35 +95,32 @@ describe("#get", function() {
     })
   })
 
-  describe("computed tests", () => {
+  describe("evaluating getters", () => {
     var dbl = (x => 2*x)
 
-    it("should double - ['baz', 'tah', dbl]", () => {
-      var result = evaluate(state, ['baz.tah', dbl])
+    it.only("should double - Getter(['baz.tah'], dbl)", () => {
+      var result = evaluate(state, Getter(['baz.tah'], dbl))
       expect(result).toBe(4)
     })
 
-    it("should double - [['baz','tah'], dbl]", () => {
-      var result = evaluate(state, [['baz','tah'], dbl])
+    it("should double - Getter([['baz','tah']], dbl)", () => {
+      var result = evaluate(state, Getter([['baz','tah']], dbl))
       expect(result).toBe(4)
     })
 
-    it("should double - [[store1, 'foo', 'bar'], dbl]", () => {
-      var getter = [store1, 'foo', 'bar', dbl]
-      var result = evaluate(state, getter)
+    it("should double - Getter([['store1', 'foo', 'bar']], dbl)", () => {
+      var result = evaluate(state, Getter([['store1', 'foo', 'bar']], dbl))
       expect(result).toBe(2)
     })
 
-    it("should compose computeds", function() {
-      var computed1 = ['baz.tah', dbl]
-      var computed2 = [store1, 'foo', 'bar', dbl]
+    it("should compose getters", function() {
+      var getter1 = Getter([['baz','tah']], dbl)
+      var getter2 = Getter([['store1', 'foo', 'bar']], dbl)
 
-      var composed = [computed1, computed2, (a, b) => a + b]
+      var composed = Getter([getter1, getter2], (a, b) => a + b)
 
       var result = evaluate(state, composed)
       expect(result).toBe(6)
     })
   })
 })
-
-
