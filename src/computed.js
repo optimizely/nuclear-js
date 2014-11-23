@@ -77,29 +77,6 @@ function createComputed(deps, computeFn) {
   })
 }
 
-/**
- * @param {Immutable.Map} state
- * @param {ComputedRecord} computed
- *
- * @return {*}
- */
-function evaluate(state, computed) {
-  var computeFn = computed.compute
-  var deps = computed.deps
-
-  var args = deps.map(dep => {
-    if (isComputed(dep)) {
-      // recursively evaluate
-      return evaluate(state, dep)
-    }
-    return state.getIn(dep)
-  })
-
-  return computeFn.apply(null, args)
-}
-
 module.exports = createComputed
 
 module.exports.isComputed = isComputed
-
-module.exports.evaluate = evaluate

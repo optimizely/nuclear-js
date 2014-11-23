@@ -23,7 +23,7 @@ var reactor = Reactor({
   }
 })
 
-describe("#get", function() {
+describe("Evaluate", function() {
   var state = Immutable.fromJS({
     store1: {
       foo: {

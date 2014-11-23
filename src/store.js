@@ -1,6 +1,7 @@
 var Immutable = require('immutable')
 var Map = require('immutable').Map
-var Computed = require('./computed')
+var Getter = require('./getter')
+var evaluate = require('./evaluate')
 var hasChanged = require('./has-changed')
 
 var coerceKeyPath = require('./utils').keyPath
@@ -94,7 +95,7 @@ class Store {
       throw new Error("Already a computed at " + keyPath)
     }
 
-    var computed = Computed(deps, computeFn)
+    var computed = Getter(deps, computeFn)
     this.__computeds = this.__computeds.set(keyPath, computed)
   }
 
@@ -112,7 +113,7 @@ class Store {
     return state.withMutations(state => {
       this.__computeds.forEach((computed, keyPath) => {
         if (hasChanged(prevState, state, computed.flatDeps)) {
-          state.setIn(keyPath, Computed.evaluate(state, computed))
+          state.setIn(keyPath, evaluate(state, computed))
         }
       })
       return state

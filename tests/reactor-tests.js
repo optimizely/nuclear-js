@@ -50,7 +50,7 @@ var reactor = Reactor({
   }
 })
 
-var tax = Nuclear.Getter(
+var tax = Getter(
   ['items.subtotal', 'taxPercent'],
   (subtotal, taxPercent) => {
     return (subtotal * (taxPercent / 100))
@@ -207,7 +207,6 @@ describe('Reactor', () => {
       var changeObserver = reactor.createChangeObserver()
       changeObserver.onChange('items.subtotal', mockFn)
 
-      console.log(checkoutActions.addItem)
       checkoutActions.addItem('item', 10)
 
       expect(mockFn.calls.count()).toEqual(1)

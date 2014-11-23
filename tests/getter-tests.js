@@ -1,11 +1,10 @@
-jest.autoMockOff()
-
 var Immutable = require('immutable')
-var Computed = require('../src/computed')
+var Getter = require('../src/getter')
+var evaluate = require('../src/evaluate')
 
-describe('Computed', () => {
-  it('should create an Immutable Computed Record with coerced deps', () => {
-    var computed = Computed(
+describe('Getter', () => {
+  it('should create an Immutable Getter Record with coerced deps', () => {
+    var computed = Getter(
       ['dep1', 'dep2.val'],
       (val1, val2) => {
         return val1 + val2;
@@ -22,14 +21,14 @@ describe('Computed', () => {
       dep2: 2,
     })
 
-    var computed = Computed(
+    var computed = Getter(
       ['dep1', 'dep2'],
       (val1, val2) => {
         return val1 + val2;
       }
     )
 
-    var result = Computed.evaluate(state, computed)
+    var result = evaluate(state, computed)
 
     expect(result).toBe(3)
   })
@@ -39,14 +38,14 @@ describe('Computed', () => {
     var getter2
 
     beforeEach(() => {
-      getter1 = Computed(
+      getter1 = Getter(
         ['dep1', 'dep2'],
         (val1, val2) => {
           return val1 + val2;
         }
       )
 
-      getter2 = Computed(
+      getter2 = Getter(
         [getter1, 'multi'],
         (total, multi) => {
           return multi * total
@@ -54,14 +53,14 @@ describe('Computed', () => {
       )
     })
 
-    it.only("should recursively evaluate", () => {
+    it("should recursively evaluate", () => {
       var state = Immutable.Map({
         dep1: 1,
         dep2: 2,
         multi: 3,
       })
 
-      var result = Computed.evaluate(state, getter2)
+      var result = evaluate(state, getter2)
 
       expect(result).toBe(9)
     })

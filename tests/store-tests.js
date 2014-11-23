@@ -1,18 +1,16 @@
-jest.autoMockOff()
-
 var Immutable = require('immutable')
 var List = require('immutable').List
 var Map = require('immutable').Map
 var Computed = require('../src/computed')
-var ReactiveState = require('../src/reactive-state')
+var Store = require('../src/store')
 
-describe('ReactiveState', () => {
-  describe("Immutable ReactiveState", () => {
+describe('Store', () => {
+  describe("Immutable Store", () => {
     var exp1 = { id: 1, proj_id: 10 }
     var exp2 = { id: 2, proj_id: 10 }
     var exp3 = { id: 3, proj_id: 11 }
 
-    var handler = new ReactiveState({
+    var store = new Store({
       getInitialState() {
         return Map({
           experiments: Map()
@@ -40,27 +38,42 @@ describe('ReactiveState', () => {
             return exp.get('proj_id') === 10
           })
         })
+
+        this.computed('length', ['experiments'], (exps) => {
+          return exps.size
+        })
       }
     })
 
-    var initial = handler.getInitialState()
-    handler.initialize()
+    var initial = store.getInitialState()
+    store.initialize()
 
-    it('should react to addExperiments', function() {
+    it('getInitialStateWithComputeds should execute computeds', () => {
+      var initialComputedState = store.getInitialStateWithComputeds()
+
+      var expected = Map({
+        experiments: Map(),
+        length: 0,
+        project10: Map(),
+      })
+      expect(Immutable.is(expected, initialComputedState)).toBe(true)
+    })
+
+    it('should handle to addExperiments', function() {
       var experiments = [exp1, exp2, exp3]
-      var newState = handler.react(initial, 'addExperiments', {
+      var newState = store.handle(initial, 'addExperiments', {
         data: experiments
       })
       var results = newState.get('experiments').toList().toJS()
       expect(results).toEqual(experiments)
     })
 
-    it('should react to removeExperiments', function() {
+    it('should handle to removeExperiments', function() {
       var experiments = [exp1, exp2, exp3]
-      var newState = handler.react(initial, 'addExperiments', {
+      var newState = store.handle(initial, 'addExperiments', {
         data: experiments
       })
-      var finalState = handler.react(newState, 'removeExperiment', {
+      var finalState = store.handle(newState, 'removeExperiment', {
         id: 2
       })
       var expected = [exp1, exp3]
@@ -70,20 +83,21 @@ describe('ReactiveState', () => {
     })
 
     describe('computeds', () => {
-      it('should evaluate the computeds at every react', () => {
+      it('should evaluate the computeds at every handle', () => {
         var experiments = [exp1, exp2, exp3]
-        var newState = handler.react(initial, 'addExperiments', {
+        var newState = store.handle(initial, 'addExperiments', {
           data: experiments
         })
         var results = newState.get('project10').toList().toJS()
         var expected = [exp1, exp2]
         expect(expected).toEqual(results)
+        expect(newState.get('length')).toEqual(3)
       })
     })
   })
 
-  describe("primitive ReactiveState", () => {
-    var handler = ReactiveState({
+  describe("primitive Store", () => {
+    var store = Store({
       getInitialState() {
         return 1
       },
@@ -95,16 +109,16 @@ describe('ReactiveState', () => {
       }
     })
 
-    var initialState = handler.getInitialState()
-    handler.initialize()
+    var initialState = store.getInitialState()
+    store.initialize()
 
     it('should be able to manage primitive state', () => {
-      var newState = handler.react(initialState, 'increment');
+      var newState = store.handle(initialState, 'increment');
       expect(newState).toBe(2);
     })
 
     it('should no-op when a message is passed that isn\'t registered', () => {
-      var newState = handler.react(initialState, 'noop');
+      var newState = store.handle(initialState, 'noop');
       expect(newState).toBe(1);
     })
   })

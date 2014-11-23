@@ -1,32 +1,29 @@
-jest.autoMockOff()
-
 var Nuclear = require('../src/main')
 
-describe('reactor#bindActions', () => {
+describe('Reactor - bindActions', () => {
   var reactor
+  var actionGroup
 
   beforeEach(() => {
-    var actionGroup = {
+    reactor = Nuclear.Reactor({
+      state: {},
+    })
+
+    actionGroup = reactor.bindActions({
       doit(reactor, id) {
         reactor.dispatch('type', {
           id: id
         })
       }
-    }
-
-    reactor = Nuclear.Reactor({
-      state: {},
-      actions: {
-        'group': actionGroup
-      }
     })
+
   })
 
   it('should partial every action with the reactor', () => {
     spyOn(reactor, 'dispatch')
 
-    reactor.actions('group').doit(123)
+    actionGroup.doit(123)
 
-    expect(reactor.dispatch).toHaveBeenCalledWith('type', { id: 123 })
+    expect(reactor.dispatch.calls.argsFor(0)).toEqual(['type', { id: 123 }])
   })
 })

@@ -4,10 +4,8 @@
   "description": "One-way Immutable State Modelling",
   "main": "src/main.js",
   "scripts": {
-    "test": "jest"
-  },
-  "jest": {
-    "scriptPreprocessor": "jestPreprocessor.js"
+    "test": "karma start --single-run --reporters=progress --log-level error",
+    "test-html": "karma start"
   },
   "author": "Jordan Garcia",
   "license": "MIT",
