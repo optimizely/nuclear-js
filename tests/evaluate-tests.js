@@ -1,5 +1,3 @@
-jest.autoMockOff()
-
 var Immutable = require('immutable')
 var Map = require('immutable').Map
 var List = require('immutable').List
@@ -98,7 +96,7 @@ describe("#get", function() {
   describe("evaluating getters", () => {
     var dbl = (x => 2*x)
 
-    it.only("should double - Getter(['baz.tah'], dbl)", () => {
+    it("should double - Getter(['baz.tah'], dbl)", () => {
       var result = evaluate(state, Getter(['baz.tah'], dbl))
       expect(result).toBe(4)
     })

@@ -1,4 +1,5 @@
 var Immutable = require('immutable')
+var Map = Immutable.Map
 var logging = require('./logging')
 var ChangeObserver = require('./change-observer')
 var ChangeEmitter = require('./change-emitter')
@@ -9,6 +10,7 @@ var toJS = require('./immutable-helpers').toJS
 var coerceKeyPath = require('./utils').keyPath
 var coerceArray = require('./utils').coerceArray
 var each = require('./utils').each
+var partial = require('./utils').partial
 
 
 /**
@@ -84,7 +86,6 @@ class Reactor {
 
     return {
       get: function(keyPath) {
-        //console.log('cursor get', reactor.get(prefix).toString(), prefix, keyPath)
         return evaluate(reactor.get(prefix), keyPath)
       },
 
@@ -122,15 +123,13 @@ class Reactor {
       // let each core handle the message
       this.__stores.forEach((store, id) => {
         var currState = state.get(id)
-        var newState = handler.react(currState, messageType, payload)
+        var newState = store.handle(currState, messageType, payload)
         state.set(id, newState)
 
-        logging.coreReact(keyPath, currState, newState)
+        logging.coreReact(id, currState, newState)
       })
 
       logging.dispatchEnd(state)
-
-      return state
     })
 
     // write the new state to the output stream if changed
@@ -150,9 +149,9 @@ class Reactor {
       throw new Error("Store already defined for id=" + id)
     }
 
-    this.__stores.set(id, store)
+    this.__stores = this.__stores.set(id, store)
 
-    this.state = this.state.set(id, store.getInitialState())
+    this.state = this.state.set(id, store.getInitialStateWithComputeds())
 
     if (!silent) {
       this.__changeEmitter.emitChange(this.state, 'ATTACH_STORE', {
@@ -166,6 +165,10 @@ class Reactor {
    * Adds a change handler whenever certain deps change
    * If only one argument is passed invoked the handler whenever
    * the reactor state changes
+   *
+   * TODO: standardize changeEmitter and changeObserver handler arguments
+   * current changeObserver passes applies the values of the keypaths and
+   * changeEmitter applies [state, messageType, payload]
    * @param {array<array<string>|string>} deps
    * @param {function} handler
    * @return {function} unwatch function
@@ -187,6 +190,78 @@ class Reactor {
    */
   createChangeObserver(prefix) {
     return new ChangeObserver(this.state, this.__changeEmitter, prefix)
+  }
+
+  /**
+   * Will set the state of a specific store or the entire reactor if storeId isn't present
+   * @param {string?} storeId
+   * @param {Immutable.Map} state
+   */
+  loadState(storeId, state) {
+    if (arguments.length === 1) {
+      // handle the case of loading the entire app state
+      state = storeId
+      if (!Immutable.Map.isMap(state)) {
+        throw new Error("Must pass Immutable.Map to loadState")
+      }
+
+      // update each store with the computed state derived from the store state
+      // that is being loaded
+      this.state = state.withMutations(state => {
+        state.forEach((storeState, storeId) => {
+          var store = this.__stores.get(storeId)
+          if (store) {
+            state.set(storeId, store.executeComputeds(Map(), storeState))
+          }
+        })
+      })
+    } else {
+      // loading a single stores state, execute computeds to ensure syncing
+      var store = this.__stores.get(storeId)
+      var newState = store.executeComputeds(Map(), state)
+      this.state = this.state.set(storeId, newState)
+    }
+
+    this.__changeEmitter.emitChange(this.state, 'LOAD_STATE', {
+      args: Array.prototype.slice.call(arguments)
+    })
+  }
+
+  /**
+   * Resets the state of a reactor and returns back to initial state
+   */
+  reset() {
+    this.state = Immutable.Map()
+
+    this.state = this.state.withMutations(state => {
+      this.__stores.forEach((store, id) => {
+        state.set(id, store.getInitialStateWithComputeds())
+      })
+    })
+
+    this.resetChangeListeners()
+  }
+
+  /**
+   * Takes an object of action functions that have `reactor` as the first argument
+   * and returns an object with all the functions partialed
+   * @param {object}
+   * @return {object}
+   */
+  bindActions(actionGroup) {
+    var group = {}
+    each(actionGroup, (fn, name) => {
+      group[name] = partial(fn, this)
+    })
+    return group
+  }
+
+  /**
+   * Resets all change listeners and cleans up any straggling event handlers
+   */
+  resetChangeListeners() {
+    this.__changeEmitter.removeAllListeners()
+    this.__changeObsever = this.createChangeObserver()
   }
 
   /**

@@ -1,4 +1,5 @@
 var Immutable = require('immutable')
+var Map = require('immutable').Map
 var Computed = require('./computed')
 var hasChanged = require('./has-changed')
 
@@ -17,8 +18,8 @@ class Store {
       return new Store(config)
     }
 
-    this.__handlers = Immutable.Map({})
-    this.__computeds = Immutable.Map({})
+    this.__handlers = Map({})
+    this.__computeds = Map({})
 
     // extend the config on the object
     each(config, (fn, prop) => {
@@ -43,7 +44,15 @@ class Store {
    * Overridable method to get the initial state for this type of store
    */
   getInitialState() {
-    return Immutable.Map()
+    return Map()
+  }
+
+  /**
+   * Gets the initial state plus executes any registered computeds
+   */
+  getInitialStateWithComputeds() {
+    var initialState = toImmutable(this.getInitialState())
+    return this.executeComputeds(Map(), initialState)
   }
 
   /**

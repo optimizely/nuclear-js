@@ -8,7 +8,7 @@ exports.Reactor = require('./reactor')
 /**
  * @return {ReactorState}
  */
-exports.Store = functionrequire('./store')
+exports.Store = require('./store')
 
 /**
  * @return {ComputedRecord}
