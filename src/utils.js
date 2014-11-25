@@ -20,9 +20,12 @@ exports.isNumber = _.isNumber
  * Coerces a string/array into an array keypath
  */
 exports.keyPath = function(val) {
-  if (val === null) {
+  if (val == null) {
     // null is a valid keypath, returns whole map/seq
     return val
+  }
+  if (exports.isNumber(val)) {
+    return [val]
   }
   if (!exports.isArray(val)) {
     return val.split('.')

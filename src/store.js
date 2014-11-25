@@ -86,16 +86,15 @@ class Store {
    * not the entire app state.
    *
    * @param {array|string} path to register the computed
-   * @param {array<array<string>|string>} deps
-   * @param {comptueFn} computeFn
+   * @param {Getter|array} getterArgs
    */
-  computed(path, deps, computeFn) {
+  computed(path, getterArgs) {
     var keyPath = coerceKeyPath(path)
     if (this.__computeds.get(keyPath)) {
       throw new Error("Already a computed at " + keyPath)
     }
 
-    var computed = Getter(deps, computeFn)
+    var computed = Getter.fromArgs(getterArgs)
     this.__computeds = this.__computeds.set(keyPath, computed)
   }
 

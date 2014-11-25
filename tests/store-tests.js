@@ -1,7 +1,6 @@
 var Immutable = require('immutable')
 var List = require('immutable').List
 var Map = require('immutable').Map
-var Computed = require('../src/computed')
 var Store = require('../src/store')
 
 describe('Store', () => {
@@ -10,43 +9,47 @@ describe('Store', () => {
     var exp2 = { id: 2, proj_id: 10 }
     var exp3 = { id: 3, proj_id: 11 }
 
-    var store = new Store({
-      getInitialState() {
-        return Map({
-          experiments: Map()
-        })
-      },
+    var store, initial
+    beforeEach(() => {
+      store = new Store({
 
-      initialize: function() {
-        this.on('addExperiments', (state, payload) => {
-          return state.withMutations(state => {
-            payload.data.forEach(item => {
-              state.setIn(['experiments', item.id], Map(item))
+        getInitialState() {
+          return Map({
+            experiments: Map()
+          })
+        },
+
+        initialize: function() {
+          this.on('addExperiments', (state, payload) => {
+            return state.withMutations(state => {
+              payload.data.forEach(item => {
+                state.setIn(['experiments', item.id], Map(item))
+              })
+              return state
             })
-            return state
           })
-        })
 
-        this.on('removeExperiment', (state, payload) => {
-          return state.update('experiments', exps => {
-            return exps.remove(payload.id)
+          this.on('removeExperiment', (state, payload) => {
+            return state.update('experiments', exps => {
+              return exps.remove(payload.id)
+            })
           })
-        })
 
-        this.computed('project10', ['experiments'], (exps) => {
-          return exps.filter(exp => {
-            return exp.get('proj_id') === 10
-          })
-        })
+          this.computed('project10', ['experiments', (exps) => {
+            return exps.filter(exp => {
+              return exp.get('proj_id') === 10
+            })
+          }])
 
-        this.computed('length', ['experiments'], (exps) => {
-          return exps.size
-        })
-      }
+          this.computed('length', ['experiments', (exps) => {
+            return exps.size
+          }])
+        }
+      })
+
+      initial = store.getInitialState()
+      store.initialize()
     })
-
-    var initial = store.getInitialState()
-    store.initialize()
 
     it('getInitialStateWithComputeds should execute computeds', () => {
       var initialComputedState = store.getInitialStateWithComputeds()

@@ -6,80 +6,87 @@ var Reactor = require('../src/main').Reactor
 var Store = require('../src/main').Store
 var Getter = require('../src/main').Getter
 
-var itemStore = Store({
-  getInitialState() {
-    return {
-      all: [],
-    }
-  },
-
-  initialize() {
-    this.on('addItem', (state, payload) => {
-      return state.update('all', items => {
-        return items.push(Map({
-          name: payload.name,
-          price: payload.price,
-        }))
-      })
-    })
-
-    this.computed('subtotal', ['all'], (items) => {
-      return items.reduce((total, item) => {
-        return total + item.get('price')
-      }, 0)
-    })
-  },
-})
-
-var taxPercentStore = Store({
-  getInitialState() {
-    return 0
-  },
-
-  initialize() {
-    this.on('setTax', (state, payload) => {
-      return payload
-    })
-  }
-})
-
-var reactor = Reactor({
-  stores: {
-    'items': itemStore,
-    'taxPercent': taxPercentStore,
-  }
-})
-
-var tax = Getter(
-  ['items.subtotal', 'taxPercent'],
-  (subtotal, taxPercent) => {
-    return (subtotal * (taxPercent / 100))
-  }
-)
-
-var total = Getter(
-  ['items.subtotal', tax],
-  (subtotal, tax) => {
-    var total = subtotal + tax
-    return Math.round(total, 2)
-  }
-)
-
-var checkoutActions = reactor.bindActions({
-  addItem(reactor, name, price) {
-    reactor.dispatch('addItem', {
-      name: name,
-      price: price
-    })
-  },
-
-  setTaxPercent(reactor, percent) {
-    reactor.dispatch('setTax', percent)
-  }
-})
-
 
 describe('Reactor', () => {
+  var checkoutActions, reactor, tax, total
+
+  beforeEach(() => {
+
+    var itemStore = Store({
+      getInitialState() {
+        return {
+          all: [],
+        }
+      },
+
+      initialize() {
+        this.on('addItem', (state, payload) => {
+          return state.update('all', items => {
+            return items.push(Map({
+              name: payload.name,
+              price: payload.price,
+            }))
+          })
+        })
+
+        this.computed('subtotal', ['all', (items) => {
+          return items.reduce((total, item) => {
+            return total + item.get('price')
+          }, 0)
+        }])
+      },
+    })
+
+    var taxPercentStore = Store({
+      getInitialState() {
+        return 0
+      },
+
+      initialize() {
+        this.on('setTax', (state, payload) => {
+          return payload
+        })
+      }
+    })
+
+    reactor = Reactor({
+      stores: {
+        'items': itemStore,
+        'taxPercent': taxPercentStore,
+      }
+    })
+
+    tax = Getter(
+      'items.subtotal',
+      'taxPercent',
+      (subtotal, taxPercent) => {
+        return (subtotal * (taxPercent / 100))
+      }
+    )
+
+    total = Getter(
+      'items.subtotal',
+      tax,
+      (subtotal, tax) => {
+        var total = subtotal + tax
+        return Math.round(total, 2)
+      }
+    )
+
+    checkoutActions = reactor.bindActions({
+      addItem(reactor, name, price) {
+        reactor.dispatch('addItem', {
+          name: name,
+          price: price
+        })
+      },
+
+      setTaxPercent(reactor, percent) {
+        reactor.dispatch('setTax', percent)
+      }
+    })
+  })
+
   describe('Reactor with no initial state', () => {
     afterEach(() => {
       reactor.reset()

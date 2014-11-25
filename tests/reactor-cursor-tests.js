@@ -3,50 +3,6 @@ var Map = require('immutable').Map
 var List = require('immutable').List
 var Nuclear = require('../src/main')
 
-var itemsState = Nuclear.Store({
-  getInitialState() {
-    return {
-      all: {},
-    }
-  },
-
-  initialize() {
-    this.on('addItem', (state, item) => {
-      return state.update('all', items => {
-        return items.set(item.id, Map(item))
-      })
-    })
-
-    this.on('updateItem', (state, updated) => {
-      return state.updateIn(['all', updated.id], item => {
-        return item.set('val', updated.val)
-      })
-    })
-
-    this.computed('count', ['all'], (items) => {
-      return items.size
-    })
-  },
-})
-
-var itemActionGroup = {
-  addItem(reactor, item) {
-    reactor.dispatch('addItem', item)
-  },
-  updateItem(reactor, id, val) {
-    reactor.dispatch('updateItem', {
-      id: id,
-      val: val
-    })
-  },
-}
-
-var reactorConfig = {
-  stores: {
-    items: itemsState,
-  },
-}
-
 describe('Reactor - Cursors', () => {
   var itemActions
   var reactor
@@ -61,6 +17,50 @@ describe('Reactor - Cursors', () => {
   }
 
   beforeEach(() => {
+    var itemsState = Nuclear.Store({
+      getInitialState() {
+        return {
+          all: {},
+        }
+      },
+
+      initialize() {
+        this.on('addItem', (state, item) => {
+          return state.update('all', items => {
+            return items.set(item.id, Map(item))
+          })
+        })
+
+        this.on('updateItem', (state, updated) => {
+          return state.updateIn(['all', updated.id], item => {
+            return item.set('val', updated.val)
+          })
+        })
+
+        this.computed('count', ['all'], (items) => {
+          return items.size
+        })
+      },
+    })
+
+    var itemActionGroup = {
+      addItem(reactor, item) {
+        reactor.dispatch('addItem', item)
+      },
+      updateItem(reactor, id, val) {
+        reactor.dispatch('updateItem', {
+          id: id,
+          val: val
+        })
+      },
+    }
+
+    var reactorConfig = {
+      stores: {
+        items: itemsState,
+      },
+    }
+
     reactor = Nuclear.Reactor(reactorConfig)
 
     itemActions = reactor.bindActions(itemActionGroup)

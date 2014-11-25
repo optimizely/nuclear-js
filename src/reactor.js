@@ -3,6 +3,7 @@ var Map = Immutable.Map
 var logging = require('./logging')
 var ChangeObserver = require('./change-observer')
 var ChangeEmitter = require('./change-emitter')
+var Getter = require('./getter')
 var evaluate = require('./evaluate')
 
 // helper fns
@@ -53,20 +54,22 @@ class Reactor {
 
   /**
    * Gets the Immutable state at the keyPath
-   * @param {array|string} keyPath
+   * @param {array|string} ...keyPaths
+   * @param {function?} getFn
    * @return {*}
    */
-  get(keyPath) {
-    return evaluate(this.state, keyPath, this)
+  get() {
+    return evaluate(this.state, Getter.fromArgs(arguments))
   }
 
   /**
    * Gets the coerced state (to JS object) of the reactor by keyPath
-   * @param {array|string} keyPath
+   * @param {array|string} ...keyPaths
+   * @param {function?} getFn
    * @return {*}
    */
-  getJS(keyPath) {
-    return toJS(this.get(keyPath))
+  getJS() {
+    return toJS(this.get.apply(this, arguments))
   }
 
   /**
@@ -85,8 +88,8 @@ class Reactor {
     }
 
     return {
-      get: function(keyPath) {
-        return evaluate(reactor.get(prefix), keyPath)
+      get: function() {
+        return evaluate(reactor.get(prefix), Getter.fromArgs(arguments))
       },
 
       getJS: reactor.getJS,

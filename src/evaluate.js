@@ -1,6 +1,8 @@
 var Getter = require('./getter')
 var isArray = require('./utils').isArray
 var isNumber = require('./utils').isNumber
+var isString = require('./utils').isString
+var isFunction = require('./utils').isFunction
 var coerceKeyPath = require('./utils').keyPath
 
 /**
@@ -24,14 +26,31 @@ module.exports = function evaluate(state, getter) {
     return state
   }
 
-  if (isNumber(getter)) {
-    // is a number lookup, ex: 0
-    return state.get(getter)
+  if (isKeyPath(getter)) {
+    if (state && state.getIn) {
+      return state.getIn(coerceKeyPath(getter))
+    } else {
+      // account for the cases when state is a primitive value
+      return state
+    }
   } else if (Getter.isGetter(getter)) {
     // its of type Getter
     var values = getter.deps.map(evaluate.bind(null, state))
     return getter.computeFn.apply(null, values)
   } else {
-    return state.getIn(coerceKeyPath(getter))
+    throw new Error("Evaluate must be passed a keyPath or Getter")
   }
+}
+
+/**
+ * Checks if something is simply a keyPath and not a getter
+ * @param {*} toTest
+ * @return {boolean}
+ */
+function isKeyPath(toTest) {
+  return (
+    isNumber(toTest) ||
+    isString(toTest) ||
+    (isArray(toTest) && !isFunction(toTest[toTest.length - 1]))
+  )
 }

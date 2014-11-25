@@ -76,7 +76,7 @@ reactor.get(['foo', 'bar'], ['multiplier'], function(foobarValue, multiplier) {
 
 - **getter** `array|Getter` any array or arguments that can be passed to `reactor.get`
 - **handler** `function` called with the value of `reactor.get(getter)`
-- Returns an unobserver function that when called stops observation and removes any listeners
+- Returns an unobserve function that when called stops observation and removes any listeners
 
 **Usage**
 
@@ -95,5 +95,5 @@ var getter = [
 
 var unobserve = reactor.observe(getter, function(val) {
   console.log(val);
-}); // will console log the value of reactor.get(getter) anytime it changes
+}); // will console log the value of reactor.get.apply(reactor, getter)
 ```

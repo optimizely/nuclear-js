@@ -1,6 +1,10 @@
 var coerceKeyPath = require('./utils').keyPath
 var Immutable = require('immutable')
 var Record = Immutable.Record
+var isFunction = require('./utils').isFunction
+var isArray = require('./utils').isArray
+
+var identity = x => x
 
 var Getter = Record({
   deps: null,
@@ -13,6 +17,15 @@ var Getter = Record({
  */
 function isGetter(toTest) {
   return (toTest instanceof Getter)
+}
+
+/**
+ * Checks if something is a getter literal, ex: ['dep1', 'dep2', function(dep1, dep2) {...}]
+ * @param {*} toTest
+ * @return {boolean}
+ */
+function isGetterLike(toTest) {
+  return (isArray(toTest) && isFunction(toTest[toTest.length - 1]))
 }
 
 /**
@@ -59,12 +72,27 @@ function flattenDeps(deps) {
 
 /**
  * Wrap the Getter in a function that coerces args
- * @param {array} deps
- * @param {function} computeFn
+ *
+ * Takes the form createGetter('dep1', 'dep2', computeFn)
+ * or
+ * Takes the form createGetter('dep1', 'dep2') // identity function is used
  *
  * @return {GetterRecord}
  */
-function createGetter(deps, computeFn) {
+function createGetter() {
+  var len = arguments.length
+  var deps
+  var computeFn
+  if (isFunction(arguments[len - 1])) {
+    // computeFn is provided
+    deps = Array.prototype.slice.call(arguments, 0, len - 1)
+    computeFn = arguments[len - 1]
+  } else {
+    // computeFn isnt provided use identity
+    deps = Array.prototype.slice.call(arguments, 0)
+    computeFn = identity
+  }
+
   // compute the flatten deps, and cache since deps are immutable
   // once they enter the record
   var flatDeps = flattenDeps(deps)
@@ -77,6 +105,24 @@ function createGetter(deps, computeFn) {
   })
 }
 
+/**
+ * Returns a getter from arguments
+ * @param {array} args or arguments
+ * @return {Getter}
+ */
+function fromArgs(args) {
+  if (args.length === 0) {
+    return createGetter([])
+  }
+  if (args.length === 1 && isGetter(args[0])) {
+    // was passed a Getter
+    return args[0]
+  }
+  return createGetter.apply(null, args)
+}
+
 module.exports = createGetter
 
 module.exports.isGetter = isGetter
+
+module.exports.fromArgs = fromArgs

@@ -3,25 +3,8 @@ var Map = require('immutable').Map
 var List = require('immutable').List
 
 var Store = require('../src/store');
-var Reactor = require('../src/reactor');
 var Getter = require('../src/getter');
 var evaluate = require('../src/evaluate')
-
-var store1 = Store({
-  getInitialState() {
-    return {}
-  },
-
-  getDoubleValue() {
-    return this.get('foo.bar') * 2
-  }
-})
-
-var reactor = Reactor({
-  stores: {
-    store1: store1
-  }
-})
 
 describe("Evaluate", function() {
   var state = Immutable.fromJS({
@@ -91,31 +74,37 @@ describe("Evaluate", function() {
       var result = evaluate(state, getter)
       expect(result).toBe(1)
     })
+
+    it("Getter(['bar', 'baz', 'tah', 1]", () => {
+      var getter = Getter(['bar', 'baz', 'tah', 1])
+      var result = evaluate(state, getter)
+      expect(result).toBe(1)
+    })
   })
 
   describe("evaluating getters", () => {
     var dbl = (x => 2*x)
 
-    it("should double - Getter(['baz.tah'], dbl)", () => {
-      var result = evaluate(state, Getter(['baz.tah'], dbl))
+    it("should double - Getter('baz.tah', dbl)", () => {
+      var result = evaluate(state, Getter('baz.tah', dbl))
       expect(result).toBe(4)
     })
 
-    it("should double - Getter([['baz','tah']], dbl)", () => {
-      var result = evaluate(state, Getter([['baz','tah']], dbl))
+    it("should double - Getter(['baz','tah'], dbl)", () => {
+      var result = evaluate(state, Getter(['baz','tah'], dbl))
       expect(result).toBe(4)
     })
 
-    it("should double - Getter([['store1', 'foo', 'bar']], dbl)", () => {
-      var result = evaluate(state, Getter([['store1', 'foo', 'bar']], dbl))
+    it("should double - Getter(['store1', 'foo', 'bar'], dbl)", () => {
+      var result = evaluate(state, Getter(['store1', 'foo', 'bar'], dbl))
       expect(result).toBe(2)
     })
 
     it("should compose getters", function() {
-      var getter1 = Getter([['baz','tah']], dbl)
-      var getter2 = Getter([['store1', 'foo', 'bar']], dbl)
+      var getter1 = Getter(['baz','tah'], dbl)
+      var getter2 = Getter(['store1', 'foo', 'bar'], dbl)
 
-      var composed = Getter([getter1, getter2], (a, b) => a + b)
+      var composed = Getter(getter1, getter2, (a, b) => a + b)
 
       var result = evaluate(state, composed)
       expect(result).toBe(6)
