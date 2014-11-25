@@ -4,11 +4,11 @@ var logging = require('./logging')
 var ChangeObserver = require('./change-observer')
 var ChangeEmitter = require('./change-emitter')
 var Getter = require('./getter')
+var KeyPath = require('./key-path')
 var evaluate = require('./evaluate')
 
 // helper fns
 var toJS = require('./immutable-helpers').toJS
-var coerceKeyPath = require('./utils').keyPath
 var coerceArray = require('./utils').coerceArray
 var each = require('./utils').each
 var partial = require('./utils').partial
@@ -40,16 +40,16 @@ class Reactor {
      */
     this.__changeEmitter = new ChangeEmitter()
     /**
-     * Change observer interface to observe certain keypaths
-     * It gets populated in initialize to capture initial state
-     */
-    this.__changeObsever
-    /**
      * Holds a map of id => reactor instance
      */
     this.__stores = Immutable.Map({})
 
     this.__initialize(config)
+    /**
+     * Change observer interface to observe certain keypaths
+     * Created after __initialize so it starts with initialState
+     */
+    this.__changeObsever = new ChangeObserver(this.state, this.__changeEmitter)
   }
 
   /**
@@ -80,11 +80,11 @@ class Reactor {
    */
   cursor(keyPath) {
     var reactor = this
-    var prefix = coerceKeyPath(keyPath)
+    var prefix = KeyPath(keyPath)
 
     var prefixKeyPath = function(path) {
       path = path || []
-      return prefix.concat(coerceKeyPath(path))
+      return prefix.concat(KeyPath(path))
     }
 
     return {
@@ -96,15 +96,23 @@ class Reactor {
 
       dispatch: reactor.dispatch.bind(reactor),
 
-      onChange: function(deps, handler) {
-        if (arguments.length === 1) {
-          return reactor.onChange([prefix], deps)
+      observe: function(getter, handler) {
+        var options = {
+          prefix: prefix
         }
-        var deps = coerceArray(deps).map(prefixKeyPath)
-        return reactor.onChange(deps, handler)
-      },
+        if (arguments.length === 1) {
+          options.handler = getter
+          options.getter = Getter()
+        } else {
+          if (KeyPath.isKeyPath(getter)) {
+            getter = Getter(getter)
+          }
+          options.getter = getter
+          options.handler = handler
+        }
 
-      createChangeObserver: reactor.createChangeObserver.bind(reactor, prefix),
+        return reactor.__changeObsever.onChange(options)
+      },
 
       cursor: function(keyPath) {
         return reactor.cursor.call(reactor, prefixKeyPath(keyPath))
@@ -165,34 +173,37 @@ class Reactor {
   }
 
   /**
+   * Adds a change observer whenever a certain part of the reactor state changes
+   *
+   * 1. observe(handlerFn) - 1 argument, called anytime reactor.state changes
+   * 2. observe('foo.bar', handlerFn) - 2 arguments, called anytime foo.bar changes
+   *    with the value of reactor.get('foo.bar')
+   * 3. observe(['foo', 'bar'], handlerFn) same as above
+   * 4. observe(getter, handlerFn) called whenever any getter dependencies change with
+   *    the value of the getter
+   *
    * Adds a change handler whenever certain deps change
    * If only one argument is passed invoked the handler whenever
    * the reactor state changes
    *
-   * TODO: standardize changeEmitter and changeObserver handler arguments
-   * current changeObserver passes applies the values of the keypaths and
-   * changeEmitter applies [state, messageType, payload]
-   * @param {array<array<string>|string>} deps
+   * @param {KeyPath|Getter} getter
    * @param {function} handler
    * @return {function} unwatch function
    */
-  onChange(deps, handler) {
+  observe(getter, handler) {
+    var options = {}
     if (arguments.length === 1) {
-      return this.__changeEmitter.addChangeListener(deps)
+      options.handler = getter
+      options.getter = Getter()
+    } else {
+      if (KeyPath.isKeyPath(getter)) {
+        getter = Getter(getter)
+      }
+      options.getter = getter
+      options.handler = handler
     }
-    return this.__changeObsever.onChange(deps, handler)
-  }
 
-  /**
-   * Creates an instance of the ChangeObserver for this reactor
-   *
-   * Allows the creation of changeHandlers for a keyPath on this reactor,
-   * while providing a single method call to destroy and cleanup
-   *
-   * @return {ChangeObserver}
-   */
-  createChangeObserver(prefix) {
-    return new ChangeObserver(this.state, this.__changeEmitter, prefix)
+    this.__changeObsever.onChange(options)
   }
 
   /**
@@ -264,7 +275,7 @@ class Reactor {
    */
   resetChangeListeners() {
     this.__changeEmitter.removeAllListeners()
-    this.__changeObsever = this.createChangeObserver()
+    this.__changeObsever = new ChangeObserver(this.state, this.__changeEmitter)
   }
 
   /**
@@ -278,11 +289,6 @@ class Reactor {
         this.attachStore(id, store, false)
       })
     }
-
-    /**
-     * Change observer interface to observe certain keypaths
-     */
-    this.__changeObsever = this.createChangeObserver()
   }
 }
 

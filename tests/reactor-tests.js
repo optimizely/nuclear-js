@@ -155,9 +155,9 @@ describe('Reactor', () => {
         expect(reactor.get(total)).toEqual(11)
       })
 
-      it("should emit the state of the reactor to a handler registered with onChange()", () => {
+      it("should emit the state of the reactor to a handler registered with observe()", () => {
         var mockFn = jasmine.createSpy()
-        reactor.onChange(mockFn)
+        reactor.observe(mockFn)
 
         checkoutActions.addItem(item.name, item.price)
 
@@ -180,7 +180,7 @@ describe('Reactor', () => {
 
       it("should not emit to the outputStream if state does not change after a dispatch", () => {
         var mockFn = jasmine.createSpy()
-        reactor.onChange(mockFn)
+        reactor.observe(mockFn)
 
         reactor.dispatch('noop', {})
 
@@ -188,10 +188,10 @@ describe('Reactor', () => {
       })
     }) // when dispatching a relevant action
 
-    describe('#onChange', () => {
+    describe('#observe', () => {
       it('should invoke a change handler if the specific keypath changes', () => {
         var mockFn = jasmine.createSpy()
-        reactor.onChange('taxPercent', mockFn)
+        reactor.observe('taxPercent', mockFn)
 
         checkoutActions.setTaxPercent(5)
 
@@ -200,29 +200,33 @@ describe('Reactor', () => {
       })
       it('should not invoke a change handler if another keypath changes', () => {
         var mockFn = jasmine.createSpy()
-        reactor.onChange('taxPercent', mockFn)
+        reactor.observe('taxPercent', mockFn)
 
         checkoutActions.addItem('item', 1)
 
         expect(mockFn.calls.count()).toEqual(0)
       })
-    })
+      it('should invoke a change handler if a getter value changes', () => {
+        var mockFn = jasmine.createSpy()
+        checkoutActions.addItem('item', 100)
 
-    it("should create a ChangeObserver properly", () => {
-      var mockFn = jasmine.createSpy()
+        reactor.observe(total, mockFn)
 
-      var changeObserver = reactor.createChangeObserver()
-      changeObserver.onChange('items.subtotal', mockFn)
+        checkoutActions.setTaxPercent(5)
 
-      checkoutActions.addItem('item', 10)
+        expect(mockFn.calls.count()).toEqual(1)
+        expect(mockFn.calls.argsFor(0)).toEqual([105])
+      })
 
-      expect(mockFn.calls.count()).toEqual(1)
-      expect(mockFn.calls.argsFor(0)).toEqual([10])
+      it('should not invoke a change handler if a getters deps dont change', () => {
+        var mockFn = jasmine.createSpy()
+        var doubleTax = Getter('taxPercent', x => 2*x)
+        reactor.observe(doubleTax, mockFn)
 
-      changeObserver.destroy()
+        checkoutActions.addItem('item', 100)
 
-      checkoutActions.addItem('item 2', 20)
-      expect(mockFn.calls.count()).toEqual(1)
+        expect(mockFn.calls.count()).toEqual(0)
+      })
     })
   }) // Reactor with no initial state
 
@@ -246,7 +250,7 @@ describe('Reactor', () => {
 
     it('should load the entire app state and call any changeObservers', () => {
       var mockFn = jasmine.createSpy()
-      reactor.onChange(mockFn)
+      reactor.observe(mockFn)
 
       reactor.loadState(initialState)
 
@@ -279,7 +283,7 @@ describe('Reactor', () => {
       reactor.loadState(initialState)
 
       var mockFn = jasmine.createSpy()
-      reactor.onChange('taxPercent', mockFn)
+      reactor.observe('taxPercent', mockFn)
 
 
       reactor.loadState('taxPercent', 30)

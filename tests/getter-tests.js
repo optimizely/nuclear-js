@@ -3,6 +3,60 @@ var Getter = require('../src/getter')
 var evaluate = require('../src/evaluate')
 
 describe('Getter', () => {
+  describe("construction tests", () => {
+    var state = Immutable.fromJS({
+      foo: {
+        bar: 1,
+      },
+
+      baz: {
+        tah: 3
+      }
+    })
+
+    var dbl = x => 2*x
+
+    var add = (a,b) => a+b
+
+
+    it("Getter('foo.bar')", () => {
+      var getter = Getter('foo.bar')
+      expect(evaluate(state, getter)).toBe(1)
+    })
+
+    it("Getter(['foo', 'bar'])", () => {
+      var getter = Getter(['foo', 'bar'])
+      expect(evaluate(state, getter)).toBe(1)
+    })
+
+    it("Getter('foo.bar', dbl)", () => {
+      var getter = Getter('foo.bar', dbl)
+      expect(evaluate(state, getter)).toBe(2)
+    })
+
+    it("Getter(['foo', 'bar'], dbl)", () => {
+      var getter = Getter(['foo', 'bar'], dbl)
+      expect(evaluate(state, getter)).toBe(2)
+    })
+
+    it("Getter('foo.bar', 'baz.tah', add)", () => {
+      var getter = Getter('foo.bar', 'baz.tah', add)
+      expect(evaluate(state, getter)).toBe(4)
+    })
+
+    it("Getter(['foo', 'bar'], ['baz', 'tah'], add)", () => {
+      var getter = Getter(['foo', 'bar'], ['baz', 'tah'], add)
+      expect(evaluate(state, getter)).toBe(4)
+    })
+
+    it('compose getters: Getter(foobarDbl, baztahDbl, add)', () => {
+      var foobarDbl = Getter('foo.bar', dbl)
+      var baztahDbl = Getter('baz.tah', dbl)
+      var getter = Getter(foobarDbl, baztahDbl, add)
+      expect(evaluate(state, getter)).toBe(8)
+    })
+  })
+
   it('should create an Immutable Getter Record with coerced deps', () => {
     var computed = Getter('dep1', 'dep2.val', (val1, val2) => {
       return val1 + val2;

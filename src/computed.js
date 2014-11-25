@@ -1,4 +1,4 @@
-var coerceKeyPath = require('./utils').keyPath
+var KeyPath = require('./key-path')
 var Immutable = require('immutable')
 var Record = Immutable.Record
 
@@ -28,7 +28,7 @@ function coerceDeps(deps){
       // if the dep is an nested Computed simply return
       return dep
     }
-    return coerceKeyPath(dep)
+    return KeyPath(dep)
   })
 }
 

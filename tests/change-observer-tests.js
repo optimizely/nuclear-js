@@ -1,3 +1,4 @@
+var Getter = require('../src/getter')
 var ChangeEmitter = require('../src/change-emitter')
 var ChangeObserver = require('../src/change-observer')
 var Immutable = require('immutable')
@@ -27,7 +28,10 @@ describe('ChangeObserver', () => {
     describe('registering change handlers', () => {
       it('should allow registration of a single string key', () => {
         var mockFn = jasmine.createSpy()
-        observer.onChange('foo', mockFn)
+        observer.onChange({
+          getter: Getter('foo'),
+          handler: mockFn,
+        })
 
         changeEmitter.emitChange(initialState.updateIn(['foo', 'bar'], x => 2))
 
@@ -38,7 +42,10 @@ describe('ChangeObserver', () => {
       })
       it('should allow registration of a non-deep string key', () => {
         var mockFn = jasmine.createSpy()
-        observer.onChange(['foo'], mockFn)
+        observer.onChange({
+          getter: Getter(['foo']),
+          handler: mockFn,
+        })
 
         changeEmitter.emitChange(initialState.updateIn(['foo', 'bar'], x => 2))
 
@@ -49,7 +56,10 @@ describe('ChangeObserver', () => {
       })
       it('should allow registration of a deep string key', () => {
         var mockFn = jasmine.createSpy()
-        observer.onChange(['foo.bar'], mockFn)
+        observer.onChange({
+          getter: Getter(['foo.bar']),
+          handler: mockFn,
+        })
 
         changeEmitter.emitChange(initialState.updateIn(['foo', 'bar'], x => {
           return {
@@ -64,7 +74,10 @@ describe('ChangeObserver', () => {
       })
       it('should not call the handler if another part of the map changes', () => {
         var mockFn = jasmine.createSpy()
-        observer.onChange(['foo'], mockFn)
+        observer.onChange({
+          getter: Getter(['foo']),
+          handler: mockFn,
+        })
 
         changeEmitter.emitChange(initialState.set('baz', x => 2))
 
@@ -86,7 +99,7 @@ describe('ChangeObserver', () => {
           val: 1
         }
       })
-      observer = new ChangeObserver(initialState, changeEmitter, 'foo')
+      observer = new ChangeObserver(initialState, changeEmitter)
     })
 
     afterEach(() => {
@@ -96,7 +109,11 @@ describe('ChangeObserver', () => {
 
     it('should scope the deps by the prefix', () => {
       var mockFn = jasmine.createSpy()
-      observer.onChange(['bar'], mockFn)
+      observer.onChange({
+        getter: Getter('bar'),
+        handler: mockFn,
+        prefix: 'foo'
+      })
 
       changeEmitter.emitChange(initialState.setIn(['foo', 'bar'], 2))
 
@@ -106,17 +123,25 @@ describe('ChangeObserver', () => {
 
     it('should scope the deps by the prefix given an array of multiple deps', () => {
       var mockFn = jasmine.createSpy()
-      observer.onChange(['bar', 'baz'], mockFn)
+      observer.onChange({
+        getter: Getter('bar', 'baz', (a, b) => a+b),
+        handler: mockFn,
+        prefix: 'foo'
+      })
 
       changeEmitter.emitChange(initialState.setIn(['foo', 'baz'], 2))
 
       expect(mockFn.calls.count()).toBe(1)
-      expect(mockFn.calls.argsFor(0)).toEqual([1, 2])
+      expect(mockFn.calls.argsFor(0)).toEqual([3])
     })
 
     it('should not call the handler function if an out of scope value changes', () => {
       var mockFn = jasmine.createSpy()
-      observer.onChange(['bar', 'baz'], mockFn)
+      observer.onChange({
+        getter: Getter(['bar', 'baz']),
+        handler: mockFn,
+        prefix: 'foo'
+      })
 
       changeEmitter.emitChange(initialState.setIn(['other', 'val'], 2))
 

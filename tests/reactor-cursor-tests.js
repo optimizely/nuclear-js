@@ -122,10 +122,10 @@ describe('Reactor - Cursors', () => {
     expect(valCursor.get()).toBe('c')
   })
 
-  it('onChange should scope to the cursor prefix', () => {
+  it('observe should scope to the cursor prefix', () => {
     var mockFn = jasmine.createSpy()
     var item1Cursor = reactor.cursor(['items', 'all', item1.id])
-    item1Cursor.onChange(mockFn)
+    item1Cursor.observe(mockFn)
 
     item1Cursor.dispatch('updateItem', {
       id: 1,
@@ -142,10 +142,10 @@ describe('Reactor - Cursors', () => {
     expect(Immutable.is(firstCallArg, expected)).toBe(true)
   })
 
-  it('onChange should to be scoped to prefix + keyPath', () => {
+  it('observe should to be scoped to prefix + keyPath', () => {
     var mockFn = jasmine.createSpy()
     var item1Cursor = reactor.cursor(['items', 'all', item1.id])
-    item1Cursor.onChange('val', mockFn)
+    item1Cursor.observe('val', mockFn)
 
     item1Cursor.dispatch('updateItem', {
       id: 1,

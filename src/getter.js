@@ -1,4 +1,4 @@
-var coerceKeyPath = require('./utils').keyPath
+var KeyPath = require('./key-path')
 var Immutable = require('immutable')
 var Record = Immutable.Record
 var isFunction = require('./utils').isFunction
@@ -41,7 +41,7 @@ function coerceDeps(deps){
       // if the dep is an nested Getter simply return
       return dep
     }
-    return coerceKeyPath(dep)
+    return KeyPath(dep)
   })
 }
 
@@ -80,6 +80,10 @@ function flattenDeps(deps) {
  * @return {GetterRecord}
  */
 function createGetter() {
+  // createGetter() returns a blank getter
+  if (arguments.length === 0) {
+    return createGetter([])
+  }
   var len = arguments.length
   var deps
   var computeFn
@@ -111,9 +115,6 @@ function createGetter() {
  * @return {Getter}
  */
 function fromArgs(args) {
-  if (args.length === 0) {
-    return createGetter([])
-  }
   if (args.length === 1 && isGetter(args[0])) {
     // was passed a Getter
     return args[0]

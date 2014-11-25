@@ -4,7 +4,7 @@ var Getter = require('./getter')
 var evaluate = require('./evaluate')
 var hasChanged = require('./has-changed')
 
-var coerceKeyPath = require('./utils').keyPath
+var KeyPath = require('./key-path')
 var each = require('./utils').each
 var toImmutable = require('./immutable-helpers').toImmutable
 
@@ -89,7 +89,7 @@ class Store {
    * @param {Getter|array} getterArgs
    */
   computed(path, getterArgs) {
-    var keyPath = coerceKeyPath(path)
+    var keyPath = KeyPath(path)
     if (this.__computeds.get(keyPath)) {
       throw new Error("Already a computed at " + keyPath)
     }
