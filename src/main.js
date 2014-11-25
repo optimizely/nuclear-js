@@ -6,14 +6,16 @@ var helpers = require('./immutable-helpers')
 exports.Reactor = require('./reactor')
 
 /**
- * @return {ReactorState}
+ * @return {Store}
  */
 exports.Store = require('./store')
 
 /**
- * @return {ComputedRecord}
+ * @return {GetterRecord}
  */
 exports.Getter = require('./getter')
+
+exports.KeyPath = require('./key-path')
 
 // export the immutable library
 exports.Immutable = require('immutable')
@@ -22,3 +24,4 @@ exports.Immutable = require('immutable')
 exports.toJS = helpers.toJS
 exports.toImmutable = helpers.toImmutable
 exports.isImmutable = helpers.isImmutable
+exports.evaluate = require('./evaluate')
