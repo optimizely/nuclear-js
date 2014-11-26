@@ -27,7 +27,7 @@ module.exports = [
   {
     entry: './src/main.js',
     output: {
-      library: 'arrayUpdater',
+      library: 'Nuclear',
       libraryTarget: 'umd',
       filename: genFilename(true),
     },
