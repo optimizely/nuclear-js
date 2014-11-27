@@ -1,14 +1,32 @@
 {
   "name": "nuclear-js",
   "version": "0.5.0-rc1",
-  "description": "One-way Immutable State Modelling",
-  "main": "src/main.js",
+  "description": "Immutable, reactive Flux architecture. UI Agnostic.",
+  "main": "dist/nuclear.js",
   "scripts": {
     "test": "karma start --single-run --reporters=progress --log-level error",
     "test-html": "karma start"
   },
   "author": "Jordan Garcia",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/optimizely/nuclear-js/issues"
+  },
+  "homepage": "https://github.com/optimizely/nuclear-js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/optimizely/nuclear-js"
+  },
+  "keywords": [
+    "flux",
+    "nuclear",
+    "immutable",
+    "react",
+    "vue",
+    "vuejs",
+    "functional",
+    "stateless"
+  ],
   "dependencies": {
     "immutable": "^3.0.x",
     "lodash": "^2.4.1"
