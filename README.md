@@ -233,29 +233,31 @@ reactor.observe(isOverBudget, isOver => {
 
 ### Hooking up a UI: React
 
-Syncing reactor stores and React component state is effortless using the [NuclearVueMixin](https://github.com/jordangarcia/nuclear-vue-mixin).
+Syncing reactor stores and React component state is effortless using the [NuclearReactMixin](https://github.com/jordangarcia/nuclear-react-mixin).
 
 ```js
 var React = require('react')
 var NuclearReactMixin = require('nuclear-react-mixin')
 
-var ShoppingCart = react.createClass({
+var ShoppingCart = React.createClass({
   mixins: [NuclearReactMixin(reactor)],
 
   // simply implement this function to keep a components state
   // in sync with a Nuclear Reactor
   getDataBindings() {
-    // can reference a reactor KeyPath
-    items: 'items',
-    taxPercent: 'taxPercent',
-    // or reference a Getter
-    subtotal: getSubtotal,
-    tax: getTax,
-    total: getTotal,
-    // or inline a getter
-    expensiveItems: Getter('items', items => {
-      return items.filter(item => item > 100)
-    })
+    return {
+      // can reference a reactor KeyPath
+      items: 'items',
+      taxPercent: 'taxPercent',
+      // or reference a Getter
+      subtotal: getSubtotal,
+      tax: getTax,
+      total: getTotal,
+      // or inline a getter
+      expensiveItems: Getter('items', items => {
+        return items.filter(item => item > 100)
+      })
+    }
   },
 
   render() {
@@ -270,7 +272,6 @@ var ShoppingCart = react.createClass({
     })
     return (
       <div>
-        <AddItemForm />
         <table>
           <tr>
             <td>Quantity:</td>
@@ -298,7 +299,7 @@ var ShoppingCart = react.createClass({
 ```
 
 Whenever any of the reactor values being observed from `getDataBindings()` changes then `setState()` will be called with the updated value and the component will be rerendered.
-Thus your React components always stay in sync with your app state!
+Thus your React components always stays in sync with your app state!
 
 
 ### Hooking up a UI: VueJS
