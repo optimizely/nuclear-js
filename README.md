@@ -231,9 +231,81 @@ reactor.observe(isOverBudget, isOver => {
 
 **Using this pattern of composing Getters together the majority of your system becomes purely functional transforms.**
 
-## Coming soon
+### Hooking up a UI: React
 
-- Hooking the shopping cart example up to VueJS or React or AngularJS
+Syncing reactor stores and React component state is effortless using the [NuclearVueMixin](https://github.com/jordangarcia/nuclear-vue-mixin).
+
+```js
+var React = require('react')
+var NuclearReactMixin = require('nuclear-react-mixin')
+
+var ShoppingCart = react.createClass({
+  mixins: [NuclearReactMixin(reactor)],
+
+  // simply implement this function to keep a components state
+  // in sync with a Nuclear Reactor
+  getDataBindings() {
+    // can reference a reactor KeyPath
+    items: 'items',
+    taxPercent: 'taxPercent',
+    // or reference a Getter
+    subtotal: getSubtotal,
+    tax: getTax,
+    total: getTotal,
+    // or inline a getter
+    expensiveItems: Getter('items', items => {
+      return items.filter(item => item > 100)
+    })
+  },
+
+  render() {
+    var itemRows = this.state.items.map(function(item) {
+      return (
+        <tr>
+          <td>{item.get('quantity')}</td>
+          <td>{item.get('name')}</td>
+          <td>{item.get('price')}</td>
+        </tr>
+      )
+    })
+    return (
+      <div>
+        <AddItemForm />
+        <table>
+          <tr>
+            <td>Quantity:</td>
+            <td>Name:</td>
+            <td>Price:</td>
+          </tr>
+          {itemRows}
+          <tr>
+            <td colspan=2>subtotal:</td>
+            <td>{this.state.subtotal}</td>
+          </tr>
+          <tr>
+            <td colspan=2>tax @ {this.state.taxPercent}%</td>
+            <td>{this.state.taxPercent}</td>
+          </tr>
+          <tr>
+            <td colspan=2>total:</td>
+            <td>{this.state.total}</td>
+          </tr>
+        </table>
+      </div>
+    )
+  }
+})
+```
+
+Whenever any of the reactor values being observed from `getDataBindings()` changes then `setState()` will be called with the updated value and the component will be rerendered.
+Thus your React components always stay in sync with your app state!
+
+
+### Hooking up a UI: VueJS
+
+Coming soon...
+
+## Coming soon
 
 - Handle asnychronous data in a NuclearJS system
 
