@@ -255,7 +255,7 @@ unidirectional data flow and a single synchronous dispatcher.
 
 - Because Getters are used whenever data from two or more stores needs to be combined there is no need for `dispatcher.waitsFor`
 
-- When dispatching Reactor's wait for every Store to receive the action before notifying subscribers, this ensures one re-render per dispatch
+- Reactor.dispatch waits for every Store to receive the action before notifying subscribers, this ensures no renders can happen before all stores have handled the action.
 
 - Immutability allows more granular change observation.  You no longer have to listen for change events at the store level.  Comparing the any part of two
 different immutable maps is simply a `===` operation (constant time) and the map lookup itself is `O(log32)`.
@@ -268,13 +268,21 @@ Dispatches a message to all registered Store. This process is done syncronously,
 
 ex: `reactor.dispatch('addUser', { name: 'jordan' })`
 
-#### `Reactor#get(keyPath)`
+#### `Reactor#get(...keyPath, [transformFn])`
 
 Returns the immutable value for some KeyPath or Getter in the reactor state. Returns `undefined` if a keyPath doesnt have a value.
 
-ex: `reactor.get('users.active')` or `reactor.get(['users', 'active'])`
+```js
+reactor.get('users.active')
+reactor.get(['users', 'active'])
+reactor.get('users.active', 'usernameFilter', function(activeUsers, filter) {
+  return activeUsers.filter(function(user) {
+    return user.get('username').indexOf(filter) !== -1
+  }
+})
+```
 
-#### `Reactor#getJS(keyPathOrGetter, handlerFn)`
+#### `Reactor#getJS(...keyPath, [transformFn])`
 
 Same as `get` but coerces the value to a plain JS before returning
 
@@ -293,12 +301,12 @@ Same as `get` but coerces the value to a plain JS before returning
 
 - **Decoupled** - A NuclearJS system should be able to function without any sort of UI or frontend.  It should be backend/frontend agnostic and be able to run on a NodeJS server.
 
-## Examples
-
-- [TodoMVC](https://github.com/jordangarcia/todomvc-nuclear-react)
-- [Tetris](https://github.com/jordangarcia/tetris)
-
 ## Tools / Addons
 
 - [NuclearVueMixin](https://github.com/jordangarcia/nuclear-vue-mixin) Keeps Vue ViewModels data in sync with a reactor.
 - [NuclearReactMixin](https://github.com/jordangarcia/nuclear-react-mixin) Keeps React components always in sync with a Nuclear.Reactor.  Uses immutability to call set state only when the data behind a component actually changes (inspired by Om).
+
+## Examples
+
+- [TodoMVC](https://github.com/jordangarcia/todomvc-nuclear-react) **currently out of date**
+- [Tetris](https://github.com/jordangarcia/tetris) **currently out of date**
