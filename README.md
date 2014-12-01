@@ -304,7 +304,59 @@ Thus your React components always stays in sync with your app state!
 
 ### Hooking up a UI: VueJS
 
-Coming soon...
+Syncing reactor stores and to VueJS components is simple using the [NuclearVueMixin](https://github.com/jordangarcia/nuclear-vue-mixin).
+
+```js
+var Vue = require('vue')
+var NuclearVueMixin = require('nuclear-vue-mixin')
+
+var ShoppingCart = new Vue({
+  mixins: [NuclearVueMixin(reactor)],
+
+  getDataBindings: function() {
+    return {
+      // can reference a reactor KeyPath
+      items: 'items',
+      taxPercent: 'taxPercent',
+      // or reference a Getter
+      subtotal: getSubtotal,
+      tax: getTax,
+      total: getTotal,
+    }
+  },
+
+  template: require('text!./shopping-cart.html'),
+})
+```
+
+In `shopping-cart.html`
+
+```html
+<table>
+  <tr>
+    <td>Quantity:</td>
+    <td>Name:</td>
+    <td>Price:</td>
+  </tr>
+  <tr v-repeat="item: items">
+    <td>{{ item.quantity }}</td>
+    <td>{{ item.name }}</td>
+    <td>{{ item.price | currency }}</td>
+  </tr>
+  <tr>
+    <td colspan=2>subtotal:</td>
+    <td>{{ subtotal }}</td>
+  </tr>
+  <tr>
+    <td colspan=2>tax @ {{ taxPercent }}%</td>
+    <td>{{ tax }}</td>
+  </tr>
+  <tr>
+    <td colspan=2>total:</td>
+    <td>{{ total }}</td>
+  </tr>
+</table>
+```
 
 ## Coming soon
 
