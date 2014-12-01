@@ -304,7 +304,7 @@ Thus your React components always stays in sync with your app state!
 
 ### Hooking up a UI: VueJS
 
-Syncing reactor stores and to VueJS components is simple using the [NuclearVueMixin](https://github.com/jordangarcia/nuclear-vue-mixin).
+Syncing reactor stores to VueJS components is simple using the [NuclearVueMixin](https://github.com/jordangarcia/nuclear-vue-mixin).
 
 ```js
 var Vue = require('vue')
