@@ -203,7 +203,7 @@ class Reactor {
       options.handler = handler
     }
 
-    this.__changeObsever.onChange(options)
+    return this.__changeObsever.onChange(options)
   }
 
   /**

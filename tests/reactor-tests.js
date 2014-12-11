@@ -227,6 +227,19 @@ describe('Reactor', () => {
 
         expect(mockFn.calls.count()).toEqual(0)
       })
+
+      it('should return an unwatch function', () => {
+        var mockFn = jasmine.createSpy()
+        checkoutActions.addItem('item', 100)
+
+        var unwatch = reactor.observe(total, mockFn)
+
+        unwatch()
+
+        checkoutActions.setTaxPercent(5)
+
+        expect(mockFn.calls.count()).toEqual(0)
+      })
     })
   }) // Reactor with no initial state
 
