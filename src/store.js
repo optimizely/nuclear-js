@@ -64,7 +64,7 @@ class Store {
     var handler = this.__handlers.get(type)
 
     if (typeof handler === 'function') {
-      var newState = toImmutable(handler.call(this, state, payload, type))
+      var newState = handler.call(this, state, payload, type)
       return this.executeComputeds(state, newState)
     }
 

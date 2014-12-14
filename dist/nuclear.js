@@ -335,7 +335,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      options.handler = handler
 	    }
 
-	    this.__changeObsever.onChange(options)
+	    return this.__changeObsever.onChange(options)
 	  };
 
 	  /**
@@ -497,7 +497,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var handler = this.__handlers.get(type)
 
 	    if (typeof handler === 'function') {
-	      var newState = toImmutable(handler.call(this, state, payload, type))
+	      var newState = handler.call(this, state, payload, type)
 	      return this.executeComputeds(state, newState)
 	    }
 
