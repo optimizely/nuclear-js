@@ -66,28 +66,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 	exports.Store = __webpack_require__(3)
 
-	/**
-	 * @return {GetterRecord}
-	 */
-	exports.Getter = __webpack_require__(4)
-
-	exports.KeyPath = __webpack_require__(5)
-
 	// export the immutable library
-	exports.Immutable = __webpack_require__(12)
+	exports.Immutable = __webpack_require__(10)
 
 	// expose helper functions
 	exports.toJS = helpers.toJS
 	exports.toImmutable = helpers.toImmutable
 	exports.isImmutable = helpers.isImmutable
-	exports.evaluate = __webpack_require__(6)
 
 
 /***/ },
 /* 1 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Immutable = __webpack_require__(12)
+	var Immutable = __webpack_require__(10)
 
 	/**
 	 * A collection of helpers for the ImmutableJS library
@@ -130,20 +122,20 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 2 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Immutable = __webpack_require__(12)
+	var Immutable = __webpack_require__(10)
 	var Map = Immutable.Map
-	var logging = __webpack_require__(7)
-	var ChangeObserver = __webpack_require__(8)
-	var ChangeEmitter = __webpack_require__(9)
-	var Getter = __webpack_require__(4)
-	var KeyPath = __webpack_require__(5)
-	var evaluate = __webpack_require__(6)
+	var logging = __webpack_require__(4)
+	var ChangeObserver = __webpack_require__(5)
+	var Getter = __webpack_require__(6)
+	var KeyPath = __webpack_require__(7)
+	var Evaluator = __webpack_require__(8)
 
 	// helper fns
 	var toJS = __webpack_require__(1).toJS
-	var coerceArray = __webpack_require__(10).coerceArray
-	var each = __webpack_require__(10).each
-	var partial = __webpack_require__(10).partial
+	var toImmutable = __webpack_require__(1).toImmutable
+	var coerceArray = __webpack_require__(9).coerceArray
+	var each = __webpack_require__(9).each
+	var partial = __webpack_require__(9).partial
 
 
 	/**
@@ -165,153 +157,47 @@ return /******/ (function(modules) { // webpackBootstrap
 	    /**
 	     * The state for the whole cluster
 	     */
-	    this.state = Immutable.Map({})
-	    /**
-	     * Event bus that emits a change event anytime the state
-	     * of the system changes
-	     */
-	    this.__changeEmitter = new ChangeEmitter()
+	    this.__state = Immutable.Map({})
 	    /**
 	     * Holds a map of id => reactor instance
 	     */
 	    this.__stores = Immutable.Map({})
 
-	    this.__initialize(config)
+	    this.__evaluator = new Evaluator()
 	    /**
 	     * Change observer interface to observe certain keypaths
 	     * Created after __initialize so it starts with initialState
 	     */
-	    this.__changeObsever = new ChangeObserver(this.state, this.__changeEmitter)
+	    this.__changeObsever = new ChangeObserver(this.__state, this.__evaluator)
 	  }
 
 	  /**
-	   * Gets the Immutable state at the keyPath
-	   * @param {array|string} ...keyPaths
-	   * @param {function?} getFn
+	   * Gets the Immutable state at the keyPath or evaluates a getter
+	   * @param {KeyPath|Getter} keyPathOrGetter
 	   * @return {*}
 	   */
-	  Reactor.prototype.get=function() {"use strict";
-	    return evaluate(this.state, Getter.fromArgs(arguments))
+	  Reactor.prototype.evaluate=function(keyPathOrGetter) {"use strict";
+	    if (arguments.length === 0) {
+	      keyPathOrGetter = []
+	    }
+	    return this.__evaluator.evaluate(this.__state, keyPathOrGetter)
 	  };
 
 	  /**
 	   * Gets the coerced state (to JS object) of the reactor by keyPath
-	   * @param {array|string} ...keyPaths
-	   * @param {function?} getFn
+	   * @param {KeyPath|Getter} keyPathOrGetter
 	   * @return {*}
 	   */
-	  Reactor.prototype.getJS=function() {"use strict";
-	    return toJS(this.get.apply(this, arguments))
-	  };
-
-	  /**
-	   * Returns a faux-reactor cursor to a specific keyPath
-	   * This prefixes all `get` and `getJS` operations with a keyPath
-	   *
-	   * dispatch still dispatches to the entire reactor
-	   */
-	  Reactor.prototype.cursor=function(keyPath) {"use strict";
-	    var reactor = this
-	    var prefix = KeyPath(keyPath)
-
-	    var prefixKeyPath = function(path) {
-	      path = path || []
-	      return prefix.concat(KeyPath(path))
-	    }
-
-	    return {
-	      get: function() {
-	        return evaluate(reactor.get(prefix), Getter.fromArgs(arguments))
-	      },
-
-	      getJS: reactor.getJS,
-
-	      dispatch: reactor.dispatch.bind(reactor),
-
-	      observe: function(getter, handler) {
-	        var options = {
-	          prefix: prefix
-	        }
-	        if (arguments.length === 1) {
-	          options.handler = getter
-	          options.getter = Getter()
-	        } else {
-	          if (KeyPath.isKeyPath(getter)) {
-	            getter = Getter(getter)
-	          }
-	          options.getter = getter
-	          options.handler = handler
-	        }
-
-	        return reactor.__changeObsever.onChange(options)
-	      },
-
-	      cursor: function(keyPath) {
-	        return reactor.cursor.call(reactor, prefixKeyPath(keyPath))
-	      }
-	    }
-	  };
-
-	  /**
-	   * Dispatches a single message
-	   * @param {string} messageType
-	   * @param {object|undefined} payload
-	   */
-	  Reactor.prototype.dispatch=function(messageType, payload) {"use strict";
-	    var prevState = this.state
-
-	    this.state = this.state.withMutations(function(state)  {
-	      logging.dispatchStart(messageType, payload)
-
-	      // let each core handle the message
-	      this.__stores.forEach(function(store, id)  {
-	        var currState = state.get(id)
-	        var newState = store.handle(currState, messageType, payload)
-	        state.set(id, newState)
-
-	        logging.coreReact(id, currState, newState)
-	      })
-
-	      logging.dispatchEnd(state)
-	    }.bind(this))
-
-	    // write the new state to the output stream if changed
-	    if (this.state !== prevState) {
-	      this.__changeEmitter.emitChange(this.state, messageType, payload)
-	    }
-	  };
-
-	  /**
-	   * Attachs a store to a non-running or running nuclear reactor.  Will emit change
-	   * @param {string} id
-	   * @param {Store} store
-	   * @param {boolean} silent whether to emit change
-	   */
-	  Reactor.prototype.attachStore=function(id, store, silent) {"use strict";
-	    if (this.__stores.get(id)) {
-	      throw new Error("Store already defined for id=" + id)
-	    }
-
-	    this.__stores = this.__stores.set(id, store)
-
-	    this.state = this.state.set(id, store.getInitialStateWithComputeds())
-
-	    if (!silent) {
-	      this.__changeEmitter.emitChange(this.state, 'ATTACH_STORE', {
-	        id: id,
-	        store: store
-	      })
-	    }
+	  Reactor.prototype.evaluateToJS=function(keyPathOrGetter) {"use strict";
+	    return toJS(this.evaluate.apply(this, arguments))
 	  };
 
 	  /**
 	   * Adds a change observer whenever a certain part of the reactor state changes
 	   *
 	   * 1. observe(handlerFn) - 1 argument, called anytime reactor.state changes
-	   * 2. observe('foo.bar', handlerFn) - 2 arguments, called anytime foo.bar changes
-	   *    with the value of reactor.get('foo.bar')
-	   * 3. observe(['foo', 'bar'], handlerFn) same as above
-	   * 4. observe(getter, handlerFn) called whenever any getter dependencies change with
+	   * 2. observe(keyPath, handlerFn) same as above
+	   * 3. observe(getter, handlerFn) called whenever any getter dependencies change with
 	   *    the value of the getter
 	   *
 	   * Adds a change handler whenever certain deps change
@@ -325,11 +211,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	  Reactor.prototype.observe=function(getter, handler) {"use strict";
 	    var options = {}
 	    if (arguments.length === 1) {
+	      options.getter = Getter.fromKeyPath([])
 	      options.handler = getter
-	      options.getter = Getter()
 	    } else {
 	      if (KeyPath.isKeyPath(getter)) {
-	        getter = Getter(getter)
+	        getter = Getter.fromKeyPath(getter)
 	      }
 	      options.getter = getter
 	      options.handler = handler
@@ -338,89 +224,97 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return this.__changeObsever.onChange(options)
 	  };
 
-	  /**
-	   * Will set the state of a specific store or the entire reactor if storeId isn't present
-	   * @param {string?} storeId
-	   * @param {Immutable.Map} state
-	   */
-	  Reactor.prototype.loadState=function(storeId, state) {"use strict";
-	    if (arguments.length === 1) {
-	      // handle the case of loading the entire app state
-	      state = storeId
-	      if (!Immutable.Map.isMap(state)) {
-	        throw new Error("Must pass Immutable.Map to loadState")
-	      }
 
-	      // update each store with the computed state derived from the store state
-	      // that is being loaded
-	      this.state = state.withMutations(function(state)  {
-	        state.forEach(function(storeState, storeId)  {
-	          var store = this.__stores.get(storeId)
-	          if (store) {
-	            state.set(storeId, store.executeComputeds(Map(), storeState))
-	          }
-	        }.bind(this))
-	      }.bind(this))
-	    } else {
-	      // loading a single stores state, execute computeds to ensure syncing
-	      var store = this.__stores.get(storeId)
-	      var newState = store.executeComputeds(Map(), state)
-	      this.state = this.state.set(storeId, newState)
+	  /**
+	   * Dispatches a single message
+	   * @param {string} actionType
+	   * @param {object|undefined} payload
+	   */
+	  Reactor.prototype.dispatch=function(actionType, payload) {"use strict";
+	    var prevState = this.__state
+
+	    this.__state = this.__state.withMutations(function(state)  {
+	      logging.dispatchStart(actionType, payload)
+
+	      // let each core handle the message
+	      this.__stores.forEach(function(store, id)  {
+	        var currState = state.get(id)
+	        var newState = store.handle(currState, actionType, payload)
+	        state.set(id, newState)
+
+	        logging.coreReact(id, currState, newState)
+	      })
+
+	      logging.dispatchEnd(state)
+	    }.bind(this))
+
+	    // write the new state to the output stream if changed
+	    if (this.__state !== prevState) {
+	      this.__notifyObservers(this.__state, actionType, payload)
+	    }
+	  };
+
+	  /**
+	   * Attachs a store to a non-running or running nuclear reactor.  Will emit change
+	   * @param {string} id
+	   * @param {Store} store
+	   * @param {boolean} silent should not notify observers of state change
+	   */
+	  Reactor.prototype.attachStore=function(id, store, silent) {"use strict";
+	    if (this.__stores.get(id)) {
+	      console.warn("Store already defiend for id=" + id)
 	    }
 
-	    this.__changeEmitter.emitChange(this.state, 'LOAD_STATE', {
-	      args: Array.prototype.slice.call(arguments)
-	    })
+	    this.__stores = this.__stores.set(id, store)
+	    this.__state = this.__state.set(id, toImmutable(store.getInitialState()))
+
+	    if (!silent) {
+	      this.__notifyObservers(this.__state, 'ATTACH_STORE', {
+	        id: id,
+	        store: store
+	      })
+	    }
+	  };
+
+	  /**
+	   * @param {Array.<string, Store>} stores
+	   * @param {boolean} silent should not notify observers of state change
+	   */
+	  Reactor.prototype.attachStores=function(stores, silent) {"use strict";
+	    each(stores, function(store, id)  {
+	      this.attachStore(id, store, true)
+	    }.bind(this))
+	    if (!silent) {
+	      this.__notifyObservers(this.__state, 'ATTACH_STORES', {
+	        stores: stores
+	      })
+	    }
 	  };
 
 	  /**
 	   * Resets the state of a reactor and returns back to initial state
 	   */
 	  Reactor.prototype.reset=function() {"use strict";
-	    this.state = Immutable.Map()
-
-	    this.state = this.state.withMutations(function(state)  {
+	    this.__state = Immutable.Map().withMutations(function(state)  {
 	      this.__stores.forEach(function(store, id)  {
-	        state.set(id, store.getInitialStateWithComputeds())
+	        state.set(id, toImmutable(store.getInitialState()))
 	      })
 	    }.bind(this))
 
-	    this.resetChangeListeners()
+	    this.__evaluator.reset()
+	    this.__changeObsever.reset(this.__state)
 	  };
 
 	  /**
-	   * Takes an object of action functions that have `reactor` as the first argument
-	   * and returns an object with all the functions partialed
-	   * @param {object}
-	   * @return {object}
+	   * Notifies subscribed observers of state change
+	   * @param {Immutable.Map} state
+	   * @param {string} actionType
+	   * @param {object} payload
 	   */
-	  Reactor.prototype.bindActions=function(actionGroup) {"use strict";
-	    var group = {}
-	    each(actionGroup, function(fn, name)  {
-	      group[name] = partial(fn, this)
-	    }.bind(this))
-	    return group
-	  };
-
-	  /**
-	   * Resets all change listeners and cleans up any straggling event handlers
-	   */
-	  Reactor.prototype.resetChangeListeners=function() {"use strict";
-	    this.__changeEmitter.removeAllListeners()
-	    this.__changeObsever = new ChangeObserver(this.state, this.__changeEmitter)
-	  };
-
-	  /**
-	   * Initializes all stores
-	   * This method can only be called once per reactor
-	   * @param {object} config
-	   */
-	  Reactor.prototype.__initialize=function(config) {"use strict";
-	    if (config.stores) {
-	      each(config.stores, function(store, id)  {
-	        this.attachStore(id, store, false)
-	      }.bind(this))
-	    }
+	  Reactor.prototype.__notifyObservers=function(state, actionType, payload) {"use strict";
+	    // after a dispatch discard old values
+	    this.__evaluator.afterDispatch()
+	    this.__changeObsever.notifyObservers(this.__state, actionType, payload)
 	  };
 
 
@@ -431,15 +325,8 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Immutable = __webpack_require__(12)
-	var Map = __webpack_require__(12).Map
-	var Getter = __webpack_require__(4)
-	var evaluate = __webpack_require__(6)
-	var hasChanged = __webpack_require__(11)
-
-	var KeyPath = __webpack_require__(5)
-	var each = __webpack_require__(10).each
-	var toImmutable = __webpack_require__(1).toImmutable
+	var Map = __webpack_require__(10).Map
+	var extend = __webpack_require__(9).extend
 
 	/**
 	 * Stores define how a certain domain of the application should respond to actions
@@ -453,12 +340,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    this.__handlers = Map({})
-	    this.__computeds = Map({})
 
-	    // extend the config on the object
-	    each(config, function(fn, prop)  {
-	      this[prop] = fn
-	    }.bind(this))
+	    extend(this, config)
 
 	    this.initialize()
 	  }
@@ -482,14 +365,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	  };
 
 	  /**
-	   * Gets the initial state plus executes any registered computeds
-	   */
-	  Store.prototype.getInitialStateWithComputeds=function() {"use strict";
-	    var initialState = toImmutable(this.getInitialState())
-	    return this.executeComputeds(Map(), initialState)
-	  };
-
-	  /**
 	   * Takes a current reactor state, action type and payload
 	   * does the reaction and returns the new state
 	   */
@@ -497,8 +372,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var handler = this.__handlers.get(type)
 
 	    if (typeof handler === 'function') {
-	      var newState = handler.call(this, state, payload, type)
-	      return this.executeComputeds(state, newState)
+	      return handler.call(this, state, payload, type)
 	    }
 
 	    return state
@@ -509,47 +383,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	   */
 	  Store.prototype.on=function(actionType, handler) {"use strict";
 	    this.__handlers = this.__handlers.set(actionType, handler)
-	  };
-
-	  /**
-	   * Registers a local computed to this component.
-	   * These computeds are calculated after every react happens on this State.
-	   *
-	   * These computeds keyPaths are relative to the local state passed to react,
-	   * not the entire app state.
-	   *
-	   * @param {array|string} path to register the computed
-	   * @param {Getter|array} getterArgs
-	   */
-	  Store.prototype.computed=function(path, getterArgs) {"use strict";
-	    var keyPath = KeyPath(path)
-	    if (this.__computeds.get(keyPath)) {
-	      throw new Error("Already a computed at " + keyPath)
-	    }
-
-	    var computed = Getter.fromArgs(getterArgs)
-	    this.__computeds = this.__computeds.set(keyPath, computed)
-	  };
-
-	  /**
-	   * Executes the registered computeds on a passed in state object
-	   * @param {Immutable.Map|*} prevState
-	   * @param {Immutable.Map|*} state
-	   * @return {Immutable.Map|*}
-	   */
-	  Store.prototype.executeComputeds=function(prevState, state) {"use strict";
-	    if (this.__computeds.size === 0) {
-	      return state
-	    }
-
-	    return state.withMutations(function(state)  {
-	      this.__computeds.forEach(function(computed, keyPath)  {
-	        if (hasChanged(prevState, state, computed.flatDeps)) {
-	          state.setIn(keyPath, evaluate(state, computed))
-	        }
-	      })
-	      return state
-	    }.bind(this))
 	  };
 
 
@@ -564,226 +397,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 4 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var KeyPath = __webpack_require__(5)
-	var Immutable = __webpack_require__(12)
-	var Record = Immutable.Record
-	var isFunction = __webpack_require__(10).isFunction
-	var isArray = __webpack_require__(10).isArray
-
-	var identity = function(x)  {return x;}
-
-	var Getter = Record({
-	  deps: null,
-	  flatDeps: null,
-	  computeFn: null,
-	})
-
-	/**
-	 * Checks if something is a GetterRecord
-	 */
-	function isGetter(toTest) {
-	  return (toTest instanceof Getter)
-	}
-
-	/**
-	 * Checks if something is a getter literal, ex: ['dep1', 'dep2', function(dep1, dep2) {...}]
-	 * @param {*} toTest
-	 * @return {boolean}
-	 */
-	function isGetterLike(toTest) {
-	  return (isArray(toTest) && isFunction(toTest[toTest.length - 1]))
-	}
-
-	/**
-	 * Coerce string deps to be array dep keyPaths
-	 * ex: 'foo1.foo2' => ['foo1', 'foo2']
-	 *
-	 * @param {array<string|array<string>>}
-	 * @return {<array<array<string>>}
-	 */
-	function coerceDeps(deps){
-	  return deps.map(function(dep)  {
-	    if (isGetter(dep)) {
-	      // if the dep is an nested Getter simply return
-	      return dep
-	    }
-	    return KeyPath(dep)
-	  })
-	}
-
-	/**
-	 * Recursive function to flatten deps of a getter
-	 * @param {array<array<string>|Getter>} deps
-	 * @return {array<array<string>>} unique flatten deps
-	 */
-	function flattenDeps(deps) {
-	  var accum = Immutable.Set()
-
-	  var coercedDeps = coerceDeps(deps)
-
-	  accum = accum.withMutations(function(accum)  {
-	    coercedDeps.forEach(function(dep)  {
-	      if (isGetter(dep)) {
-	        accum.union(flattenDeps(dep.deps))
-	      } else {
-	        accum = accum.add(dep)
-	      }
-	    })
-
-	    return accum
-	  })
-
-	  return accum.toJS()
-	}
-
-	/**
-	 * Wrap the Getter in a function that coerces args
-	 *
-	 * Takes the form createGetter('dep1', 'dep2', computeFn)
-	 * or
-	 * Takes the form createGetter('dep1', 'dep2') // identity function is used
-	 *
-	 * @return {GetterRecord}
-	 */
-	function createGetter() {
-	  // createGetter() returns a blank getter
-	  if (arguments.length === 0) {
-	    return createGetter([])
-	  }
-	  var len = arguments.length
-	  var deps
-	  var computeFn
-	  if (isFunction(arguments[len - 1])) {
-	    // computeFn is provided
-	    deps = Array.prototype.slice.call(arguments, 0, len - 1)
-	    computeFn = arguments[len - 1]
-	  } else {
-	    // computeFn isnt provided use identity
-	    deps = Array.prototype.slice.call(arguments, 0)
-	    computeFn = identity
-	  }
-
-	  // compute the flatten deps, and cache since deps are immutable
-	  // once they enter the record
-	  var flatDeps = flattenDeps(deps)
-	  var deps = coerceDeps(deps)
-
-	  return new Getter({
-	    deps: deps,
-	    flatDeps: flatDeps,
-	    computeFn: computeFn
-	  })
-	}
-
-	/**
-	 * Returns a getter from arguments
-	 * @param {array} args or arguments
-	 * @return {Getter}
-	 */
-	function fromArgs(args) {
-	  if (args.length === 1 && isGetter(args[0])) {
-	    // was passed a Getter
-	    return args[0]
-	  }
-	  return createGetter.apply(null, args)
-	}
-
-	module.exports = createGetter
-
-	module.exports.isGetter = isGetter
-
-	module.exports.fromArgs = fromArgs
-
-
-/***/ },
-/* 5 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var isArray = __webpack_require__(10).isArray
-	var isNumber = __webpack_require__(10).isNumber
-	var isString = __webpack_require__(10).isString
-	var isFunction = __webpack_require__(10).isFunction
-	/**
-	 * Coerces a string/array into an array keypath
-	 */
-	module.exports = function(val) {
-	  if (val == null || val === false) {
-	    // null is a valid keypath, returns whole map/seq
-	    return []
-	  }
-	  if (isNumber(val)) {
-	    return [val]
-	  }
-	  if (!isArray(val)) {
-	    return val.split('.')
-	  }
-	  return val
-	}
-
-	/**
-	 * Checks if something is simply a keyPath and not a getter
-	 * @param {*} toTest
-	 * @return {boolean}
-	 */
-	module.exports.isKeyPath = function(toTest) {
-	  return (
-	    toTest == null ||
-	    isNumber(toTest) ||
-	    isString(toTest) ||
-	    (isArray(toTest) && !isFunction(toTest[toTest.length - 1]))
-	  )
-	}
-
-
-/***/ },
-/* 6 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var KeyPath = __webpack_require__(5)
-	var Getter = __webpack_require__(4)
-
-	/**
-	 * General purpose getter function
-	 */
-
-	/**
-	 * Getter forms:
-	 * 'foo.bar'
-	 * ['foor', 'bar']
-	 * ['store1, 'foo', 'bar']
-	 * ['foo', 'bar', function(fooValue, barValue) {...}]
-	 * [['foo.bar'], 'baz', function(foobarValue, bazValue) {...}]
-	 * [['store1', 'foo', 'bar', ['foo.bar'], 'baz', function(Store.foo.bar, foobarValue, bazValue) {...}]
-	 *
-	 * @param {Immutable.Map} state
-	 * @param {string|array} getter
-	 */
-	module.exports = function evaluate(state, getter) {
-	  if (getter == null || getter === false) {
-	    return state
-	  }
-
-	  if (KeyPath.isKeyPath(getter)) {
-	    if (state && state.getIn) {
-	      return state.getIn(KeyPath(getter))
-	    } else {
-	      // account for the cases when state is a primitive value
-	      return state
-	    }
-	  } else if (Getter.isGetter(getter)) {
-	    // its of type Getter
-	    var values = getter.deps.map(evaluate.bind(null, state))
-	    return getter.computeFn.apply(null, values)
-	  } else {
-	    throw new Error("Evaluate must be passed a keyPath or Getter")
-	  }
-	}
-
-
-/***/ },
-/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -815,15 +428,14 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 8 */
+/* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Getter = __webpack_require__(4)
-	var evaluate = __webpack_require__(6)
-	var hasChanged = __webpack_require__(11)
-	var coerceArray = __webpack_require__(10).coerceArray
-	var KeyPath = __webpack_require__(5)
-	var clone = __webpack_require__(10).clone
+	var Immutable = __webpack_require__(10)
+	var Getter = __webpack_require__(6)
+	var hashCode = __webpack_require__(11)
+	var clone = __webpack_require__(9).clone
+	var isEqual = __webpack_require__(12)
 
 	/**
 	 * ChangeObserver is an object that contains a set of subscriptions
@@ -834,54 +446,76 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  /**
 	   * @param {Immutable.Map} initialState
-	   * @param {EventEmitter} changeEmitter
+	   * @param {Evaluator} evaluator
 	   */
-	  function ChangeObserver(initialState, changeEmitter) {"use strict";
-	    this.__changeHandlers = []
+	  function ChangeObserver(initialState, evaluator) {"use strict";
 	    this.__prevState = initialState
-
-	    // add the change listener and store the unlisten function
-	    this.__unlistenFn = changeEmitter.addChangeListener(function(currState)  {
-	      this.__changeHandlers.forEach(function(entry)  {
-	        var prev = (entry.prefix) ? evaluate(this.__prevState, entry.prefix) : this.__prevState
-	        var curr = (entry.prefix) ? evaluate(currState, entry.prefix) : currState
-
-	        if (hasChanged(prev, curr, entry.getter.flatDeps)) {
-	          var newValue = evaluate(curr, entry.getter)
-	          entry.handler.call(null, newValue)
-	        }
-	      }.bind(this))
-	      this.__prevState = currState
-	    }.bind(this))
+	    this.__evaluator = evaluator
+	    this.__prevValues = Immutable.Map({})
+	    this.__observers = []
 	  }
 
 	  /**
-	   * Specify an array of keyPaths as dependencies and
-	   * a changeHandler fn
-	   *
-	   * options.getter
-	   * options.handler
-	   * options.prefix
+	   * @param {Immutable.Map} newState
+	   */
+	  ChangeObserver.prototype.notifyObservers=function(newState) {"use strict";
+	    this.__observers.forEach(function(entry)  {
+	      var getter = entry.getter
+	      var code = hashCode(getter)
+	      var prevState = this.__prevState
+	      var prevValue
+
+	      if (this.__prevValues.has(code)) {
+	        prevValue = this.__prevValues.get(code)
+	      } else {
+	        prevValue = this.__evaluator.evaluate(prevState, getter, true)
+	        this.__prevValues.set(code, prevValue)
+	      }
+
+	      var currValue = this.__evaluator.evaluate(newState, getter, true)
+
+	      if (!isEqual(prevValue, currValue)) {
+	        entry.handler.call(null, currValue)
+	      }
+
+	      this.__prevValues.set(code, currValue)
+	    }.bind(this))
+	    this.__prevState = newState
+	  };
+
+	  /**
+	   * Specify an getter and a change handler fn
+	   * Handler function is called whenever the value of the getter changes
 	   * @param {object} options
+	   * @param {Getter} options.getter
+	   * @param {function} options.handler
 	   * @return {function} unwatch function
 	   */
 	  ChangeObserver.prototype.onChange=function(options) {"use strict";
 	    var entry = clone(options)
-	    this.__changeHandlers.push(entry)
+	    // TODO make observers a map of <Getter> => { handlers }
+	    this.__observers.push(entry)
 	    // return unwatch function
 	    return function()  {
-	      var ind  = this.__changeHandlers.indexOf(entry)
+	      // TODO untrack from change emitter
+	      var ind  = this.__observers.indexOf(entry)
 	      if (ind > -1) {
-	        this.__changeHandlers.splice(ind, 1)
+	        this.__observers.splice(ind, 1)
 	      }
 	    }.bind(this)
 	  };
 
 	  /**
-	   * Clean up
+	   * Resets and clears all observers and reinitializes back to the supplied
+	   * previous state
+	   * @param {Immutable.Map} prevState
+	   *
 	   */
-	  ChangeObserver.prototype.destroy=function() {"use strict";
-	    this.__unlistenFn()
+	  ChangeObserver.prototype.reset=function(prevState, evaluator) {"use strict";
+	    this.__prevState = prevState
+	    this.__prevValues = Immutable.Map({})
+	    this.__evaluator = evaluator
+	    this.__observers = []
 	  };
 
 
@@ -889,52 +523,295 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 9 */
+/* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var EventEmitter = __webpack_require__(13).EventEmitter
+	var Immutable = __webpack_require__(10)
+	var isFunction = __webpack_require__(9).isFunction
+	var isArray = __webpack_require__(9).isArray
+	var isKeyPath = __webpack_require__(7).isKeyPath
 
-	var CHANGE_EVENT = 'change'
+	/**
+	 * Getter helper functions
+	 * A getter is an array with the form:
+	 * [<KeyPath>, ...<KeyPath>, <function>]
+	 */
+	var identity = function(x)  {return x;}
 
-	for(var EventEmitter____Key in EventEmitter){if(EventEmitter.hasOwnProperty(EventEmitter____Key)){ChangeEmitter[EventEmitter____Key]=EventEmitter[EventEmitter____Key];}}var ____SuperProtoOfEventEmitter=EventEmitter===null?null:EventEmitter.prototype;ChangeEmitter.prototype=Object.create(____SuperProtoOfEventEmitter);ChangeEmitter.prototype.constructor=ChangeEmitter;ChangeEmitter.__superConstructor__=EventEmitter;
-	  function ChangeEmitter() {"use strict";
-	    EventEmitter.call(this)
+	/**
+	 * Checks if something is a getter literal, ex: ['dep1', 'dep2', function(dep1, dep2) {...}]
+	 * @param {*} toTest
+	 * @return {boolean}
+	 */
+	function isGetter(toTest) {
+	  return (isArray(toTest) && isFunction(toTest[toTest.length - 1]))
+	}
+
+
+	/**
+	 * Recursive function to flatten deps of a getter
+	 * @param {Getter} getter
+	 * @return {Array.<KeyPath>} unique flatten deps
+	 */
+	function unwrapDeps(getter) {
+	  var accum = Immutable.Set()
+	  var deps = getter.slice(0, getter.length - 1)
+
+	  return accum.withMutations(function(accum)  {
+	    deps.forEach(function(dep)  {
+	      isGetter(dep)
+	        ? accum.union(unwrapDeps(dep))
+	        : accum.add(dep)
+	    })
+	    return accum
+	  })
+	}
+
+	/**
+	 * Returns the compute function from a getter
+	 * @param {Getter} getter
+	 * @return {function}
+	 */
+	function getComputeFn(getter) {
+	  return getter[getter.length - 1]
+	}
+
+	/**
+	 * Returns an array of deps from a getter
+	 * @param {Getter} getter
+	 * @return {function}
+	 */
+	function getDeps(getter) {
+	  return getter.slice(0, getter.length - 1)
+	}
+
+	/**
+	 * @param {KeyPath}
+	 * @return {Getter}
+	 */
+	function fromKeyPath(keyPath) {
+	  if (!isKeyPath(keyPath)) {
+	    throw new Error("Cannot create Getter from KeyPath: " + keyPath)
 	  }
 
-	  ChangeEmitter.prototype.emitChange=function(state, messageType, payload) {"use strict";
-	    this.emit(CHANGE_EVENT, state, messageType, payload)
-	  };
+	  return [keyPath, identity]
+	}
+
+
+	module.exports = {
+	  unwrapDeps: unwrapDeps,
+	  isGetter: isGetter,
+	  getComputeFn: getComputeFn,
+	  getDeps: getDeps,
+	  fromKeyPath: fromKeyPath,
+	}
+
+
+/***/ },
+/* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var isArray = __webpack_require__(9).isArray
+	var isNumber = __webpack_require__(9).isNumber
+	var isString = __webpack_require__(9).isString
+	var isFunction = __webpack_require__(9).isFunction
+
+	/**
+	 * Checks if something is simply a keyPath and not a getter
+	 * @param {*} toTest
+	 * @return {boolean}
+	 */
+	exports.isKeyPath = function(toTest) {
+	  return (
+	    isArray(toTest) &&
+	    !isFunction(toTest[toTest.length - 1])
+	  )
+	}
+
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Immutable = __webpack_require__(10)
+	var helpers = __webpack_require__(1)
+	var isImmutable = helpers.isImmutable
+	var toImmutable = helpers.toImmutable
+	var hashCode = __webpack_require__(11)
+	var unwrapDeps = __webpack_require__(6).unwrapDeps
+	var isEqual = __webpack_require__(12)
+	var getComputeFn = __webpack_require__(6).getComputeFn
+	var getDeps = __webpack_require__(6).getDeps
+	var isKeyPath = __webpack_require__(7).isKeyPath
+	var isGetter = __webpack_require__(6).isGetter
+	var isObject = __webpack_require__(9).isObject
+	var isArray = __webpack_require__(9).isArray
+	var cloneDeep = __webpack_require__(9).cloneDeep
+
+
+	/**
+	 * Dereferences a value, if its a mutable value makes a copy
+	 */
+	function deref(val) {
+	  if (isImmutable(val)) {
+	    // cache hit
+	    return val
+	  } else if (isArray(val) || isObject(val)){
+	    // its a mutable value so clone it deep
+	    return cloneDeep(val)
+	  } else {
+	    // its a plain JS immutable type, eg: string, number
+	    return val
+	  }
+	}
+
+
+	  function Evaluator() {"use strict";
+	    /**
+	     * Mains a list of cached getters
+	     *
+	     * {
+	     *   <hashCode>: {
+	     *     prevArgs: Immutable.List,
+	     *     prevValue: any,
+	     *     currStateHashCode: number,
+	     *     currArgs: any,
+	     *     currValue: Immutable.List,
+	     *   }
+	     * }
+	     *
+	     */
+	    this.__cachedGetters = Immutable.Map({})
+	  }
 
 	  /**
-	   * Adds a change listener to the emitter listener registry
-	   * Returns the unlisten function
+	   * Takes either a KeyPath or Getter and evaluates
+	   *
+	   * KeyPath form:
+	   * ['foo', 'bar'] => state.getIn(['foo', 'bar'])
+	   *
+	   * Getter form:
+	   * [<KeyPath>, <KeyPath>, ..., <function>]
+	   *
+	   * @param {Immutable.Map} state
+	   * @param {string|array} getter
+	   * @param {boolean} track whether the dep should be tracked for caching / performance
 	   */
-	  ChangeEmitter.prototype.addChangeListener=function(fn) {"use strict";
-	    var emitter = this
-	    emitter.on(CHANGE_EVENT, fn)
-	    return function unwatch() {
-	      emitter.removeChangeListener(fn)
+	  Evaluator.prototype.evaluate=function(state, keyPathOrGetter, track) {"use strict";
+	    if (isKeyPath(keyPathOrGetter)) {
+	      // if its a keyPath simply return
+	      if (state && state.getIn) {
+	        return state.getIn(keyPathOrGetter)
+	      } else {
+	        // account for the cases when state is a primitive value
+	        return state
+	      }
+	    } else if (isGetter(keyPathOrGetter)) {
+	      var code = hashCode(keyPathOrGetter)
+
+	      // if the value is cached for this dispatch cycle, return the cached value
+	      if (this.__isCached(state, keyPathOrGetter)) {
+	        // Cache hit
+	        return deref(this.__cachedGetters.getIn([code, 'currValue']))
+
+	      } else if (this.__cachedGetters.hasIn([code, 'prevValue'])) {
+	        var prevValue = this.__cachedGetters.getIn([code, 'prevValue'])
+	        var prevArgs = this.__cachedGetters.getIn([code, 'prevArgs'])
+	        // getter deps could still be unchanged since we only looked at the unwrapped (keypath, bottom level) deps
+	        var currArgs = toImmutable(getDeps(getter).every(function(getter)  {
+	          return this.evaluate(state, getter, track)
+	        }.bind(this)))
+
+	        if (Immutable.is(prevArgs, currArgs)) {
+	          // the arguments to this getter are current identical
+	          if (track) {
+	            this.__cacheValue(state, keyPathOrGetter, prevArgs, prevValue)
+	          }
+	          return deref(prevValue)
+	        }
+	      }
+	      // no cache hit evaluate
+	      var deps = getDeps(keyPathOrGetter)
+	      var computeFn = getComputeFn(keyPathOrGetter)
+	      var args = deps.map(function(dep)  {
+	        return this.evaluate(state, dep, track)
+	      }.bind(this))
+	      var evaluatedValue = computeFn.apply(null, args)
+
+	      if (track) {
+	        this.__cacheValue(state, keyPathOrGetter, args, evaluatedValue)
+	      }
+
+	      return evaluatedValue
+	    } else {
+	      throw new Error("evaluate must be passed a keyPath or Getter")
 	    }
 	  };
 
 	  /**
-	   * Removes a change listener by fn
+	   * Caches the value of a getter given state, getter, args, value
+	   * @param {Immutable.Map} state
+	   * @param {Getter} getter
+	   * @param {Array} args
+	   * @param {any} value
 	   */
-	  ChangeEmitter.prototype.removeChangeListener=function(fn) {"use strict";
-	    this.removeListener(CHANGE_EVENT, fn)
+	  Evaluator.prototype.__cacheValue=function(state, getter, args, value) {"use strict";
+	    var code = hashCode(getter)
+	    this.__cachedGetters = this.__cachedGetters.set(code, Immutable.Map({
+	      currValue: value,
+	      currArgs: toImmutable(args),
+	      currStateHashCode: state.hashCode(),
+	    }))
+	  };
+
+	  /**
+	   * Returns boolean whether the supplied getter is cached for a given state
+	   * @param {Immutable.Map} state
+	   * @param {Getter} getter
+	   * @return {boolean}
+	   */
+	  Evaluator.prototype.__isCached=function(state, getter) {"use strict";
+	    var code = hashCode(getter)
+	    return (
+	      this.__cachedGetters.hasIn([code, 'currValue']) &&
+	      this.__cachedGetters.getIn([code, 'currStateHashCode']) === state.hashCode()
+	    )
+	  };
+
+	  Evaluator.prototype.afterDispatch=function() {"use strict";
+	    this.__cachedGetters = this.__cachedGetters.map(function(entry)  {
+	      return Immutable.Map({
+	        prevValue: entry.get('currValue'),
+	        prevArgs: entry.get('currArgs'),
+	      })
+	    })
+	  };
+
+	  /**
+	   * Removes all caching about a getter
+	   * @param {Getter}
+	   */
+	  Evaluator.prototype.untrack=function(getter) {"use strict";
+	    // TODO
+	  };
+
+	  Evaluator.prototype.reset=function() {"use strict";
+	    this.__cachedGetters = Immutable.Map({})
 	  };
 
 
-	module.exports = ChangeEmitter
+	module.exports = Evaluator
 
 
 /***/ },
-/* 10 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(14);
+	var _ = __webpack_require__(13);
 
 	exports.clone = _.clone
+
+	exports.cloneDeep = _.cloneDeep
 
 	exports.extend = _.extend
 
@@ -943,6 +820,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.partial = _.partial
 
 	exports.isArray = _.isArray
+
+	exports.isObject = _.isObject
 
 	exports.isFunction = _.isFunction
 
@@ -964,34 +843,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 11 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var Iterable = __webpack_require__(12).Iterable
-
-	/**
-	 * Takes a prevState and currState and returns true if any
-	 * of the values at those paths changed
-	 * @param {Immutable.Map} prevState
-	 * @param {Immutable.Map} currState
-	 * @param {Array<Array<String>>} keyPaths
-	 *
-	 * @return {boolean}
-	 */
-	module.exports = function(prevState, currState, keyPaths) {
-	  if (!Iterable.isIterable(prevState) || !Iterable.isIterable(currState)) {
-	    // prev or current state is some primitive
-	    return prevState !== currState
-	  }
-
-	  return keyPaths.some(function(keyPath) {
-	    return prevState.getIn(keyPath) !== currState.getIn(keyPath)
-	  })
-	}
-
-
-/***/ },
-/* 12 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -1037,17 +889,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	$traceurRuntime.superCall = superCall;
 	$traceurRuntime.defaultSuperCall = defaultSuperCall;
 	"use strict";
-	function is(first, second) {
-	  if (first === second) {
-	    return first !== 0 || second !== 0 || 1 / first === 1 / second;
+	function is(valueA, valueB) {
+	  if (valueA === valueB || (valueA !== valueA && valueB !== valueB)) {
+	    return true;
 	  }
-	  if (first !== first) {
-	    return second !== second;
+	  if (!valueA || !valueB) {
+	    return false;
 	  }
-	  if (first && typeof first.equals === 'function') {
-	    return first.equals(second);
+	  if (typeof valueA.valueOf === 'function' && typeof valueB.valueOf === 'function') {
+	    valueA = valueA.valueOf();
+	    valueB = valueB.valueOf();
 	  }
-	  return false;
+	  return typeof valueA.equals === 'function' && typeof valueB.equals === 'function' ? valueA.equals(valueB) : valueA === valueB || (valueA !== valueA && valueB !== valueB);
 	}
 	function invariant(condition, error) {
 	  if (!condition)
@@ -1087,7 +940,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return iter.size;
 	}
 	function wrapIndex(iter, index) {
-	  return index >= 0 ? index : ensureSize(iter) + index;
+	  return index >= 0 ? (+index) : ensureSize(iter) + (+index);
 	}
 	function returnTrue() {
 	  return true;
@@ -1104,26 +957,43 @@ return /******/ (function(modules) { // webpackBootstrap
 	function resolveIndex(index, size, defaultIndex) {
 	  return index === undefined ? defaultIndex : index < 0 ? Math.max(0, size + index) : size === undefined ? index : Math.min(size, index);
 	}
+	var imul = typeof Math.imul === 'function' && Math.imul(0xffffffff, 2) === -2 ? Math.imul : function imul(a, b) {
+	  a = a | 0;
+	  b = b | 0;
+	  var c = a & 0xffff;
+	  var d = b & 0xffff;
+	  return (c * d) + ((((a >>> 16) * d + c * (b >>> 16)) << 16) >>> 0) | 0;
+	};
+	function smi(i32) {
+	  return ((i32 >>> 1) & 0x40000000) | (i32 & 0xBFFFFFFF);
+	}
 	function hash(o) {
-	  if (!o) {
+	  if (o === false || o === null || o === undefined) {
 	    return 0;
+	  }
+	  if (typeof o.valueOf === 'function') {
+	    o = o.valueOf();
+	    if (o === false || o === null || o === undefined) {
+	      return 0;
+	    }
 	  }
 	  if (o === true) {
 	    return 1;
 	  }
 	  var type = typeof o;
 	  if (type === 'number') {
-	    if ((o | 0) === o) {
-	      return o & HASH_MAX_VAL;
+	    var h = o | 0;
+	    while (o > 0xFFFFFFFF) {
+	      o /= 0xFFFFFFFF;
+	      h ^= o;
 	    }
-	    o = '' + o;
-	    type = 'string';
+	    return smi(h);
 	  }
 	  if (type === 'string') {
 	    return o.length > STRING_HASH_CACHE_MIN_STRLEN ? cachedHashString(o) : hashString(o);
 	  }
-	  if (o.hashCode) {
-	    return hash(typeof o.hashCode === 'function' ? o.hashCode() : o.hashCode);
+	  if (typeof o.hashCode === 'function') {
+	    return o.hashCode();
 	  }
 	  return hashJSObj(o);
 	}
@@ -1143,9 +1013,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	function hashString(string) {
 	  var hash = 0;
 	  for (var ii = 0; ii < string.length; ii++) {
-	    hash = (31 * hash + string.charCodeAt(ii)) & HASH_MAX_VAL;
+	    hash = 31 * hash + string.charCodeAt(ii) | 0;
 	  }
-	  return hash;
+	  return smi(hash);
 	}
 	function hashJSObj(obj) {
 	  var hash = weakMap && weakMap.get(obj);
@@ -1165,7 +1035,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  if (Object.isExtensible && !Object.isExtensible(obj)) {
 	    throw new Error('Non-extensible objects are not allowed as keys.');
 	  }
-	  hash = ++objHashUID & HASH_MAX_VAL;
+	  hash = ++objHashUID;
+	  if (objHashUID & 0x40000000) {
+	    objHashUID = 0;
+	  }
 	  if (weakMap) {
 	    weakMap.set(obj, hash);
 	  } else if (canDefineProperty) {
@@ -1206,7 +1079,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	}
 	var weakMap = typeof WeakMap === 'function' && new WeakMap();
-	var HASH_MAX_VAL = 0x7FFFFFFF;
 	var objHashUID = 0;
 	var UID_HASH_KEY = '__immutablehash__';
 	if (typeof Symbol === 'function') {
@@ -1293,7 +1165,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return new ToKeyedSequence(this, true);
 	  },
 	  toMap: function() {
-	    assertNotInfinite(this.size);
 	    return Map(this.toKeyedSeq());
 	  },
 	  toObject: function() {
@@ -1305,11 +1176,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return object;
 	  },
 	  toOrderedMap: function() {
-	    assertNotInfinite(this.size);
 	    return OrderedMap(this.toKeyedSeq());
 	  },
+	  toOrderedSet: function() {
+	    return OrderedSet(isKeyed(this) ? this.valueSeq() : this);
+	  },
 	  toSet: function() {
-	    assertNotInfinite(this.size);
 	    return Set(isKeyed(this) ? this.valueSeq() : this);
 	  },
 	  toSetSeq: function() {
@@ -1319,11 +1191,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return isIndexed(this) ? this.toIndexedSeq() : isKeyed(this) ? this.toKeyedSeq() : this.toSetSeq();
 	  },
 	  toStack: function() {
-	    assertNotInfinite(this.size);
 	    return Stack(isKeyed(this) ? this.valueSeq() : this);
 	  },
 	  toList: function() {
-	    assertNotInfinite(this.size);
 	    return List(isKeyed(this) ? this.valueSeq() : this);
 	  },
 	  toString: function() {
@@ -1350,6 +1220,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return this.__iterator(ITERATE_ENTRIES);
 	  },
 	  every: function(predicate, context) {
+	    assertNotInfinite(this.size);
 	    var returnValue = true;
 	    this.__iterate((function(v, k, c) {
 	      if (!predicate.call(context, v, k, c)) {
@@ -1373,9 +1244,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return foundValue;
 	  },
 	  forEach: function(sideEffect, context) {
+	    assertNotInfinite(this.size);
 	    return this.__iterate(context ? sideEffect.bind(context) : sideEffect);
 	  },
 	  join: function(separator) {
+	    assertNotInfinite(this.size);
 	    separator = separator !== undefined ? '' + separator : ',';
 	    var joined = '';
 	    var isFirst = true;
@@ -1392,6 +1265,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return reify(this, mapFactory(this, mapper, context));
 	  },
 	  reduce: function(reducer, initialReduction, context) {
+	    assertNotInfinite(this.size);
 	    var reduction;
 	    var useFirst;
 	    if (arguments.length < 2) {
@@ -1432,7 +1306,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return !this.every(not(predicate), context);
 	  },
 	  sort: function(comparator) {
-	    return this.sortBy(valueMapper, comparator);
+	    return reify(this, sortFactory(this, comparator));
 	  },
 	  values: function() {
 	    return this.__iterator(ITERATE_VALUES);
@@ -1447,31 +1321,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return countByFactory(this, grouper, context);
 	  },
 	  equals: function(other) {
-	    if (this === other) {
-	      return true;
-	    }
-	    if (!other || typeof other.equals !== 'function') {
-	      return false;
-	    }
-	    if (this.size !== undefined && other.size !== undefined) {
-	      if (this.size !== other.size) {
-	        return false;
-	      }
-	      if (this.size === 0 && other.size === 0) {
-	        return true;
-	      }
-	    }
-	    if (this.__hash !== undefined && other.__hash !== undefined && this.__hash !== other.__hash) {
-	      return false;
-	    }
-	    return this.__deepEquals(other);
-	  },
-	  __deepEquals: function(other) {
-	    var entries = this.entries();
-	    return typeof other.every === 'function' && other.every((function(v, k) {
-	      var entry = entries.next().value;
-	      return entry && is(entry[0], k) && is(entry[1], v);
-	    })) && entries.next().done;
+	    return deepEqual(this, other);
 	  },
 	  entrySeq: function() {
 	    var iterable = this;
@@ -1510,8 +1360,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	  getIn: function(searchKeyPath, notSetValue) {
 	    var nested = this;
 	    if (searchKeyPath) {
-	      for (var ii = 0; ii < searchKeyPath.length; ii++) {
-	        nested = nested && nested.get ? nested.get(searchKeyPath[ii], NOT_SET) : NOT_SET;
+	      var iter = getIterator(searchKeyPath) || getIterator($Iterable(searchKeyPath));
+	      var step;
+	      while (!(step = iter.next()).done) {
+	        var key = step.value;
+	        nested = nested && nested.get ? nested.get(key, NOT_SET) : NOT_SET;
 	        if (nested === NOT_SET) {
 	          return notSetValue;
 	        }
@@ -1524,6 +1377,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	  },
 	  has: function(searchKey) {
 	    return this.get(searchKey, NOT_SET) !== NOT_SET;
+	  },
+	  hasIn: function(searchKeyPath) {
+	    return this.getIn(searchKeyPath, NOT_SET) !== NOT_SET;
 	  },
 	  isSubset: function(iter) {
 	    iter = typeof iter.contains === 'function' ? iter : $Iterable(iter);
@@ -1541,26 +1397,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return this.toSeq().reverse().first();
 	  },
 	  max: function(comparator) {
-	    return this.maxBy(valueMapper, comparator);
+	    return maxFactory(this, comparator);
 	  },
 	  maxBy: function(mapper, comparator) {
-	    var $__0 = this;
-	    comparator = comparator || defaultComparator;
-	    var maxEntry = this.entrySeq().reduce((function(max, next) {
-	      return comparator(mapper(next[1], next[0], $__0), mapper(max[1], max[0], $__0)) > 0 ? next : max;
-	    }));
-	    return maxEntry && maxEntry[1];
+	    return maxFactory(this, comparator, mapper);
 	  },
 	  min: function(comparator) {
-	    return this.minBy(valueMapper, comparator);
+	    return maxFactory(this, comparator ? neg(comparator) : defaultNegComparator);
 	  },
 	  minBy: function(mapper, comparator) {
-	    var $__0 = this;
-	    comparator = comparator || defaultComparator;
-	    var minEntry = this.entrySeq().reduce((function(min, next) {
-	      return comparator(mapper(next[1], next[0], $__0), mapper(min[1], min[0], $__0)) < 0 ? next : min;
-	    }));
-	    return minEntry && minEntry[1];
+	    return maxFactory(this, comparator ? neg(comparator) : defaultNegComparator, mapper);
 	  },
 	  rest: function() {
 	    return this.slice(1);
@@ -1578,11 +1424,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return this.skipWhile(not(predicate), context);
 	  },
 	  sortBy: function(mapper, comparator) {
-	    var $__0 = this;
-	    comparator = comparator || defaultComparator;
-	    return reify(this, new ArraySeq(this.entrySeq().entrySeq().toArray().sort((function(a, b) {
-	      return comparator(mapper(a[1][1], a[1][0], $__0), mapper(b[1][1], b[1][0], $__0)) || a[0] - b[0];
-	    }))).fromEntrySeq().valueSeq().fromEntrySeq());
+	    return reify(this, sortFactory(this, comparator, mapper));
 	  },
 	  take: function(amount) {
 	    return reify(this, takeFactory(this, amount));
@@ -1600,14 +1442,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return this.toIndexedSeq();
 	  },
 	  hashCode: function() {
-	    return this.__hash || (this.__hash = this.size === Infinity ? 0 : this.reduce((function(h, v, k) {
-	      return (h + (hash(v) ^ (v === k ? 0 : hash(k)))) & HASH_MAX_VAL;
-	    }), 0));
+	    return this.__hash || (this.__hash = hashIterable(this));
 	  }
 	}, {});
 	var IS_ITERABLE_SENTINEL = '@@__IMMUTABLE_ITERABLE__@@';
 	var IS_KEYED_SENTINEL = '@@__IMMUTABLE_KEYED__@@';
 	var IS_INDEXED_SENTINEL = '@@__IMMUTABLE_INDEXED__@@';
+	var IS_ORDERED_SENTINEL = '@@__IMMUTABLE_ORDERED__@@';
 	var IterablePrototype = Iterable.prototype;
 	IterablePrototype[IS_ITERABLE_SENTINEL] = true;
 	IterablePrototype[ITERATOR_SYMBOL] = IterablePrototype.values;
@@ -1760,13 +1601,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	  skipWhile: function(predicate, context) {
 	    return reify(this, skipWhileFactory(this, predicate, context, false));
 	  },
-	  sortBy: function(mapper, comparator) {
-	    var $__0 = this;
-	    comparator = comparator || defaultComparator;
-	    return reify(this, new ArraySeq(this.entrySeq().toArray().sort((function(a, b) {
-	      return comparator(mapper(a[1], a[0], $__0), mapper(b[1], b[0], $__0)) || a[0] - b[0];
-	    }))).fromEntrySeq().valueSeq());
-	  },
 	  take: function(amount) {
 	    var iter = this;
 	    var takeSeq = takeFactory(iter, amount);
@@ -1780,6 +1614,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	}, {}, Iterable);
 	IndexedIterable.prototype[IS_INDEXED_SENTINEL] = true;
+	IndexedIterable.prototype[IS_ORDERED_SENTINEL] = true;
 	var SetIterable = function SetIterable(value) {
 	  return isIterable(value) && !isAssociative(value) ? value : SetSeq(value);
 	};
@@ -1807,17 +1642,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	function isAssociative(maybeAssociative) {
 	  return isKeyed(maybeAssociative) || isIndexed(maybeAssociative);
 	}
+	function isOrdered(maybeOrdered) {
+	  return !!(maybeOrdered && maybeOrdered[IS_ORDERED_SENTINEL]);
+	}
 	Iterable.isIterable = isIterable;
 	Iterable.isKeyed = isKeyed;
 	Iterable.isIndexed = isIndexed;
 	Iterable.isAssociative = isAssociative;
+	Iterable.isOrdered = isOrdered;
 	Iterable.Keyed = KeyedIterable;
 	Iterable.Indexed = IndexedIterable;
 	Iterable.Set = SetIterable;
 	Iterable.Iterator = Iterator;
-	function valueMapper(v) {
-	  return v;
-	}
 	function keyMapper(v, k) {
 	  return k;
 	}
@@ -1829,11 +1665,85 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return !predicate.apply(this, arguments);
 	  };
 	}
+	function neg(predicate) {
+	  return function() {
+	    return -predicate.apply(this, arguments);
+	  };
+	}
 	function quoteString(value) {
 	  return typeof value === 'string' ? JSON.stringify(value) : value;
 	}
-	function defaultComparator(a, b) {
-	  return a > b ? 1 : a < b ? -1 : 0;
+	function defaultNegComparator(a, b) {
+	  return a < b ? 1 : a > b ? -1 : 0;
+	}
+	function deepEqual(a, b) {
+	  if (a === b) {
+	    return true;
+	  }
+	  if (!isIterable(b) || a.size !== undefined && b.size !== undefined && a.size !== b.size || a.__hash !== undefined && b.__hash !== undefined && a.__hash !== b.__hash || isKeyed(a) !== isKeyed(b) || isIndexed(a) !== isIndexed(b) || isOrdered(a) !== isOrdered(b)) {
+	    return false;
+	  }
+	  if (a.size === 0 && b.size === 0) {
+	    return true;
+	  }
+	  var notAssociative = !isAssociative(a);
+	  if (isOrdered(a)) {
+	    var entries = a.entries();
+	    return b.every((function(v, k) {
+	      var entry = entries.next().value;
+	      return entry && is(entry[1], v) && (notAssociative || is(entry[0], k));
+	    })) && entries.next().done;
+	  }
+	  var flipped = false;
+	  if (a.size === undefined) {
+	    if (b.size === undefined) {
+	      a.cacheResult();
+	    } else {
+	      flipped = true;
+	      var _ = a;
+	      a = b;
+	      b = _;
+	    }
+	  }
+	  var allEqual = true;
+	  var bSize = b.__iterate((function(v, k) {
+	    if (notAssociative ? !a.has(v) : flipped ? !is(v, a.get(k, NOT_SET)) : !is(a.get(k, NOT_SET), v)) {
+	      allEqual = false;
+	      return false;
+	    }
+	  }));
+	  return allEqual && a.size === bSize;
+	}
+	function hashIterable(iterable) {
+	  if (iterable.size === Infinity) {
+	    return 0;
+	  }
+	  var ordered = isOrdered(iterable);
+	  var keyed = isKeyed(iterable);
+	  var h = ordered ? 1 : 0;
+	  var size = iterable.__iterate(keyed ? ordered ? (function(v, k) {
+	    h = 31 * h + hashMerge(hash(v), hash(k)) | 0;
+	  }) : (function(v, k) {
+	    h = h + hashMerge(hash(v), hash(k)) | 0;
+	  }) : ordered ? (function(v) {
+	    h = 31 * h + hash(v) | 0;
+	  }) : (function(v) {
+	    h = h + hash(v) | 0;
+	  }));
+	  return murmurHashOfSize(size, h);
+	}
+	function murmurHashOfSize(size, h) {
+	  h = imul(h, 0xCC9E2D51);
+	  h = imul(h << 15 | h >>> -15, 0x1B873593);
+	  h = imul(h << 13 | h >>> -13, 5);
+	  h = (h + 0xE6546B64 | 0) ^ size;
+	  h = imul(h ^ h >>> 16, 0x85EBCA6B);
+	  h = imul(h ^ h >>> 13, 0xC2B2AE35);
+	  h = smi(h ^ h >>> 16);
+	  return h;
+	}
+	function hashMerge(a, b) {
+	  return a ^ b + 0x9E3779B9 + (a << 6) + (a >> 2) | 0;
 	}
 	function mixin(ctor, methods) {
 	  var proto = ctor.prototype;
@@ -1989,6 +1899,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }));
 	  }
 	}, {}, KeyedSeq);
+	ObjectSeq.prototype[IS_ORDERED_SENTINEL] = true;
 	var IterableSeq = function IterableSeq(iterable) {
 	  this._iterable = iterable;
 	  this.size = iterable.length || iterable.size;
@@ -2108,7 +2019,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return value && typeof value.length === 'number';
 	}
 	function seqIterate(seq, fn, reverse, useKeys) {
-	  assertNotInfinite(seq.size);
 	  var cache = seq._cache;
 	  if (cache) {
 	    var maxIndex = cache.length - 1;
@@ -2188,29 +2098,33 @@ return /******/ (function(modules) { // webpackBootstrap
 	Collection.Indexed = IndexedCollection;
 	Collection.Set = SetCollection;
 	var Map = function Map(value) {
-	  return value === null || value === undefined ? emptyMap() : isMap(value) ? value : emptyMap().merge(KeyedIterable(value));
+	  return value === null || value === undefined ? emptyMap() : isMap(value) ? value : emptyMap().withMutations((function(map) {
+	    var iter = KeyedIterable(value);
+	    assertNotInfinite(iter.size);
+	    iter.forEach((function(v, k) {
+	      return map.set(k, v);
+	    }));
+	  }));
 	};
 	($traceurRuntime.createClass)(Map, {
 	  toString: function() {
 	    return this.__toString('Map {', '}');
 	  },
 	  get: function(k, notSetValue) {
-	    return this._root ? this._root.get(0, hash(k), k, notSetValue) : notSetValue;
+	    return this._root ? this._root.get(0, undefined, k, notSetValue) : notSetValue;
 	  },
 	  set: function(k, v) {
 	    return updateMap(this, k, v);
 	  },
 	  setIn: function(keyPath, v) {
-	    invariant(keyPath.length > 0, 'Requires non-empty key path.');
-	    return this.updateIn(keyPath, (function() {
+	    return this.updateIn(keyPath, NOT_SET, (function() {
 	      return v;
 	    }));
 	  },
 	  remove: function(k) {
 	    return updateMap(this, k, NOT_SET);
 	  },
-	  removeIn: function(keyPath) {
-	    invariant(keyPath.length > 0, 'Requires non-empty key path.');
+	  deleteIn: function(keyPath) {
 	    return this.updateIn(keyPath, (function() {
 	      return NOT_SET;
 	    }));
@@ -2223,7 +2137,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      updater = notSetValue;
 	      notSetValue = undefined;
 	    }
-	    return keyPath.length === 0 ? updater(this) : updateInDeepMap(this, keyPath, notSetValue, updater, 0);
+	    var updatedValue = updateInDeepMap(this, getIterator(keyPath) || getIterator(Iterable(keyPath)), notSetValue, updater);
+	    return updatedValue === NOT_SET ? undefined : updatedValue;
 	  },
 	  clear: function() {
 	    if (this.size === 0) {
@@ -2247,14 +2162,36 @@ return /******/ (function(modules) { // webpackBootstrap
 	      iters[$__3 - 1] = arguments[$__3];
 	    return mergeIntoMapWith(this, merger, iters);
 	  },
+	  mergeIn: function(keyPath) {
+	    for (var iters = [],
+	        $__4 = 1; $__4 < arguments.length; $__4++)
+	      iters[$__4 - 1] = arguments[$__4];
+	    return this.updateIn(keyPath, emptyMap(), (function(m) {
+	      return m.merge.apply(m, iters);
+	    }));
+	  },
 	  mergeDeep: function() {
 	    return mergeIntoMapWith(this, deepMerger(undefined), arguments);
 	  },
 	  mergeDeepWith: function(merger) {
 	    for (var iters = [],
-	        $__4 = 1; $__4 < arguments.length; $__4++)
-	      iters[$__4 - 1] = arguments[$__4];
+	        $__5 = 1; $__5 < arguments.length; $__5++)
+	      iters[$__5 - 1] = arguments[$__5];
 	    return mergeIntoMapWith(this, deepMerger(merger), iters);
+	  },
+	  mergeDeepIn: function(keyPath) {
+	    for (var iters = [],
+	        $__6 = 1; $__6 < arguments.length; $__6++)
+	      iters[$__6 - 1] = arguments[$__6];
+	    return this.updateIn(keyPath, emptyMap(), (function(m) {
+	      return m.mergeDeep.apply(m, iters);
+	    }));
+	  },
+	  sort: function(comparator) {
+	    return OrderedMap(sortFactory(this, comparator));
+	  },
+	  sortBy: function(mapper, comparator) {
+	    return OrderedMap(sortFactory(this, comparator, mapper));
 	  },
 	  withMutations: function(fn) {
 	    var mutable = this.asMutable();
@@ -2302,123 +2239,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	var MapPrototype = Map.prototype;
 	MapPrototype[IS_MAP_SENTINEL] = true;
 	MapPrototype[DELETE] = MapPrototype.remove;
-	var BitmapIndexedNode = function BitmapIndexedNode(ownerID, bitmap, nodes) {
+	MapPrototype.removeIn = MapPrototype.deleteIn;
+	var ArrayMapNode = function ArrayMapNode(ownerID, entries) {
 	  this.ownerID = ownerID;
-	  this.bitmap = bitmap;
-	  this.nodes = nodes;
-	};
-	var $BitmapIndexedNode = BitmapIndexedNode;
-	($traceurRuntime.createClass)(BitmapIndexedNode, {
-	  get: function(shift, hash, key, notSetValue) {
-	    var bit = (1 << ((shift === 0 ? hash : hash >>> shift) & MASK));
-	    var bitmap = this.bitmap;
-	    return (bitmap & bit) === 0 ? notSetValue : this.nodes[popCount(bitmap & (bit - 1))].get(shift + SHIFT, hash, key, notSetValue);
-	  },
-	  update: function(ownerID, shift, hash, key, value, didChangeSize, didAlter) {
-	    var hashFrag = (shift === 0 ? hash : hash >>> shift) & MASK;
-	    var bit = 1 << hashFrag;
-	    var bitmap = this.bitmap;
-	    var exists = (bitmap & bit) !== 0;
-	    if (!exists && value === NOT_SET) {
-	      return this;
-	    }
-	    var idx = popCount(bitmap & (bit - 1));
-	    var nodes = this.nodes;
-	    var node = exists ? nodes[idx] : undefined;
-	    var newNode = updateNode(node, ownerID, shift + SHIFT, hash, key, value, didChangeSize, didAlter);
-	    if (newNode === node) {
-	      return this;
-	    }
-	    if (!exists && newNode && nodes.length >= MAX_BITMAP_SIZE) {
-	      return expandNodes(ownerID, nodes, bitmap, hashFrag, newNode);
-	    }
-	    if (exists && !newNode && nodes.length === 2 && isLeafNode(nodes[idx ^ 1])) {
-	      return nodes[idx ^ 1];
-	    }
-	    if (exists && newNode && nodes.length === 1 && isLeafNode(newNode)) {
-	      return newNode;
-	    }
-	    var isEditable = ownerID && ownerID === this.ownerID;
-	    var newBitmap = exists ? newNode ? bitmap : bitmap ^ bit : bitmap | bit;
-	    var newNodes = exists ? newNode ? setIn(nodes, idx, newNode, isEditable) : spliceOut(nodes, idx, isEditable) : spliceIn(nodes, idx, newNode, isEditable);
-	    if (isEditable) {
-	      this.bitmap = newBitmap;
-	      this.nodes = newNodes;
-	      return this;
-	    }
-	    return new $BitmapIndexedNode(ownerID, newBitmap, newNodes);
-	  },
-	  iterate: function(fn, reverse) {
-	    var nodes = this.nodes;
-	    for (var ii = 0,
-	        maxIndex = nodes.length - 1; ii <= maxIndex; ii++) {
-	      if (nodes[reverse ? maxIndex - ii : ii].iterate(fn, reverse) === false) {
-	        return false;
-	      }
-	    }
-	  }
-	}, {});
-	var ArrayNode = function ArrayNode(ownerID, count, nodes) {
-	  this.ownerID = ownerID;
-	  this.count = count;
-	  this.nodes = nodes;
-	};
-	var $ArrayNode = ArrayNode;
-	($traceurRuntime.createClass)(ArrayNode, {
-	  get: function(shift, hash, key, notSetValue) {
-	    var idx = (shift === 0 ? hash : hash >>> shift) & MASK;
-	    var node = this.nodes[idx];
-	    return node ? node.get(shift + SHIFT, hash, key, notSetValue) : notSetValue;
-	  },
-	  update: function(ownerID, shift, hash, key, value, didChangeSize, didAlter) {
-	    var idx = (shift === 0 ? hash : hash >>> shift) & MASK;
-	    var removed = value === NOT_SET;
-	    var nodes = this.nodes;
-	    var node = nodes[idx];
-	    if (removed && !node) {
-	      return this;
-	    }
-	    var newNode = updateNode(node, ownerID, shift + SHIFT, hash, key, value, didChangeSize, didAlter);
-	    if (newNode === node) {
-	      return this;
-	    }
-	    var newCount = this.count;
-	    if (!node) {
-	      newCount++;
-	    } else if (!newNode) {
-	      newCount--;
-	      if (newCount < MIN_ARRAY_SIZE) {
-	        return packNodes(ownerID, nodes, newCount, idx);
-	      }
-	    }
-	    var isEditable = ownerID && ownerID === this.ownerID;
-	    var newNodes = setIn(nodes, idx, newNode, isEditable);
-	    if (isEditable) {
-	      this.count = newCount;
-	      this.nodes = newNodes;
-	      return this;
-	    }
-	    return new $ArrayNode(ownerID, newCount, newNodes);
-	  },
-	  iterate: function(fn, reverse) {
-	    var nodes = this.nodes;
-	    for (var ii = 0,
-	        maxIndex = nodes.length - 1; ii <= maxIndex; ii++) {
-	      var node = nodes[reverse ? maxIndex - ii : ii];
-	      if (node && node.iterate(fn, reverse) === false) {
-	        return false;
-	      }
-	    }
-	  }
-	}, {});
-	var HashCollisionNode = function HashCollisionNode(ownerID, hash, entries) {
-	  this.ownerID = ownerID;
-	  this.hash = hash;
 	  this.entries = entries;
 	};
-	var $HashCollisionNode = HashCollisionNode;
-	($traceurRuntime.createClass)(HashCollisionNode, {
-	  get: function(shift, hash, key, notSetValue) {
+	var $ArrayMapNode = ArrayMapNode;
+	($traceurRuntime.createClass)(ArrayMapNode, {
+	  get: function(shift, keyHash, key, notSetValue) {
 	    var entries = this.entries;
 	    for (var ii = 0,
 	        len = entries.length; ii < len; ii++) {
@@ -2428,16 +2256,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	    return notSetValue;
 	  },
-	  update: function(ownerID, shift, hash, key, value, didChangeSize, didAlter) {
+	  update: function(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
 	    var removed = value === NOT_SET;
-	    if (hash !== this.hash) {
-	      if (removed) {
-	        return this;
-	      }
-	      SetRef(didAlter);
-	      SetRef(didChangeSize);
-	      return mergeIntoNode(this, ownerID, shift, hash, [key, value]);
-	    }
 	    var entries = this.entries;
 	    var idx = 0;
 	    for (var len = entries.length; idx < len; idx++) {
@@ -2446,13 +2266,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 	    }
 	    var exists = idx < len;
-	    if (removed && !exists) {
+	    if (exists ? entries[idx][1] === value : removed) {
 	      return this;
 	    }
 	    SetRef(didAlter);
 	    (removed || !exists) && SetRef(didChangeSize);
-	    if (removed && len === 2) {
-	      return new ValueNode(ownerID, this.hash, entries[idx ^ 1]);
+	    if (removed && entries.length === 1) {
+	      return;
+	    }
+	    if (!exists && !removed && entries.length >= MAX_ARRAY_MAP_SIZE) {
+	      return createNodes(ownerID, entries, key, value);
 	    }
 	    var isEditable = ownerID && ownerID === this.ownerID;
 	    var newEntries = isEditable ? entries : arrCopy(entries);
@@ -2469,29 +2292,186 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this.entries = newEntries;
 	      return this;
 	    }
-	    return new $HashCollisionNode(ownerID, this.hash, newEntries);
-	  },
-	  iterate: function(fn, reverse) {
-	    var entries = this.entries;
-	    for (var ii = 0,
-	        maxIndex = entries.length - 1; ii <= maxIndex; ii++) {
-	      if (fn(entries[reverse ? maxIndex - ii : ii]) === false) {
-	        return false;
-	      }
-	    }
+	    return new $ArrayMapNode(ownerID, newEntries);
 	  }
 	}, {});
-	var ValueNode = function ValueNode(ownerID, hash, entry) {
+	var BitmapIndexedNode = function BitmapIndexedNode(ownerID, bitmap, nodes) {
 	  this.ownerID = ownerID;
-	  this.hash = hash;
+	  this.bitmap = bitmap;
+	  this.nodes = nodes;
+	};
+	var $BitmapIndexedNode = BitmapIndexedNode;
+	($traceurRuntime.createClass)(BitmapIndexedNode, {
+	  get: function(shift, keyHash, key, notSetValue) {
+	    if (keyHash === undefined) {
+	      keyHash = hash(key);
+	    }
+	    var bit = (1 << ((shift === 0 ? keyHash : keyHash >>> shift) & MASK));
+	    var bitmap = this.bitmap;
+	    return (bitmap & bit) === 0 ? notSetValue : this.nodes[popCount(bitmap & (bit - 1))].get(shift + SHIFT, keyHash, key, notSetValue);
+	  },
+	  update: function(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
+	    if (keyHash === undefined) {
+	      keyHash = hash(key);
+	    }
+	    var keyHashFrag = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
+	    var bit = 1 << keyHashFrag;
+	    var bitmap = this.bitmap;
+	    var exists = (bitmap & bit) !== 0;
+	    if (!exists && value === NOT_SET) {
+	      return this;
+	    }
+	    var idx = popCount(bitmap & (bit - 1));
+	    var nodes = this.nodes;
+	    var node = exists ? nodes[idx] : undefined;
+	    var newNode = updateNode(node, ownerID, shift + SHIFT, keyHash, key, value, didChangeSize, didAlter);
+	    if (newNode === node) {
+	      return this;
+	    }
+	    if (!exists && newNode && nodes.length >= MAX_BITMAP_INDEXED_SIZE) {
+	      return expandNodes(ownerID, nodes, bitmap, keyHashFrag, newNode);
+	    }
+	    if (exists && !newNode && nodes.length === 2 && isLeafNode(nodes[idx ^ 1])) {
+	      return nodes[idx ^ 1];
+	    }
+	    if (exists && newNode && nodes.length === 1 && isLeafNode(newNode)) {
+	      return newNode;
+	    }
+	    var isEditable = ownerID && ownerID === this.ownerID;
+	    var newBitmap = exists ? newNode ? bitmap : bitmap ^ bit : bitmap | bit;
+	    var newNodes = exists ? newNode ? setIn(nodes, idx, newNode, isEditable) : spliceOut(nodes, idx, isEditable) : spliceIn(nodes, idx, newNode, isEditable);
+	    if (isEditable) {
+	      this.bitmap = newBitmap;
+	      this.nodes = newNodes;
+	      return this;
+	    }
+	    return new $BitmapIndexedNode(ownerID, newBitmap, newNodes);
+	  }
+	}, {});
+	var HashArrayMapNode = function HashArrayMapNode(ownerID, count, nodes) {
+	  this.ownerID = ownerID;
+	  this.count = count;
+	  this.nodes = nodes;
+	};
+	var $HashArrayMapNode = HashArrayMapNode;
+	($traceurRuntime.createClass)(HashArrayMapNode, {
+	  get: function(shift, keyHash, key, notSetValue) {
+	    if (keyHash === undefined) {
+	      keyHash = hash(key);
+	    }
+	    var idx = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
+	    var node = this.nodes[idx];
+	    return node ? node.get(shift + SHIFT, keyHash, key, notSetValue) : notSetValue;
+	  },
+	  update: function(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
+	    if (keyHash === undefined) {
+	      keyHash = hash(key);
+	    }
+	    var idx = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
+	    var removed = value === NOT_SET;
+	    var nodes = this.nodes;
+	    var node = nodes[idx];
+	    if (removed && !node) {
+	      return this;
+	    }
+	    var newNode = updateNode(node, ownerID, shift + SHIFT, keyHash, key, value, didChangeSize, didAlter);
+	    if (newNode === node) {
+	      return this;
+	    }
+	    var newCount = this.count;
+	    if (!node) {
+	      newCount++;
+	    } else if (!newNode) {
+	      newCount--;
+	      if (newCount < MIN_HASH_ARRAY_MAP_SIZE) {
+	        return packNodes(ownerID, nodes, newCount, idx);
+	      }
+	    }
+	    var isEditable = ownerID && ownerID === this.ownerID;
+	    var newNodes = setIn(nodes, idx, newNode, isEditable);
+	    if (isEditable) {
+	      this.count = newCount;
+	      this.nodes = newNodes;
+	      return this;
+	    }
+	    return new $HashArrayMapNode(ownerID, newCount, newNodes);
+	  }
+	}, {});
+	var HashCollisionNode = function HashCollisionNode(ownerID, keyHash, entries) {
+	  this.ownerID = ownerID;
+	  this.keyHash = keyHash;
+	  this.entries = entries;
+	};
+	var $HashCollisionNode = HashCollisionNode;
+	($traceurRuntime.createClass)(HashCollisionNode, {
+	  get: function(shift, keyHash, key, notSetValue) {
+	    var entries = this.entries;
+	    for (var ii = 0,
+	        len = entries.length; ii < len; ii++) {
+	      if (is(key, entries[ii][0])) {
+	        return entries[ii][1];
+	      }
+	    }
+	    return notSetValue;
+	  },
+	  update: function(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
+	    if (keyHash === undefined) {
+	      keyHash = hash(key);
+	    }
+	    var removed = value === NOT_SET;
+	    if (keyHash !== this.keyHash) {
+	      if (removed) {
+	        return this;
+	      }
+	      SetRef(didAlter);
+	      SetRef(didChangeSize);
+	      return mergeIntoNode(this, ownerID, shift, keyHash, [key, value]);
+	    }
+	    var entries = this.entries;
+	    var idx = 0;
+	    for (var len = entries.length; idx < len; idx++) {
+	      if (is(key, entries[idx][0])) {
+	        break;
+	      }
+	    }
+	    var exists = idx < len;
+	    if (exists ? entries[idx][1] === value : removed) {
+	      return this;
+	    }
+	    SetRef(didAlter);
+	    (removed || !exists) && SetRef(didChangeSize);
+	    if (removed && len === 2) {
+	      return new ValueNode(ownerID, this.keyHash, entries[idx ^ 1]);
+	    }
+	    var isEditable = ownerID && ownerID === this.ownerID;
+	    var newEntries = isEditable ? entries : arrCopy(entries);
+	    if (exists) {
+	      if (removed) {
+	        idx === len - 1 ? newEntries.pop() : (newEntries[idx] = newEntries.pop());
+	      } else {
+	        newEntries[idx] = [key, value];
+	      }
+	    } else {
+	      newEntries.push([key, value]);
+	    }
+	    if (isEditable) {
+	      this.entries = newEntries;
+	      return this;
+	    }
+	    return new $HashCollisionNode(ownerID, this.keyHash, newEntries);
+	  }
+	}, {});
+	var ValueNode = function ValueNode(ownerID, keyHash, entry) {
+	  this.ownerID = ownerID;
+	  this.keyHash = keyHash;
 	  this.entry = entry;
 	};
 	var $ValueNode = ValueNode;
 	($traceurRuntime.createClass)(ValueNode, {
-	  get: function(shift, hash, key, notSetValue) {
+	  get: function(shift, keyHash, key, notSetValue) {
 	    return is(key, this.entry[0]) ? this.entry[1] : notSetValue;
 	  },
-	  update: function(ownerID, shift, hash, key, value, didChangeSize, didAlter) {
+	  update: function(ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
 	    var removed = value === NOT_SET;
 	    var keyMatch = is(key, this.entry[0]);
 	    if (keyMatch ? value === this.entry[1] : removed) {
@@ -2507,15 +2487,34 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.entry[1] = value;
 	        return this;
 	      }
-	      return new $ValueNode(ownerID, hash, [key, value]);
+	      return new $ValueNode(ownerID, this.keyHash, [key, value]);
 	    }
 	    SetRef(didChangeSize);
-	    return mergeIntoNode(this, ownerID, shift, hash, [key, value]);
-	  },
-	  iterate: function(fn) {
-	    return fn(this.entry);
+	    return mergeIntoNode(this, ownerID, shift, hash(key), [key, value]);
 	  }
 	}, {});
+	ArrayMapNode.prototype.iterate = HashCollisionNode.prototype.iterate = function(fn, reverse) {
+	  var entries = this.entries;
+	  for (var ii = 0,
+	      maxIndex = entries.length - 1; ii <= maxIndex; ii++) {
+	    if (fn(entries[reverse ? maxIndex - ii : ii]) === false) {
+	      return false;
+	    }
+	  }
+	};
+	BitmapIndexedNode.prototype.iterate = HashArrayMapNode.prototype.iterate = function(fn, reverse) {
+	  var nodes = this.nodes;
+	  for (var ii = 0,
+	      maxIndex = nodes.length - 1; ii <= maxIndex; ii++) {
+	    var node = nodes[reverse ? maxIndex - ii : ii];
+	    if (node && node.iterate(fn, reverse) === false) {
+	      return false;
+	    }
+	  }
+	};
+	ValueNode.prototype.iterate = function(fn, reverse) {
+	  return fn(this.entry);
+	};
 	var MapIterator = function MapIterator(map, type, reverse) {
 	  this._type = type;
 	  this._reverse = reverse;
@@ -2578,13 +2577,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return EMPTY_MAP || (EMPTY_MAP = makeMap(0));
 	}
 	function updateMap(map, k, v) {
-	  var didChangeSize = MakeRef(CHANGE_LENGTH);
-	  var didAlter = MakeRef(DID_ALTER);
-	  var newRoot = updateNode(map._root, map.__ownerID, 0, hash(k), k, v, didChangeSize, didAlter);
-	  if (!didAlter.value) {
-	    return map;
+	  var newRoot;
+	  var newSize;
+	  if (!map._root) {
+	    if (v === NOT_SET) {
+	      return map;
+	    }
+	    newSize = 1;
+	    newRoot = new ArrayMapNode(map.__ownerID, [[k, v]]);
+	  } else {
+	    var didChangeSize = MakeRef(CHANGE_LENGTH);
+	    var didAlter = MakeRef(DID_ALTER);
+	    newRoot = updateNode(map._root, map.__ownerID, 0, undefined, k, v, didChangeSize, didAlter);
+	    if (!didAlter.value) {
+	      return map;
+	    }
+	    newSize = map.size + (didChangeSize.value ? v === NOT_SET ? -1 : 1 : 0);
 	  }
-	  var newSize = map.size + (didChangeSize.value ? v === NOT_SET ? -1 : 1 : 0);
 	  if (map.__ownerID) {
 	    map.size = newSize;
 	    map._root = newRoot;
@@ -2594,29 +2603,40 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	  return newRoot ? makeMap(newSize, newRoot) : emptyMap();
 	}
-	function updateNode(node, ownerID, shift, hash, key, value, didChangeSize, didAlter) {
+	function updateNode(node, ownerID, shift, keyHash, key, value, didChangeSize, didAlter) {
 	  if (!node) {
 	    if (value === NOT_SET) {
 	      return node;
 	    }
 	    SetRef(didAlter);
 	    SetRef(didChangeSize);
-	    return new ValueNode(ownerID, hash, [key, value]);
+	    return new ValueNode(ownerID, keyHash, [key, value]);
 	  }
-	  return node.update(ownerID, shift, hash, key, value, didChangeSize, didAlter);
+	  return node.update(ownerID, shift, keyHash, key, value, didChangeSize, didAlter);
 	}
 	function isLeafNode(node) {
 	  return node.constructor === ValueNode || node.constructor === HashCollisionNode;
 	}
-	function mergeIntoNode(node, ownerID, shift, hash, entry) {
-	  if (node.hash === hash) {
-	    return new HashCollisionNode(ownerID, hash, [node.entry, entry]);
+	function mergeIntoNode(node, ownerID, shift, keyHash, entry) {
+	  if (node.keyHash === keyHash) {
+	    return new HashCollisionNode(ownerID, keyHash, [node.entry, entry]);
 	  }
-	  var idx1 = (shift === 0 ? node.hash : node.hash >>> shift) & MASK;
-	  var idx2 = (shift === 0 ? hash : hash >>> shift) & MASK;
+	  var idx1 = (shift === 0 ? node.keyHash : node.keyHash >>> shift) & MASK;
+	  var idx2 = (shift === 0 ? keyHash : keyHash >>> shift) & MASK;
 	  var newNode;
-	  var nodes = idx1 === idx2 ? [mergeIntoNode(node, ownerID, shift + SHIFT, hash, entry)] : ((newNode = new ValueNode(ownerID, hash, entry)), idx1 < idx2 ? [node, newNode] : [newNode, node]);
+	  var nodes = idx1 === idx2 ? [mergeIntoNode(node, ownerID, shift + SHIFT, keyHash, entry)] : ((newNode = new ValueNode(ownerID, keyHash, entry)), idx1 < idx2 ? [node, newNode] : [newNode, node]);
 	  return new BitmapIndexedNode(ownerID, (1 << idx1) | (1 << idx2), nodes);
+	}
+	function createNodes(ownerID, entries, key, value) {
+	  if (!ownerID) {
+	    ownerID = new OwnerID();
+	  }
+	  var node = new ValueNode(ownerID, hash(key), [key, value]);
+	  for (var ii = 0; ii < entries.length; ii++) {
+	    var entry = entries[ii];
+	    node = node.update(ownerID, 0, undefined, entry[0], entry[1]);
+	  }
+	  return node;
 	}
 	function packNodes(ownerID, nodes, count, excluding) {
 	  var bitmap = 0;
@@ -2640,7 +2660,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    expandedNodes[ii] = bitmap & 1 ? nodes[count++] : undefined;
 	  }
 	  expandedNodes[including] = node;
-	  return new ArrayNode(ownerID, count + 1, expandedNodes);
+	  return new HashArrayMapNode(ownerID, count + 1, expandedNodes);
 	}
 	function mergeIntoMapWith(map, merger, iterables) {
 	  var iters = [];
@@ -2662,8 +2682,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	  });
 	}
 	function mergeIntoCollectionWith(collection, merger, iters) {
+	  iters = iters.filter((function(x) {
+	    return x.size !== 0;
+	  }));
 	  if (iters.length === 0) {
 	    return collection;
+	  }
+	  if (collection.size === 0 && iters.length === 1) {
+	    return collection.constructor(iters[0]);
 	  }
 	  return collection.withMutations((function(collection) {
 	    var mergeIntoMap = merger ? (function(value, key) {
@@ -2678,13 +2704,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  }));
 	}
-	function updateInDeepMap(collection, keyPath, notSetValue, updater, offset) {
-	  invariant(!collection || collection.set, 'updateIn with invalid keyPath');
-	  var key = keyPath[offset];
-	  var existing = collection ? collection.get(key, NOT_SET) : NOT_SET;
-	  var existingValue = existing === NOT_SET ? undefined : existing;
-	  var value = offset === keyPath.length - 1 ? updater(existing === NOT_SET ? notSetValue : existing) : updateInDeepMap(existingValue, keyPath, notSetValue, updater, offset + 1);
-	  return value === existingValue ? collection : value === NOT_SET ? collection && collection.remove(key) : (collection || emptyMap()).set(key, value);
+	function updateInDeepMap(existing, keyPathIter, notSetValue, updater) {
+	  var isNotSet = existing === NOT_SET;
+	  var step = keyPathIter.next();
+	  if (step.done) {
+	    var existingValue = isNotSet ? notSetValue : existing;
+	    var newValue = updater(existingValue);
+	    return newValue === existingValue ? existing : newValue;
+	  }
+	  invariant(isNotSet || (existing && existing.set), 'invalid keyPath');
+	  var key = step.value;
+	  var nextExisting = isNotSet ? NOT_SET : existing.get(key, NOT_SET);
+	  var nextUpdated = updateInDeepMap(nextExisting, keyPathIter, notSetValue, updater);
+	  return nextUpdated === nextExisting ? existing : nextUpdated === NOT_SET ? existing.remove(key) : (isNotSet ? emptyMap() : existing).set(key, nextUpdated);
 	}
 	function popCount(x) {
 	  x = x - ((x >> 1) & 0x55555555);
@@ -2733,8 +2765,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	  return newArray;
 	}
-	var MAX_BITMAP_SIZE = SIZE / 2;
-	var MIN_ARRAY_SIZE = SIZE / 4;
+	var MAX_ARRAY_MAP_SIZE = SIZE / 4;
+	var MAX_BITMAP_INDEXED_SIZE = SIZE / 2;
+	var MIN_HASH_ARRAY_MAP_SIZE = SIZE / 4;
 	var ToKeyedSequence = function ToKeyedSequence(indexed, useKeys) {
 	  this._iter = indexed;
 	  this._useKeys = useKeys;
@@ -2791,6 +2824,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }));
 	  }
 	}, {}, KeyedSeq);
+	ToKeyedSequence.prototype[IS_ORDERED_SENTINEL] = true;
 	var ToIndexedSequence = function ToIndexedSequence(iter) {
 	  this._iter = iter;
 	  this.size = iter.size;
@@ -3039,8 +3073,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	  var isKeyedIter = isKeyed(iterable);
 	  var groups = Map().asMutable();
 	  iterable.__iterate((function(v, k) {
-	    groups.update(grouper.call(context, v, k, iterable), [], (function(a) {
-	      return (a.push(isKeyedIter ? [k, v] : v), a);
+	    groups.update(grouper.call(context, v, k, iterable), (function(a) {
+	      return (a = a || [], a.push(isKeyedIter ? [k, v] : v), a);
 	    }));
 	  }));
 	  var coerce = iterableClass(iterable);
@@ -3224,21 +3258,33 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	function concatFactory(iterable, values) {
 	  var isKeyedIterable = isKeyed(iterable);
-	  var iters = new ArraySeq([iterable].concat(values)).map((function(v) {
+	  var iters = [iterable].concat(values).map((function(v) {
 	    if (!isIterable(v)) {
 	      v = isKeyedIterable ? keyedSeqFromValue(v) : indexedSeqFromValue(Array.isArray(v) ? v : [v]);
 	    } else if (isKeyedIterable) {
 	      v = KeyedIterable(v);
 	    }
 	    return v;
+	  })).filter((function(v) {
+	    return v.size !== 0;
 	  }));
-	  if (isKeyedIterable) {
-	    iters = iters.toKeyedSeq();
-	  } else if (!isIndexed(iterable)) {
-	    iters = iters.toSetSeq();
+	  if (iters.length === 0) {
+	    return iterable;
 	  }
-	  var flat = iters.flatten(true);
-	  flat.size = iters.reduce((function(sum, seq) {
+	  if (iters.length === 1) {
+	    var singleton = iters[0];
+	    if (singleton === iterable || isKeyedIterable && isKeyed(singleton) || isIndexed(iterable) && isIndexed(singleton)) {
+	      return singleton;
+	    }
+	  }
+	  var concatSeq = new ArraySeq(iters);
+	  if (isKeyedIterable) {
+	    concatSeq = concatSeq.toKeyedSeq();
+	  } else if (!isIndexed(iterable)) {
+	    concatSeq = concatSeq.toSetSeq();
+	  }
+	  concatSeq = concatSeq.flatten(true);
+	  concatSeq.size = iters.reduce((function(sum, seq) {
 	    if (sum !== undefined) {
 	      var size = seq.size;
 	      if (size !== undefined) {
@@ -3246,7 +3292,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 	    }
 	  }), 0);
-	  return flat;
+	  return concatSeq;
 	}
 	function flattenFactory(iterable, depth, useKeys) {
 	  var flatSequence = makeSequence(iterable);
@@ -3327,6 +3373,45 @@ return /******/ (function(modules) { // webpackBootstrap
 	  };
 	  return interposedSequence;
 	}
+	function sortFactory(iterable, comparator, mapper) {
+	  if (!comparator) {
+	    comparator = defaultComparator;
+	  }
+	  var isKeyedIterable = isKeyed(iterable);
+	  var index = 0;
+	  var entries = iterable.toSeq().map((function(v, k) {
+	    return [k, v, index++, mapper ? mapper(v, k, iterable) : v];
+	  })).toArray();
+	  entries.sort((function(a, b) {
+	    return comparator(a[3], b[3]) || a[2] - b[2];
+	  })).forEach(isKeyedIterable ? (function(v, i) {
+	    entries[i].length = 2;
+	  }) : (function(v, i) {
+	    entries[i] = v[1];
+	  }));
+	  return isKeyedIterable ? KeyedSeq(entries) : isIndexed(iterable) ? IndexedSeq(entries) : SetSeq(entries);
+	}
+	function maxFactory(iterable, comparator, mapper) {
+	  if (!comparator) {
+	    comparator = defaultComparator;
+	  }
+	  if (mapper) {
+	    var entry = iterable.toSeq().map((function(v, k) {
+	      return [v, mapper(v, k, iterable)];
+	    })).reduce((function(a, b) {
+	      return _maxCompare(comparator, a[1], b[1]) ? b : a;
+	    }));
+	    return entry && entry[0];
+	  } else {
+	    return iterable.reduce((function(a, b) {
+	      return _maxCompare(comparator, a, b) ? b : a;
+	    }));
+	  }
+	}
+	function _maxCompare(comparator, a, b) {
+	  var comp = comparator(b, a);
+	  return (comp === 0 && b !== a && (b === undefined || b === null || b !== b)) || comp > 0;
+	}
 	function reify(iter, seq) {
 	  return isSeq(iter) ? seq : iter.constructor(seq);
 	}
@@ -3354,6 +3439,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return Seq.prototype.cacheResult.call(this);
 	  }
 	}
+	function defaultComparator(a, b) {
+	  return a > b ? 1 : a < b ? -1 : 0;
+	}
 	var List = function List(value) {
 	  var empty = emptyList();
 	  if (value === null || value === undefined) {
@@ -3362,15 +3450,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	  if (isList(value)) {
 	    return value;
 	  }
-	  value = IndexedIterable(value);
-	  var size = value.size;
+	  var iter = IndexedIterable(value);
+	  var size = iter.size;
 	  if (size === 0) {
 	    return empty;
 	  }
+	  assertNotInfinite(size);
 	  if (size > 0 && size < SIZE) {
-	    return makeList(0, size, SHIFT, null, new VNode(value.toArray()));
+	    return makeList(0, size, SHIFT, null, new VNode(iter.toArray()));
 	  }
-	  return empty.merge(value);
+	  return empty.withMutations((function(list) {
+	    list.setSize(size);
+	    iter.forEach((function(v, i) {
+	      return list.set(i, v);
+	    }));
+	  }));
 	};
 	($traceurRuntime.createClass)(List, {
 	  toString: function() {
@@ -3435,8 +3529,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	  },
 	  mergeWith: function(merger) {
 	    for (var iters = [],
-	        $__5 = 1; $__5 < arguments.length; $__5++)
-	      iters[$__5 - 1] = arguments[$__5];
+	        $__7 = 1; $__7 < arguments.length; $__7++)
+	      iters[$__7 - 1] = arguments[$__7];
 	    return mergeIntoListWith(this, merger, iters);
 	  },
 	  mergeDeep: function() {
@@ -3444,8 +3538,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	  },
 	  mergeDeepWith: function(merger) {
 	    for (var iters = [],
-	        $__6 = 1; $__6 < arguments.length; $__6++)
-	      iters[$__6 - 1] = arguments[$__6];
+	        $__8 = 1; $__8 < arguments.length; $__8++)
+	      iters[$__8 - 1] = arguments[$__8];
 	    return mergeIntoListWith(this, deepMerger(merger), iters);
 	  },
 	  setSize: function(size) {
@@ -3459,21 +3553,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return setListBounds(this, resolveBegin(begin, size), resolveEnd(end, size));
 	  },
 	  __iterator: function(type, reverse) {
-	    return new ListIterator(this, type, reverse);
+	    var index = 0;
+	    var values = iterateList(this, reverse);
+	    return new Iterator((function() {
+	      var value = values();
+	      return value === DONE ? iteratorDone() : iteratorValue(type, index++, value);
+	    }));
 	  },
 	  __iterate: function(fn, reverse) {
-	    var $__0 = this;
-	    var iterations = 0;
-	    var eachFn = (function(v) {
-	      return fn(v, iterations++, $__0);
-	    });
-	    var tailOffset = getTailOffset(this._capacity);
-	    if (reverse) {
-	      iterateVNode(this._tail, 0, tailOffset - this._origin, this._capacity - this._origin, eachFn, reverse) && iterateVNode(this._root, this._level, -this._origin, tailOffset - this._origin, eachFn, reverse);
-	    } else {
-	      iterateVNode(this._root, this._level, -this._origin, tailOffset - this._origin, eachFn, reverse) && iterateVNode(this._tail, 0, tailOffset - this._origin, this._capacity - this._origin, eachFn, reverse);
+	    var index = 0;
+	    var values = iterateList(this, reverse);
+	    var value;
+	    while ((value = values()) !== DONE) {
+	      if (fn(value, index++, this) === false) {
+	        break;
+	      }
 	    }
-	    return iterations;
+	    return index;
 	  },
 	  __ensureOwner: function(ownerID) {
 	    if (ownerID === this.__ownerID) {
@@ -3497,9 +3593,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	ListPrototype[IS_LIST_SENTINEL] = true;
 	ListPrototype[DELETE] = ListPrototype.remove;
 	ListPrototype.setIn = MapPrototype.setIn;
-	ListPrototype.removeIn = MapPrototype.removeIn;
+	ListPrototype.deleteIn = ListPrototype.removeIn = MapPrototype.removeIn;
 	ListPrototype.update = MapPrototype.update;
 	ListPrototype.updateIn = MapPrototype.updateIn;
+	ListPrototype.mergeIn = MapPrototype.mergeIn;
+	ListPrototype.mergeDeepIn = MapPrototype.mergeDeepIn;
 	ListPrototype.withMutations = MapPrototype.withMutations;
 	ListPrototype.asMutable = MapPrototype.asMutable;
 	ListPrototype.asImmutable = MapPrototype.asImmutable;
@@ -3571,89 +3669,56 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return editable;
 	  }
 	}, {});
-	function iterateVNode(node, level, offset, max, fn, reverse) {
-	  var ii;
-	  var array = node && node.array;
-	  if (level === 0) {
-	    var from = offset < 0 ? -offset : 0;
-	    var to = max - offset;
+	var DONE = {};
+	function iterateList(list, reverse) {
+	  var left = list._origin;
+	  var right = list._capacity;
+	  var tailPos = getTailOffset(right);
+	  var tail = list._tail;
+	  return iterateNodeOrLeaf(list._root, list._level, 0);
+	  function iterateNodeOrLeaf(node, level, offset) {
+	    return level === 0 ? iterateLeaf(node, offset) : iterateNode(node, level, offset);
+	  }
+	  function iterateLeaf(node, offset) {
+	    var array = offset === tailPos ? tail && tail.array : node && node.array;
+	    var from = offset > left ? 0 : left - offset;
+	    var to = right - offset;
 	    if (to > SIZE) {
 	      to = SIZE;
 	    }
-	    for (ii = from; ii < to; ii++) {
-	      if (fn(array && array[reverse ? from + to - 1 - ii : ii]) === false) {
-	        return false;
+	    return (function() {
+	      if (from === to) {
+	        return DONE;
 	      }
-	    }
-	  } else {
-	    var step = 1 << level;
-	    var newLevel = level - SHIFT;
-	    for (ii = 0; ii <= MASK; ii++) {
-	      var levelIndex = reverse ? MASK - ii : ii;
-	      var newOffset = offset + (levelIndex << level);
-	      if (newOffset < max && newOffset + step > 0) {
-	        var nextNode = array && array[levelIndex];
-	        if (!iterateVNode(nextNode, newLevel, newOffset, max, fn, reverse)) {
-	          return false;
-	        }
-	      }
-	    }
+	      var idx = reverse ? --to : from++;
+	      return array && array[idx];
+	    });
 	  }
-	  return true;
-	}
-	var ListIterator = function ListIterator(list, type, reverse) {
-	  this._type = type;
-	  this._reverse = !!reverse;
-	  this._maxIndex = list.size - 1;
-	  var tailOffset = getTailOffset(list._capacity);
-	  var rootStack = listIteratorFrame(list._root && list._root.array, list._level, -list._origin, tailOffset - list._origin - 1);
-	  var tailStack = listIteratorFrame(list._tail && list._tail.array, 0, tailOffset - list._origin, list._capacity - list._origin - 1);
-	  this._stack = reverse ? tailStack : rootStack;
-	  this._stack.__prev = reverse ? rootStack : tailStack;
-	};
-	($traceurRuntime.createClass)(ListIterator, {next: function() {
-	    var stack = this._stack;
-	    while (stack) {
-	      var array = stack.array;
-	      var rawIndex = stack.index++;
-	      if (this._reverse) {
-	        rawIndex = MASK - rawIndex;
-	        if (rawIndex > stack.rawMax) {
-	          rawIndex = stack.rawMax;
-	          stack.index = SIZE - rawIndex;
-	        }
-	      }
-	      if (rawIndex >= 0 && rawIndex < SIZE && rawIndex <= stack.rawMax) {
-	        var value = array && array[rawIndex];
-	        if (stack.level === 0) {
-	          var type = this._type;
-	          var index;
-	          if (type !== 1) {
-	            index = stack.offset + (rawIndex << stack.level);
-	            if (this._reverse) {
-	              index = this._maxIndex - index;
-	            }
-	          }
-	          return iteratorValue(type, index, value);
-	        } else {
-	          this._stack = stack = listIteratorFrame(value && value.array, stack.level - SHIFT, stack.offset + (rawIndex << stack.level), stack.max, stack);
-	        }
-	        continue;
-	      }
-	      stack = this._stack = this._stack.__prev;
+	  function iterateNode(node, level, offset) {
+	    var values;
+	    var array = node && node.array;
+	    var from = offset > left ? 0 : (left - offset) >> level;
+	    var to = ((right - offset) >> level) + 1;
+	    if (to > SIZE) {
+	      to = SIZE;
 	    }
-	    return iteratorDone();
-	  }}, {}, Iterator);
-	function listIteratorFrame(array, level, offset, max, prevFrame) {
-	  return {
-	    array: array,
-	    level: level,
-	    offset: offset,
-	    max: max,
-	    rawMax: ((max - offset) >> level),
-	    index: 0,
-	    __prev: prevFrame
-	  };
+	    return (function() {
+	      do {
+	        if (values) {
+	          var value = values();
+	          if (value !== DONE) {
+	            return value;
+	          }
+	          values = null;
+	        }
+	        if (from === to) {
+	          return DONE;
+	        }
+	        var idx = reverse ? --to : from++;
+	        values = iterateNodeOrLeaf(array && array[idx], level - SHIFT, offset + (idx << level));
+	      } while (true);
+	    });
+	  }
 	}
 	function makeList(origin, capacity, level, root, tail, ownerID, hash) {
 	  var list = Object.create(ListPrototype);
@@ -3862,6 +3927,135 @@ return /******/ (function(modules) { // webpackBootstrap
 	function getTailOffset(size) {
 	  return size < SIZE ? 0 : (((size - 1) >>> SHIFT) << SHIFT);
 	}
+	var OrderedMap = function OrderedMap(value) {
+	  return value === null || value === undefined ? emptyOrderedMap() : isOrderedMap(value) ? value : emptyOrderedMap().withMutations((function(map) {
+	    var iter = KeyedIterable(value);
+	    assertNotInfinite(iter.size);
+	    iter.forEach((function(v, k) {
+	      return map.set(k, v);
+	    }));
+	  }));
+	};
+	($traceurRuntime.createClass)(OrderedMap, {
+	  toString: function() {
+	    return this.__toString('OrderedMap {', '}');
+	  },
+	  get: function(k, notSetValue) {
+	    var index = this._map.get(k);
+	    return index !== undefined ? this._list.get(index)[1] : notSetValue;
+	  },
+	  clear: function() {
+	    if (this.size === 0) {
+	      return this;
+	    }
+	    if (this.__ownerID) {
+	      this.size = 0;
+	      this._map.clear();
+	      this._list.clear();
+	      return this;
+	    }
+	    return emptyOrderedMap();
+	  },
+	  set: function(k, v) {
+	    return updateOrderedMap(this, k, v);
+	  },
+	  remove: function(k) {
+	    return updateOrderedMap(this, k, NOT_SET);
+	  },
+	  wasAltered: function() {
+	    return this._map.wasAltered() || this._list.wasAltered();
+	  },
+	  __iterate: function(fn, reverse) {
+	    var $__0 = this;
+	    return this._list.__iterate((function(entry) {
+	      return entry && fn(entry[1], entry[0], $__0);
+	    }), reverse);
+	  },
+	  __iterator: function(type, reverse) {
+	    return this._list.fromEntrySeq().__iterator(type, reverse);
+	  },
+	  __ensureOwner: function(ownerID) {
+	    if (ownerID === this.__ownerID) {
+	      return this;
+	    }
+	    var newMap = this._map.__ensureOwner(ownerID);
+	    var newList = this._list.__ensureOwner(ownerID);
+	    if (!ownerID) {
+	      this.__ownerID = ownerID;
+	      this._map = newMap;
+	      this._list = newList;
+	      return this;
+	    }
+	    return makeOrderedMap(newMap, newList, ownerID, this.__hash);
+	  }
+	}, {of: function() {
+	    return this(arguments);
+	  }}, Map);
+	function isOrderedMap(maybeOrderedMap) {
+	  return isMap(maybeOrderedMap) && isOrdered(maybeOrderedMap);
+	}
+	OrderedMap.isOrderedMap = isOrderedMap;
+	OrderedMap.prototype[IS_ORDERED_SENTINEL] = true;
+	OrderedMap.prototype[DELETE] = OrderedMap.prototype.remove;
+	function makeOrderedMap(map, list, ownerID, hash) {
+	  var omap = Object.create(OrderedMap.prototype);
+	  omap.size = map ? map.size : 0;
+	  omap._map = map;
+	  omap._list = list;
+	  omap.__ownerID = ownerID;
+	  omap.__hash = hash;
+	  return omap;
+	}
+	var EMPTY_ORDERED_MAP;
+	function emptyOrderedMap() {
+	  return EMPTY_ORDERED_MAP || (EMPTY_ORDERED_MAP = makeOrderedMap(emptyMap(), emptyList()));
+	}
+	function updateOrderedMap(omap, k, v) {
+	  var map = omap._map;
+	  var list = omap._list;
+	  var i = map.get(k);
+	  var has = i !== undefined;
+	  var newMap;
+	  var newList;
+	  if (v === NOT_SET) {
+	    if (!has) {
+	      return omap;
+	    }
+	    if (list.size >= SIZE && list.size >= map.size * 2) {
+	      newList = list.filter((function(entry, idx) {
+	        return entry !== undefined && i !== idx;
+	      }));
+	      newMap = newList.toKeyedSeq().map((function(entry) {
+	        return entry[0];
+	      })).flip().toMap();
+	      if (omap.__ownerID) {
+	        newMap.__ownerID = newList.__ownerID = omap.__ownerID;
+	      }
+	    } else {
+	      newMap = map.remove(k);
+	      newList = i === list.size - 1 ? list.pop() : list.set(i, undefined);
+	    }
+	  } else {
+	    if (has) {
+	      if (v === list.get(i)[1]) {
+	        return omap;
+	      }
+	      newMap = map;
+	      newList = list.set(i, [k, v]);
+	    } else {
+	      newMap = map.set(k, list.size);
+	      newList = list.set(list.size, [k, v]);
+	    }
+	  }
+	  if (omap.__ownerID) {
+	    omap.size = newMap.size;
+	    omap._map = newMap;
+	    omap._list = newList;
+	    omap.__hash = undefined;
+	    return omap;
+	  }
+	  return makeOrderedMap(newMap, newList);
+	}
 	var Stack = function Stack(value) {
 	  return value === null || value === undefined ? emptyStack() : isStack(value) ? value : emptyStack().unshiftAll(value);
 	};
@@ -3906,6 +4100,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    if (iter.size === 0) {
 	      return this;
 	    }
+	    assertNotInfinite(iter.size);
 	    var newSize = this.size;
 	    var head = this._head;
 	    iter.reverse().forEach((function(value) {
@@ -4040,7 +4235,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return EMPTY_STACK || (EMPTY_STACK = makeStack(0));
 	}
 	var Set = function Set(value) {
-	  return value === null || value === undefined ? emptySet() : isSet(value) ? value : emptySet().union(value);
+	  return value === null || value === undefined ? emptySet() : isSet(value) ? value : emptySet().withMutations((function(set) {
+	    var iter = SetIterable(value);
+	    assertNotInfinite(iter.size);
+	    iter.forEach((function(v) {
+	      return set.add(v);
+	    }));
+	  }));
 	};
 	($traceurRuntime.createClass)(Set, {
 	  toString: function() {
@@ -4050,38 +4251,26 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return this._map.has(value);
 	  },
 	  add: function(value) {
-	    var newMap = this._map.set(value, true);
-	    if (this.__ownerID) {
-	      this.size = newMap.size;
-	      this._map = newMap;
-	      return this;
-	    }
-	    return newMap === this._map ? this : makeSet(newMap);
+	    return updateSet(this, this._map.set(value, true));
 	  },
 	  remove: function(value) {
-	    var newMap = this._map.remove(value);
-	    if (this.__ownerID) {
-	      this.size = newMap.size;
-	      this._map = newMap;
-	      return this;
-	    }
-	    return newMap === this._map ? this : newMap.size === 0 ? emptySet() : makeSet(newMap);
+	    return updateSet(this, this._map.remove(value));
 	  },
 	  clear: function() {
-	    if (this.size === 0) {
-	      return this;
-	    }
-	    if (this.__ownerID) {
-	      this.size = 0;
-	      this._map.clear();
-	      return this;
-	    }
-	    return emptySet();
+	    return updateSet(this, this._map.clear());
 	  },
 	  union: function() {
-	    var iters = arguments;
+	    for (var iters = [],
+	        $__9 = 0; $__9 < arguments.length; $__9++)
+	      iters[$__9] = arguments[$__9];
+	    iters = iters.filter((function(x) {
+	      return x.size !== 0;
+	    }));
 	    if (iters.length === 0) {
 	      return this;
+	    }
+	    if (this.size === 0 && iters.length === 1) {
+	      return this.constructor(iters[0]);
 	    }
 	    return this.withMutations((function(set) {
 	      for (var ii = 0; ii < iters.length; ii++) {
@@ -4093,8 +4282,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	  },
 	  intersect: function() {
 	    for (var iters = [],
-	        $__7 = 0; $__7 < arguments.length; $__7++)
-	      iters[$__7] = arguments[$__7];
+	        $__10 = 0; $__10 < arguments.length; $__10++)
+	      iters[$__10] = arguments[$__10];
 	    if (iters.length === 0) {
 	      return this;
 	    }
@@ -4114,8 +4303,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	  },
 	  subtract: function() {
 	    for (var iters = [],
-	        $__8 = 0; $__8 < arguments.length; $__8++)
-	      iters[$__8] = arguments[$__8];
+	        $__11 = 0; $__11 < arguments.length; $__11++)
+	      iters[$__11] = arguments[$__11];
 	    if (iters.length === 0) {
 	      return this;
 	    }
@@ -4138,9 +4327,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	  },
 	  mergeWith: function(merger) {
 	    for (var iters = [],
-	        $__9 = 1; $__9 < arguments.length; $__9++)
-	      iters[$__9 - 1] = arguments[$__9];
+	        $__12 = 1; $__12 < arguments.length; $__12++)
+	      iters[$__12 - 1] = arguments[$__12];
 	    return this.union.apply(this, iters);
+	  },
+	  sort: function(comparator) {
+	    return OrderedSet(sortFactory(this, comparator));
+	  },
+	  sortBy: function(mapper, comparator) {
+	    return OrderedSet(sortFactory(this, comparator, mapper));
 	  },
 	  wasAltered: function() {
 	    return this._map.wasAltered();
@@ -4166,14 +4361,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this._map = newMap;
 	      return this;
 	    }
-	    return makeSet(newMap, ownerID);
+	    return this.__make(newMap, ownerID);
 	  }
 	}, {
 	  of: function() {
 	    return this(arguments);
 	  },
 	  fromKeys: function(value) {
-	    return this(KeyedSeq(value).flip().valueSeq());
+	    return this(KeyedIterable(value).keySeq());
 	  }
 	}, SetCollection);
 	function isSet(maybeSet) {
@@ -4189,6 +4384,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	SetPrototype.withMutations = MapPrototype.withMutations;
 	SetPrototype.asMutable = MapPrototype.asMutable;
 	SetPrototype.asImmutable = MapPrototype.asImmutable;
+	SetPrototype.__empty = emptySet;
+	SetPrototype.__make = makeSet;
+	function updateSet(set, newMap) {
+	  if (set.__ownerID) {
+	    set.size = newMap.size;
+	    set._map = newMap;
+	    return set;
+	  }
+	  return newMap === set._map ? set : newMap.size === 0 ? set.__empty() : set.__make(newMap);
+	}
 	function makeSet(map, ownerID) {
 	  var set = Object.create(SetPrototype);
 	  set.size = map ? map.size : 0;
@@ -4200,106 +4405,43 @@ return /******/ (function(modules) { // webpackBootstrap
 	function emptySet() {
 	  return EMPTY_SET || (EMPTY_SET = makeSet(emptyMap()));
 	}
-	var OrderedMap = function OrderedMap(value) {
-	  return value === null || value === undefined ? emptyOrderedMap() : isOrderedMap(value) ? value : emptyOrderedMap().merge(KeyedIterable(value));
+	var OrderedSet = function OrderedSet(value) {
+	  return value === null || value === undefined ? emptyOrderedSet() : isOrderedSet(value) ? value : emptyOrderedSet().withMutations((function(set) {
+	    var iter = SetIterable(value);
+	    assertNotInfinite(iter.size);
+	    iter.forEach((function(v) {
+	      return set.add(v);
+	    }));
+	  }));
 	};
-	($traceurRuntime.createClass)(OrderedMap, {
-	  toString: function() {
-	    return this.__toString('OrderedMap {', '}');
-	  },
-	  get: function(k, notSetValue) {
-	    var index = this._map.get(k);
-	    return index !== undefined ? this._list.get(index)[1] : notSetValue;
-	  },
-	  clear: function() {
-	    if (this.size === 0) {
-	      return this;
-	    }
-	    if (this.__ownerID) {
-	      this.size = 0;
-	      this._map.clear();
-	      this._list.clear();
-	      return this;
-	    }
-	    return emptyOrderedMap();
-	  },
-	  set: function(k, v) {
-	    return updateOrderedMap(this, k, v);
-	  },
-	  remove: function(k) {
-	    return updateOrderedMap(this, k, NOT_SET);
-	  },
-	  wasAltered: function() {
-	    return this._map.wasAltered() || this._list.wasAltered();
-	  },
-	  __iterate: function(fn, reverse) {
-	    var $__0 = this;
-	    return this._list.__iterate((function(entry) {
-	      return entry && fn(entry[1], entry[0], $__0);
-	    }), reverse);
-	  },
-	  __iterator: function(type, reverse) {
-	    return this._list.fromEntrySeq().__iterator(type, reverse);
-	  },
-	  __ensureOwner: function(ownerID) {
-	    if (ownerID === this.__ownerID) {
-	      return this;
-	    }
-	    var newMap = this._map.__ensureOwner(ownerID);
-	    var newList = this._list.__ensureOwner(ownerID);
-	    if (!ownerID) {
-	      this.__ownerID = ownerID;
-	      this._map = newMap;
-	      this._list = newList;
-	      return this;
-	    }
-	    return makeOrderedMap(newMap, newList, ownerID, this.__hash);
-	  }
-	}, {of: function() {
+	($traceurRuntime.createClass)(OrderedSet, {toString: function() {
+	    return this.__toString('OrderedSet {', '}');
+	  }}, {
+	  of: function() {
 	    return this(arguments);
-	  }}, Map);
-	function isOrderedMap(maybeOrderedMap) {
-	  return !!(maybeOrderedMap && maybeOrderedMap[IS_ORDERED_MAP_SENTINEL]);
-	}
-	OrderedMap.isOrderedMap = isOrderedMap;
-	var IS_ORDERED_MAP_SENTINEL = '@@__IMMUTABLE_ORDERED_MAP__@@';
-	OrderedMap.prototype[IS_ORDERED_MAP_SENTINEL] = true;
-	OrderedMap.prototype[DELETE] = OrderedMap.prototype.remove;
-	function makeOrderedMap(map, list, ownerID, hash) {
-	  var omap = Object.create(OrderedMap.prototype);
-	  omap.size = map ? map.size : 0;
-	  omap._map = map;
-	  omap._list = list;
-	  omap.__ownerID = ownerID;
-	  omap.__hash = hash;
-	  return omap;
-	}
-	var EMPTY_ORDERED_MAP;
-	function emptyOrderedMap() {
-	  return EMPTY_ORDERED_MAP || (EMPTY_ORDERED_MAP = makeOrderedMap(emptyMap(), emptyList()));
-	}
-	function updateOrderedMap(omap, k, v) {
-	  var map = omap._map;
-	  var list = omap._list;
-	  var i = map.get(k);
-	  var has = i !== undefined;
-	  var removed = v === NOT_SET;
-	  if ((!has && removed) || (has && v === list.get(i)[1])) {
-	    return omap;
+	  },
+	  fromKeys: function(value) {
+	    return this(KeyedIterable(value).keySeq());
 	  }
-	  if (!has) {
-	    i = list.size;
-	  }
-	  var newMap = removed ? map.remove(k) : has ? map : map.set(k, i);
-	  var newList = removed ? list.set(i, undefined) : list.set(i, [k, v]);
-	  if (omap.__ownerID) {
-	    omap.size = newMap.size;
-	    omap._map = newMap;
-	    omap._list = newList;
-	    omap.__hash = undefined;
-	    return omap;
-	  }
-	  return makeOrderedMap(newMap, newList);
+	}, Set);
+	function isOrderedSet(maybeOrderedSet) {
+	  return isSet(maybeOrderedSet) && isOrdered(maybeOrderedSet);
+	}
+	OrderedSet.isOrderedSet = isOrderedSet;
+	var OrderedSetPrototype = OrderedSet.prototype;
+	OrderedSetPrototype[IS_ORDERED_SENTINEL] = true;
+	OrderedSetPrototype.__empty = emptyOrderedSet;
+	OrderedSetPrototype.__make = makeOrderedSet;
+	function makeOrderedSet(map, ownerID) {
+	  var set = Object.create(OrderedSetPrototype);
+	  set.size = map ? map.size : 0;
+	  set._map = map;
+	  set.__ownerID = ownerID;
+	  return set;
+	}
+	var EMPTY_ORDERED_SET;
+	function emptyOrderedSet() {
+	  return EMPTY_ORDERED_SET || (EMPTY_ORDERED_SET = makeOrderedSet(emptyOrderedMap()));
 	}
 	var Record = function Record(defaultValues, name) {
 	  var RecordType = function Record(values) {
@@ -4338,7 +4480,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return this._defaultValues.hasOwnProperty(k);
 	  },
 	  get: function(k, notSetValue) {
-	    if (notSetValue !== undefined && !this.has(k)) {
+	    if (!this.has(k)) {
 	      return notSetValue;
 	    }
 	    var defaultVal = this._defaultValues[k];
@@ -4402,10 +4544,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	}, {}, KeyedCollection);
 	var RecordPrototype = Record.prototype;
 	RecordPrototype[DELETE] = RecordPrototype.remove;
+	RecordPrototype.deleteIn = RecordPrototype.removeIn = MapPrototype.removeIn;
 	RecordPrototype.merge = MapPrototype.merge;
 	RecordPrototype.mergeWith = MapPrototype.mergeWith;
+	RecordPrototype.mergeIn = MapPrototype.mergeIn;
 	RecordPrototype.mergeDeep = MapPrototype.mergeDeep;
 	RecordPrototype.mergeDeepWith = MapPrototype.mergeDeepWith;
+	RecordPrototype.mergeDeepIn = MapPrototype.mergeDeepIn;
+	RecordPrototype.setIn = MapPrototype.setIn;
 	RecordPrototype.update = MapPrototype.update;
 	RecordPrototype.updateIn = MapPrototype.updateIn;
 	RecordPrototype.withMutations = MapPrototype.withMutations;
@@ -4509,8 +4655,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      return ii > maxIndex ? iteratorDone() : iteratorValue(type, ii++, v);
 	    }));
 	  },
-	  __deepEquals: function(other) {
-	    return other instanceof $Range ? this._start === other._start && this._end === other._end && this._step === other._step : $traceurRuntime.superCall(this, $Range.prototype, "__deepEquals", [other]);
+	  equals: function(other) {
+	    return other instanceof $Range ? this._start === other._start && this._end === other._end && this._step === other._step : deepEqual(this, other);
 	  }
 	}, {}, IndexedSeq);
 	var RangePrototype = Range.prototype;
@@ -4579,8 +4725,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      return ii < $__0.size ? iteratorValue(type, ii++, $__0._value) : iteratorDone();
 	    }));
 	  },
-	  __deepEquals: function(other) {
-	    return other instanceof $Repeat ? is(this._value, other._value) : $traceurRuntime.superCall(this, $Repeat.prototype, "__deepEquals", [other]);
+	  equals: function(other) {
+	    return other instanceof $Repeat ? is(this._value, other._value) : deepEqual(other);
 	  }
 	}, {}, IndexedSeq);
 	var RepeatPrototype = Repeat.prototype;
@@ -4595,10 +4741,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	  Seq: Seq,
 	  Collection: Collection,
 	  Map: Map,
+	  OrderedMap: OrderedMap,
 	  List: List,
 	  Stack: Stack,
 	  Set: Set,
-	  OrderedMap: OrderedMap,
+	  OrderedSet: OrderedSet,
 	  Record: Record,
 	  Range: Range,
 	  Repeat: Repeat,
@@ -4614,314 +4761,60 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 13 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
-	// Copyright Joyent, Inc. and other Node contributors.
-	//
-	// Permission is hereby granted, free of charge, to any person obtaining a
-	// copy of this software and associated documentation files (the
-	// "Software"), to deal in the Software without restriction, including
-	// without limitation the rights to use, copy, modify, merge, publish,
-	// distribute, sublicense, and/or sell copies of the Software, and to permit
-	// persons to whom the Software is furnished to do so, subject to the
-	// following conditions:
-	//
-	// The above copyright notice and this permission notice shall be included
-	// in all copies or substantial portions of the Software.
-	//
-	// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-	// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-	// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-	// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-	// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-	// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-	// USE OR OTHER DEALINGS IN THE SOFTWARE.
+	var Immutable = __webpack_require__(10)
+	var isGetter = __webpack_require__(6).isGetter
+	var isKeyPath = __webpack_require__(7).isKeyPath
 
-	function EventEmitter() {
-	  this._events = this._events || {};
-	  this._maxListeners = this._maxListeners || undefined;
-	}
-	module.exports = EventEmitter;
-
-	// Backwards-compat with node 0.10.x
-	EventEmitter.EventEmitter = EventEmitter;
-
-	EventEmitter.prototype._events = undefined;
-	EventEmitter.prototype._maxListeners = undefined;
-
-	// By default EventEmitters will print a warning if more than 10 listeners are
-	// added to it. This is a useful default which helps finding memory leaks.
-	EventEmitter.defaultMaxListeners = 10;
-
-	// Obviously not all Emitters should be limited to 10. This function allows
-	// that to be increased. Set to zero for unlimited.
-	EventEmitter.prototype.setMaxListeners = function(n) {
-	  if (!isNumber(n) || n < 0 || isNaN(n))
-	    throw TypeError('n must be a positive number');
-	  this._maxListeners = n;
-	  return this;
-	};
-
-	EventEmitter.prototype.emit = function(type) {
-	  var er, handler, len, args, i, listeners;
-
-	  if (!this._events)
-	    this._events = {};
-
-	  // If there is no 'error' event listener then throw.
-	  if (type === 'error') {
-	    if (!this._events.error ||
-	        (isObject(this._events.error) && !this._events.error.length)) {
-	      er = arguments[1];
-	      if (er instanceof Error) {
-	        throw er; // Unhandled 'error' event
-	      }
-	      throw TypeError('Uncaught, unspecified "error" event.');
-	    }
+	/**
+	 * Takes a getter and returns the hash code value
+	 *
+	 * If cache argument is true it will freeze the getter
+	 * and cache the hashed value
+	 */
+	module.exports = function(keyPathOrGetter, dontCache) {
+	  if (!isGetter(keyPathOrGetter) && !isKeyPath(keyPathOrGetter)) {
+	    throw new Error("Invalid getter!  Must be of the form: [<KeyPath>, ...<KeyPath>, <function>]")
 	  }
 
-	  handler = this._events[type];
-
-	  if (isUndefined(handler))
-	    return false;
-
-	  if (isFunction(handler)) {
-	    switch (arguments.length) {
-	      // fast cases
-	      case 1:
-	        handler.call(this);
-	        break;
-	      case 2:
-	        handler.call(this, arguments[1]);
-	        break;
-	      case 3:
-	        handler.call(this, arguments[1], arguments[2]);
-	        break;
-	      // slower
-	      default:
-	        len = arguments.length;
-	        args = new Array(len - 1);
-	        for (i = 1; i < len; i++)
-	          args[i - 1] = arguments[i];
-	        handler.apply(this, args);
-	    }
-	  } else if (isObject(handler)) {
-	    len = arguments.length;
-	    args = new Array(len - 1);
-	    for (i = 1; i < len; i++)
-	      args[i - 1] = arguments[i];
-
-	    listeners = handler.slice();
-	    len = listeners.length;
-	    for (i = 0; i < len; i++)
-	      listeners[i].apply(this, args);
+	  if (keyPathOrGetter.hasOwnProperty('__hashCode')) {
+	    return keyPathOrGetter.__hashCode
 	  }
 
-	  return true;
-	};
+	  var hashCode = Immutable.fromJS(keyPathOrGetter).hashCode()
 
-	EventEmitter.prototype.addListener = function(type, listener) {
-	  var m;
+	  if (!dontCache) {
+	    Object.defineProperty(keyPathOrGetter, '__hashCode', {
+	      enumerable: false,
+	      configurable: false,
+	      writable: false,
+	      value: hashCode,
+	    })
 
-	  if (!isFunction(listener))
-	    throw TypeError('listener must be a function');
-
-	  if (!this._events)
-	    this._events = {};
-
-	  // To avoid recursion in the case that type === "newListener"! Before
-	  // adding it to the listeners, first emit "newListener".
-	  if (this._events.newListener)
-	    this.emit('newListener', type,
-	              isFunction(listener.listener) ?
-	              listener.listener : listener);
-
-	  if (!this._events[type])
-	    // Optimize the case of one listener. Don't need the extra array object.
-	    this._events[type] = listener;
-	  else if (isObject(this._events[type]))
-	    // If we've already got an array, just append.
-	    this._events[type].push(listener);
-	  else
-	    // Adding the second element, need to change to array.
-	    this._events[type] = [this._events[type], listener];
-
-	  // Check for listener leak
-	  if (isObject(this._events[type]) && !this._events[type].warned) {
-	    var m;
-	    if (!isUndefined(this._maxListeners)) {
-	      m = this._maxListeners;
-	    } else {
-	      m = EventEmitter.defaultMaxListeners;
-	    }
-
-	    if (m && m > 0 && this._events[type].length > m) {
-	      this._events[type].warned = true;
-	      console.error('(node) warning: possible EventEmitter memory ' +
-	                    'leak detected. %d listeners added. ' +
-	                    'Use emitter.setMaxListeners() to increase limit.',
-	                    this._events[type].length);
-	      if (typeof console.trace === 'function') {
-	        // not supported in IE 10
-	        console.trace();
-	      }
-	    }
+	    Object.freeze(keyPathOrGetter)
 	  }
 
-	  return this;
-	};
-
-	EventEmitter.prototype.on = EventEmitter.prototype.addListener;
-
-	EventEmitter.prototype.once = function(type, listener) {
-	  if (!isFunction(listener))
-	    throw TypeError('listener must be a function');
-
-	  var fired = false;
-
-	  function g() {
-	    this.removeListener(type, g);
-
-	    if (!fired) {
-	      fired = true;
-	      listener.apply(this, arguments);
-	    }
-	  }
-
-	  g.listener = listener;
-	  this.on(type, g);
-
-	  return this;
-	};
-
-	// emits a 'removeListener' event iff the listener was removed
-	EventEmitter.prototype.removeListener = function(type, listener) {
-	  var list, position, length, i;
-
-	  if (!isFunction(listener))
-	    throw TypeError('listener must be a function');
-
-	  if (!this._events || !this._events[type])
-	    return this;
-
-	  list = this._events[type];
-	  length = list.length;
-	  position = -1;
-
-	  if (list === listener ||
-	      (isFunction(list.listener) && list.listener === listener)) {
-	    delete this._events[type];
-	    if (this._events.removeListener)
-	      this.emit('removeListener', type, listener);
-
-	  } else if (isObject(list)) {
-	    for (i = length; i-- > 0;) {
-	      if (list[i] === listener ||
-	          (list[i].listener && list[i].listener === listener)) {
-	        position = i;
-	        break;
-	      }
-	    }
-
-	    if (position < 0)
-	      return this;
-
-	    if (list.length === 1) {
-	      list.length = 0;
-	      delete this._events[type];
-	    } else {
-	      list.splice(position, 1);
-	    }
-
-	    if (this._events.removeListener)
-	      this.emit('removeListener', type, listener);
-	  }
-
-	  return this;
-	};
-
-	EventEmitter.prototype.removeAllListeners = function(type) {
-	  var key, listeners;
-
-	  if (!this._events)
-	    return this;
-
-	  // not listening for removeListener, no need to emit
-	  if (!this._events.removeListener) {
-	    if (arguments.length === 0)
-	      this._events = {};
-	    else if (this._events[type])
-	      delete this._events[type];
-	    return this;
-	  }
-
-	  // emit removeListener for all listeners on all events
-	  if (arguments.length === 0) {
-	    for (key in this._events) {
-	      if (key === 'removeListener') continue;
-	      this.removeAllListeners(key);
-	    }
-	    this.removeAllListeners('removeListener');
-	    this._events = {};
-	    return this;
-	  }
-
-	  listeners = this._events[type];
-
-	  if (isFunction(listeners)) {
-	    this.removeListener(type, listeners);
-	  } else {
-	    // LIFO order
-	    while (listeners.length)
-	      this.removeListener(type, listeners[listeners.length - 1]);
-	  }
-	  delete this._events[type];
-
-	  return this;
-	};
-
-	EventEmitter.prototype.listeners = function(type) {
-	  var ret;
-	  if (!this._events || !this._events[type])
-	    ret = [];
-	  else if (isFunction(this._events[type]))
-	    ret = [this._events[type]];
-	  else
-	    ret = this._events[type].slice();
-	  return ret;
-	};
-
-	EventEmitter.listenerCount = function(emitter, type) {
-	  var ret;
-	  if (!emitter._events || !emitter._events[type])
-	    ret = 0;
-	  else if (isFunction(emitter._events[type]))
-	    ret = 1;
-	  else
-	    ret = emitter._events[type].length;
-	  return ret;
-	};
-
-	function isFunction(arg) {
-	  return typeof arg === 'function';
-	}
-
-	function isNumber(arg) {
-	  return typeof arg === 'number';
-	}
-
-	function isObject(arg) {
-	  return typeof arg === 'object' && arg !== null;
-	}
-
-	function isUndefined(arg) {
-	  return arg === void 0;
+	  return hashCode
 	}
 
 
 /***/ },
-/* 14 */
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Immutable = __webpack_require__(10)
+	/**
+	 * Is equal by value check
+	 */
+	module.exports = function(a, b) {
+	  return Immutable.is(a, b)
+	}
+
+
+/***/ },
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(module, global) {/**
@@ -12082,10 +11975,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	}.call(this));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(15)(module), (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(14)(module), (function() { return this; }())))
 
 /***/ },
-/* 15 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = function(module) {

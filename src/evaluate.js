@@ -6,11 +6,14 @@ var Getter = require('./getter')
  */
 
 /**
+ * Takes eithe a KeyPath or Getter and evaluates
+ *
+ * KeyPath Forms:
+ * ['foo', 'bar'] => state.getIn(['foo', 'bar'])
+ *
  * Getter forms:
- * 'foo.bar'
- * ['foor', 'bar']
- * ['store1, 'foo', 'bar']
- * ['foo', 'bar', function(fooValue, barValue) {...}]
+ * [<KeyPath>, <KeyPath>, ..., <function?>]
+ * ['foo', 'bar', function(fooValue, barValue) {...}] => 
  * [['foo.bar'], 'baz', function(foobarValue, bazValue) {...}]
  * [['store1', 'foo', 'bar', ['foo.bar'], 'baz', function(Store.foo.bar, foobarValue, bazValue) {...}]
  *

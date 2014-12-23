@@ -1,125 +1,79 @@
-var KeyPath = require('./key-path')
 var Immutable = require('immutable')
-var Record = Immutable.Record
 var isFunction = require('./utils').isFunction
 var isArray = require('./utils').isArray
-
-var identity = x => x
-
-var Getter = Record({
-  deps: null,
-  flatDeps: null,
-  computeFn: null,
-})
+var isKeyPath = require('./key-path').isKeyPath
 
 /**
- * Checks if something is a GetterRecord
+ * Getter helper functions
+ * A getter is an array with the form:
+ * [<KeyPath>, ...<KeyPath>, <function>]
  */
-function isGetter(toTest) {
-  return (toTest instanceof Getter)
-}
+var identity = (x) => x
 
 /**
  * Checks if something is a getter literal, ex: ['dep1', 'dep2', function(dep1, dep2) {...}]
  * @param {*} toTest
  * @return {boolean}
  */
-function isGetterLike(toTest) {
+function isGetter(toTest) {
   return (isArray(toTest) && isFunction(toTest[toTest.length - 1]))
 }
 
-/**
- * Coerce string deps to be array dep keyPaths
- * ex: 'foo1.foo2' => ['foo1', 'foo2']
- *
- * @param {array<string|array<string>>}
- * @return {<array<array<string>>}
- */
-function coerceDeps(deps){
-  return deps.map(dep => {
-    if (isGetter(dep)) {
-      // if the dep is an nested Getter simply return
-      return dep
-    }
-    return KeyPath(dep)
-  })
-}
 
 /**
  * Recursive function to flatten deps of a getter
- * @param {array<array<string>|Getter>} deps
- * @return {array<array<string>>} unique flatten deps
+ * @param {Getter} getter
+ * @return {Array.<KeyPath>} unique flatten deps
  */
-function flattenDeps(deps) {
+function unwrapDeps(getter) {
   var accum = Immutable.Set()
+  var deps = getter.slice(0, getter.length - 1)
 
-  var coercedDeps = coerceDeps(deps)
-
-  coercedDeps.forEach((dep) => {
-    if (isGetter(dep)) {
-      accum = accum.union(flattenDeps(dep.deps))
-    } else {
-      accum = accum.add(dep)
-    }
+  return accum.withMutations(accum => {
+    deps.forEach((dep) => {
+      isGetter(dep)
+        ? accum.union(unwrapDeps(dep))
+        : accum.add(dep)
+    })
+    return accum
   })
-
-  return accum.toJS()
 }
 
 /**
- * Wrap the Getter in a function that coerces args
- *
- * Takes the form createGetter('dep1', 'dep2', computeFn)
- * or
- * Takes the form createGetter('dep1', 'dep2') // identity function is used
- *
- * @return {GetterRecord}
+ * Returns the compute function from a getter
+ * @param {Getter} getter
+ * @return {function}
  */
-function createGetter() {
-  // createGetter() returns a blank getter
-  if (arguments.length === 0) {
-    return createGetter([])
-  }
-  var len = arguments.length
-  var deps
-  var computeFn
-  if (isFunction(arguments[len - 1])) {
-    // computeFn is provided
-    deps = Array.prototype.slice.call(arguments, 0, len - 1)
-    computeFn = arguments[len - 1]
-  } else {
-    // computeFn isnt provided use identity
-    deps = Array.prototype.slice.call(arguments, 0)
-    computeFn = identity
-  }
-
-  // compute the flatten deps, and cache since deps are immutable
-  // once they enter the record
-  var flatDeps = flattenDeps(deps)
-  var deps = coerceDeps(deps)
-
-  return new Getter({
-    deps: deps,
-    flatDeps: flatDeps,
-    computeFn: computeFn
-  })
+function getComputeFn(getter) {
+  return getter[getter.length - 1]
 }
 
 /**
- * Returns a getter from arguments
- * @param {array} args or arguments
+ * Returns an array of deps from a getter
+ * @param {Getter} getter
+ * @return {function}
+ */
+function getDeps(getter) {
+  return getter.slice(0, getter.length - 1)
+}
+
+/**
+ * @param {KeyPath}
  * @return {Getter}
  */
-function fromArgs(args) {
-  if (args.length === 1 && isGetter(args[0])) {
-    // was passed a Getter
-    return args[0]
+function fromKeyPath(keyPath) {
+  if (!isKeyPath(keyPath)) {
+    throw new Error("Cannot create Getter from KeyPath: " + keyPath)
   }
-  return createGetter.apply(null, args)
+
+  return [keyPath, identity]
 }
 
-module.exports = createGetter
 
-module.exports.isGetter = isGetter
-
-module.exports.fromArgs = fromArgs
+module.exports = {
+  unwrapDeps: unwrapDeps,
+  isGetter: isGetter,
+  getComputeFn: getComputeFn,
+  getDeps: getDeps,
+  fromKeyPath: fromKeyPath,
+}
