@@ -34,32 +34,11 @@ describe('Store', () => {
               return exps.remove(payload.id)
             })
           })
-
-          this.computed('project10', ['experiments', (exps) => {
-            return exps.filter(exp => {
-              return exp.get('proj_id') === 10
-            })
-          }])
-
-          this.computed('length', ['experiments', (exps) => {
-            return exps.size
-          }])
         }
       })
 
       initial = store.getInitialState()
       store.initialize()
-    })
-
-    it('getInitialStateWithComputeds should execute computeds', () => {
-      var initialComputedState = store.getInitialStateWithComputeds()
-
-      var expected = Map({
-        experiments: Map(),
-        length: 0,
-        project10: Map(),
-      })
-      expect(Immutable.is(expected, initialComputedState)).toBe(true)
     })
 
     it('should handle to addExperiments', function() {
@@ -83,19 +62,6 @@ describe('Store', () => {
 
       var results = finalState.get('experiments').toList().toJS()
       expect(results).toEqual(expected)
-    })
-
-    describe('computeds', () => {
-      it('should evaluate the computeds at every handle', () => {
-        var experiments = [exp1, exp2, exp3]
-        var newState = store.handle(initial, 'addExperiments', {
-          data: experiments
-        })
-        var results = newState.get('project10').toList().toJS()
-        var expected = [exp1, exp2]
-        expect(expected).toEqual(results)
-        expect(newState.get('length')).toEqual(3)
-      })
     })
   })
 

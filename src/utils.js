@@ -2,6 +2,8 @@ var _ = require('lodash');
 
 exports.clone = _.clone
 
+exports.cloneDeep = _.cloneDeep
+
 exports.extend = _.extend
 
 exports.each = _.each
@@ -9,6 +11,8 @@ exports.each = _.each
 exports.partial = _.partial
 
 exports.isArray = _.isArray
+
+exports.isObject = _.isObject
 
 exports.isFunction = _.isFunction
 
