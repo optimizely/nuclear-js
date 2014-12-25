@@ -44,7 +44,7 @@ class Reactor {
      * Change observer interface to observe certain keypaths
      * Created after __initialize so it starts with initialState
      */
-    this.__changeObsever = new ChangeObserver(this.__state, this.__evaluator)
+    this.__changeObserver = new ChangeObserver(this.__state, this.__evaluator)
   }
 
   /**
@@ -97,7 +97,7 @@ class Reactor {
       options.handler = handler
     }
 
-    return this.__changeObsever.onChange(options)
+    return this.__changeObserver.onChange(options)
   }
 
 
@@ -126,7 +126,7 @@ class Reactor {
 
     // write the new state to the output stream if changed
     if (this.__state !== prevState) {
-      this.__notifyObservers(this.__state, actionType, payload)
+      this.__changeObserver.notifyObservers(this.__state, actionType, payload)
     }
   }
 
@@ -145,7 +145,7 @@ class Reactor {
     this.__state = this.__state.set(id, toImmutable(store.getInitialState()))
 
     if (!silent) {
-      this.__notifyObservers(this.__state, 'ATTACH_STORE', {
+      this.__changeObserver.notifyObservers(this.__state, 'ATTACH_STORE', {
         id: id,
         store: store
       })
@@ -161,7 +161,7 @@ class Reactor {
       this.attachStore(id, store, true)
     })
     if (!silent) {
-      this.__notifyObservers(this.__state, 'ATTACH_STORES', {
+      this.__changeObserver.notifyObservers(this.__state, 'ATTACH_STORES', {
         stores: stores
       })
     }
@@ -178,19 +178,7 @@ class Reactor {
     })
 
     this.__evaluator.reset()
-    this.__changeObsever.reset(this.__state)
-  }
-
-  /**
-   * Notifies subscribed observers of state change
-   * @param {Immutable.Map} state
-   * @param {string} actionType
-   * @param {object} payload
-   */
-  __notifyObservers(state, actionType, payload) {
-    // after a dispatch discard old values
-    this.__evaluator.afterDispatch()
-    this.__changeObsever.notifyObservers(this.__state, actionType, payload)
+    this.__changeObserver.reset(this.__state)
   }
 }
 
