@@ -37,11 +37,9 @@ class Evaluator {
      *
      * {
      *   <hashCode>: {
-     *     prevArgs: Immutable.List,
-     *     prevValue: any,
-     *     currStateHashCode: number,
-     *     currArgs: any,
-     *     currValue: Immutable.List,
+     *     stateHashCode: number,
+     *     args: any,
+     *     value: Immutable.List,
      *   }
      * }
      *
@@ -71,46 +69,70 @@ class Evaluator {
         // account for the cases when state is a primitive value
         return state
       }
-    } else if (isGetter(keyPathOrGetter)) {
-      var code = hashCode(keyPathOrGetter)
-
-      // if the value is cached for this dispatch cycle, return the cached value
-      if (this.__isCached(state, keyPathOrGetter)) {
-        // Cache hit
-        return deref(this.__cachedGetters.getIn([code, 'currValue']))
-
-      } else if (this.__cachedGetters.hasIn([code, 'prevValue'])) {
-        var prevValue = this.__cachedGetters.getIn([code, 'prevValue'])
-        var prevArgs = this.__cachedGetters.getIn([code, 'prevArgs'])
-        // getter deps could still be unchanged since we only looked at the unwrapped (keypath, bottom level) deps
-        var currArgs = toImmutable(getDeps(getter).every(getter => {
-          return this.evaluate(state, getter, track)
-        }))
-
-        if (Immutable.is(prevArgs, currArgs)) {
-          // the arguments to this getter are current identical
-          if (track) {
-            this.__cacheValue(state, keyPathOrGetter, prevArgs, prevValue)
-          }
-          return deref(prevValue)
-        }
-      }
-      // no cache hit evaluate
-      var deps = getDeps(keyPathOrGetter)
-      var computeFn = getComputeFn(keyPathOrGetter)
-      var args = deps.map(dep => {
-        return this.evaluate(state, dep, track)
-      })
-      var evaluatedValue = computeFn.apply(null, args)
-
-      if (track) {
-        this.__cacheValue(state, keyPathOrGetter, args, evaluatedValue)
-      }
-
-      return evaluatedValue
-    } else {
+    } else if (!isGetter(keyPathOrGetter)) {
       throw new Error("evaluate must be passed a keyPath or Getter")
     }
+
+    // Must be a Getter
+    var isTracking = false;
+    var code = hashCode(keyPathOrGetter)
+    if (track && !this.__cachedGetters.has(code)) {
+      this.__cachedGetters = this.__cachedGetters.set(code, Immutable.Map({
+        stateHashCode: null,
+        value: null,
+        args: null,
+      }))
+      isTracking = true
+    } else if (this.__cachedGetters.has(code)){
+      isTracking = true
+    }
+
+    // if the value is cached for this dispatch cycle, return the cached value
+    if (this.__isCached(state, keyPathOrGetter)) {
+      // Cache hit
+      return deref(this.__cachedGetters.getIn([code, 'value']))
+
+    } else if (this.__hasStaleValue(state, keyPathOrGetter)) {
+      var prevValue = this.__cachedGetters.getIn([code, 'value'])
+      var prevArgs = this.__cachedGetters.getIn([code, 'args'])
+      // getter deps could still be unchanged since we only looked at the unwrapped (keypath, bottom level) deps
+      var currArgs = toImmutable(getDeps(getter).every(getter => {
+        return this.evaluate(state, getter, track)
+      }))
+
+      if (isEqual(prevArgs, currArgs)) {
+        // the arguments to this getter are current identical
+        if (isTracking) {
+          this.__cacheValue(state, keyPathOrGetter, prevArgs, prevValue)
+        }
+        return deref(prevValue)
+      }
+    }
+    // no cache hit evaluate
+    var deps = getDeps(keyPathOrGetter)
+    var computeFn = getComputeFn(keyPathOrGetter)
+    var args = deps.map(dep => {
+      return this.evaluate(state, dep, track)
+    })
+    var evaluatedValue = computeFn.apply(null, args)
+
+    if (isTracking) {
+      this.__cacheValue(state, keyPathOrGetter, args, evaluatedValue)
+    }
+
+    return evaluatedValue
+  }
+
+  /**
+   * @param {Immutable.Map} state
+   * @param {Getter} getter
+   */
+  __hasStaleValue(state, getter) {
+    var code = hashCode(getter)
+    return (
+      state.has(code) &&
+      state.getIn([code, 'stateHashCode']) !== state.hashCode()
+    )
   }
 
   /**
@@ -123,9 +145,9 @@ class Evaluator {
   __cacheValue(state, getter, args, value) {
     var code = hashCode(getter)
     this.__cachedGetters = this.__cachedGetters.set(code, Immutable.Map({
-      currValue: value,
-      currArgs: toImmutable(args),
-      currStateHashCode: state.hashCode(),
+      value: value,
+      args: toImmutable(args),
+      stateHashCode: state.hashCode(),
     }))
   }
 
@@ -138,18 +160,9 @@ class Evaluator {
   __isCached(state, getter) {
     var code = hashCode(getter)
     return (
-      this.__cachedGetters.hasIn([code, 'currValue']) &&
-      this.__cachedGetters.getIn([code, 'currStateHashCode']) === state.hashCode()
+      this.__cachedGetters.hasIn([code, 'value']) &&
+      this.__cachedGetters.getIn([code, 'stateHashCode']) === state.hashCode()
     )
-  }
-
-  afterDispatch() {
-    this.__cachedGetters = this.__cachedGetters.map(entry => {
-      return Immutable.Map({
-        prevValue: entry.get('currValue'),
-        prevArgs: entry.get('currArgs'),
-      })
-    })
   }
 
   /**
@@ -157,7 +170,9 @@ class Evaluator {
    * @param {Getter}
    */
   untrack(getter) {
-    // TODO
+    var code = hashCode(getter)
+    this.__cachedGetters = this.__cachedGetters.remove(code)
+    // TODO untrack all depedencies
   }
 
   reset() {

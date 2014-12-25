@@ -168,7 +168,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * Change observer interface to observe certain keypaths
 	     * Created after __initialize so it starts with initialState
 	     */
-	    this.__changeObsever = new ChangeObserver(this.__state, this.__evaluator)
+	    this.__changeObserver = new ChangeObserver(this.__state, this.__evaluator)
 	  }
 
 	  /**
@@ -221,7 +221,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      options.handler = handler
 	    }
 
-	    return this.__changeObsever.onChange(options)
+	    return this.__changeObserver.onChange(options)
 	  };
 
 
@@ -250,7 +250,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    // write the new state to the output stream if changed
 	    if (this.__state !== prevState) {
-	      this.__notifyObservers(this.__state, actionType, payload)
+	      this.__changeObserver.notifyObservers(this.__state, actionType, payload)
 	    }
 	  };
 
@@ -269,7 +269,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.__state = this.__state.set(id, toImmutable(store.getInitialState()))
 
 	    if (!silent) {
-	      this.__notifyObservers(this.__state, 'ATTACH_STORE', {
+	      this.__changeObserver.notifyObservers(this.__state, 'ATTACH_STORE', {
 	        id: id,
 	        store: store
 	      })
@@ -285,7 +285,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this.attachStore(id, store, true)
 	    }.bind(this))
 	    if (!silent) {
-	      this.__notifyObservers(this.__state, 'ATTACH_STORES', {
+	      this.__changeObserver.notifyObservers(this.__state, 'ATTACH_STORES', {
 	        stores: stores
 	      })
 	    }
@@ -302,19 +302,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }.bind(this))
 
 	    this.__evaluator.reset()
-	    this.__changeObsever.reset(this.__state)
-	  };
-
-	  /**
-	   * Notifies subscribed observers of state change
-	   * @param {Immutable.Map} state
-	   * @param {string} actionType
-	   * @param {object} payload
-	   */
-	  Reactor.prototype.__notifyObservers=function(state, actionType, payload) {"use strict";
-	    // after a dispatch discard old values
-	    this.__evaluator.afterDispatch()
-	    this.__changeObsever.notifyObservers(this.__state, actionType, payload)
+	    this.__changeObserver.reset(this.__state)
 	  };
 
 
@@ -672,11 +660,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	     *
 	     * {
 	     *   <hashCode>: {
-	     *     prevArgs: Immutable.List,
-	     *     prevValue: any,
-	     *     currStateHashCode: number,
-	     *     currArgs: any,
-	     *     currValue: Immutable.List,
+	     *     stateHashCode: number,
+	     *     args: any,
+	     *     value: Immutable.List,
 	     *   }
 	     * }
 	     *
@@ -706,46 +692,70 @@ return /******/ (function(modules) { // webpackBootstrap
 	        // account for the cases when state is a primitive value
 	        return state
 	      }
-	    } else if (isGetter(keyPathOrGetter)) {
-	      var code = hashCode(keyPathOrGetter)
-
-	      // if the value is cached for this dispatch cycle, return the cached value
-	      if (this.__isCached(state, keyPathOrGetter)) {
-	        // Cache hit
-	        return deref(this.__cachedGetters.getIn([code, 'currValue']))
-
-	      } else if (this.__cachedGetters.hasIn([code, 'prevValue'])) {
-	        var prevValue = this.__cachedGetters.getIn([code, 'prevValue'])
-	        var prevArgs = this.__cachedGetters.getIn([code, 'prevArgs'])
-	        // getter deps could still be unchanged since we only looked at the unwrapped (keypath, bottom level) deps
-	        var currArgs = toImmutable(getDeps(getter).every(function(getter)  {
-	          return this.evaluate(state, getter, track)
-	        }.bind(this)))
-
-	        if (Immutable.is(prevArgs, currArgs)) {
-	          // the arguments to this getter are current identical
-	          if (track) {
-	            this.__cacheValue(state, keyPathOrGetter, prevArgs, prevValue)
-	          }
-	          return deref(prevValue)
-	        }
-	      }
-	      // no cache hit evaluate
-	      var deps = getDeps(keyPathOrGetter)
-	      var computeFn = getComputeFn(keyPathOrGetter)
-	      var args = deps.map(function(dep)  {
-	        return this.evaluate(state, dep, track)
-	      }.bind(this))
-	      var evaluatedValue = computeFn.apply(null, args)
-
-	      if (track) {
-	        this.__cacheValue(state, keyPathOrGetter, args, evaluatedValue)
-	      }
-
-	      return evaluatedValue
-	    } else {
+	    } else if (!isGetter(keyPathOrGetter)) {
 	      throw new Error("evaluate must be passed a keyPath or Getter")
 	    }
+
+	    // Must be a Getter
+	    var isTracking = false;
+	    var code = hashCode(keyPathOrGetter)
+	    if (track && !this.__cachedGetters.has(code)) {
+	      this.__cachedGetters = this.__cachedGetters.set(code, Immutable.Map({
+	        stateHashCode: null,
+	        value: null,
+	        args: null,
+	      }))
+	      isTracking = true
+	    } else if (this.__cachedGetters.has(code)){
+	      isTracking = true
+	    }
+
+	    // if the value is cached for this dispatch cycle, return the cached value
+	    if (this.__isCached(state, keyPathOrGetter)) {
+	      // Cache hit
+	      return deref(this.__cachedGetters.getIn([code, 'value']))
+
+	    } else if (this.__hasStaleValue(state, keyPathOrGetter)) {
+	      var prevValue = this.__cachedGetters.getIn([code, 'value'])
+	      var prevArgs = this.__cachedGetters.getIn([code, 'args'])
+	      // getter deps could still be unchanged since we only looked at the unwrapped (keypath, bottom level) deps
+	      var currArgs = toImmutable(getDeps(getter).every(function(getter)  {
+	        return this.evaluate(state, getter, track)
+	      }.bind(this)))
+
+	      if (isEqual(prevArgs, currArgs)) {
+	        // the arguments to this getter are current identical
+	        if (isTracking) {
+	          this.__cacheValue(state, keyPathOrGetter, prevArgs, prevValue)
+	        }
+	        return deref(prevValue)
+	      }
+	    }
+	    // no cache hit evaluate
+	    var deps = getDeps(keyPathOrGetter)
+	    var computeFn = getComputeFn(keyPathOrGetter)
+	    var args = deps.map(function(dep)  {
+	      return this.evaluate(state, dep, track)
+	    }.bind(this))
+	    var evaluatedValue = computeFn.apply(null, args)
+
+	    if (isTracking) {
+	      this.__cacheValue(state, keyPathOrGetter, args, evaluatedValue)
+	    }
+
+	    return evaluatedValue
+	  };
+
+	  /**
+	   * @param {Immutable.Map} state
+	   * @param {Getter} getter
+	   */
+	  Evaluator.prototype.__hasStaleValue=function(state, getter) {"use strict";
+	    var code = hashCode(getter)
+	    return (
+	      state.has(code) &&
+	      state.getIn([code, 'stateHashCode']) !== state.hashCode()
+	    )
 	  };
 
 	  /**
@@ -758,9 +768,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	  Evaluator.prototype.__cacheValue=function(state, getter, args, value) {"use strict";
 	    var code = hashCode(getter)
 	    this.__cachedGetters = this.__cachedGetters.set(code, Immutable.Map({
-	      currValue: value,
-	      currArgs: toImmutable(args),
-	      currStateHashCode: state.hashCode(),
+	      value: value,
+	      args: toImmutable(args),
+	      stateHashCode: state.hashCode(),
 	    }))
 	  };
 
@@ -773,18 +783,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	  Evaluator.prototype.__isCached=function(state, getter) {"use strict";
 	    var code = hashCode(getter)
 	    return (
-	      this.__cachedGetters.hasIn([code, 'currValue']) &&
-	      this.__cachedGetters.getIn([code, 'currStateHashCode']) === state.hashCode()
+	      this.__cachedGetters.hasIn([code, 'value']) &&
+	      this.__cachedGetters.getIn([code, 'stateHashCode']) === state.hashCode()
 	    )
-	  };
-
-	  Evaluator.prototype.afterDispatch=function() {"use strict";
-	    this.__cachedGetters = this.__cachedGetters.map(function(entry)  {
-	      return Immutable.Map({
-	        prevValue: entry.get('currValue'),
-	        prevArgs: entry.get('currArgs'),
-	      })
-	    })
 	  };
 
 	  /**
@@ -792,7 +793,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @param {Getter}
 	   */
 	  Evaluator.prototype.untrack=function(getter) {"use strict";
-	    // TODO
+	    var code = hashCode(getter)
+	    this.__cachedGetters = this.__cachedGetters.remove(code)
+	    // TODO untrack all depedencies
 	  };
 
 	  Evaluator.prototype.reset=function() {"use strict";
