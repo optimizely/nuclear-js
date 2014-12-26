@@ -1,6 +1,5 @@
 var Immutable = require('immutable')
 var Getter = require('../src/getter')
-var evaluate = require('../src/evaluate')
 var isGetter = Getter.isGetter
 
 describe('Getter', () => {

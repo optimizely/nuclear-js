@@ -1,5 +1,4 @@
 var Immutable = require('immutable')
-var Map = Immutable.Map
 var logging = require('./logging')
 var ChangeObserver = require('./change-observer')
 var Getter = require('./getter')
@@ -9,9 +8,7 @@ var Evaluator = require('./evaluator')
 // helper fns
 var toJS = require('./immutable-helpers').toJS
 var toImmutable = require('./immutable-helpers').toImmutable
-var coerceArray = require('./utils').coerceArray
 var each = require('./utils').each
-var partial = require('./utils').partial
 
 
 /**
@@ -53,9 +50,6 @@ class Reactor {
    * @return {*}
    */
   evaluate(keyPathOrGetter) {
-    if (arguments.length === 0) {
-      keyPathOrGetter = []
-    }
     return this.__evaluator.evaluate(this.__state, keyPathOrGetter)
   }
 
@@ -65,7 +59,7 @@ class Reactor {
    * @return {*}
    */
   evaluateToJS(keyPathOrGetter) {
-    return toJS(this.evaluate.apply(this, arguments))
+    return toJS(this.evaluate(keyPathOrGetter))
   }
 
   /**
@@ -85,19 +79,13 @@ class Reactor {
    * @return {function} unwatch function
    */
   observe(getter, handler) {
-    var options = {}
     if (arguments.length === 1) {
-      options.getter = Getter.fromKeyPath([])
-      options.handler = getter
-    } else {
-      if (KeyPath.isKeyPath(getter)) {
-        getter = Getter.fromKeyPath(getter)
-      }
-      options.getter = getter
-      options.handler = handler
+      handler = getter
+      getter = Getter.fromKeyPath([])
+    } else if (KeyPath.isKeyPath(getter)) {
+      getter = Getter.fromKeyPath(getter)
     }
-
-    return this.__changeObserver.onChange(options)
+    return this.__changeObserver.onChange(getter, handler)
   }
 
 
@@ -126,7 +114,7 @@ class Reactor {
 
     // write the new state to the output stream if changed
     if (this.__state !== prevState) {
-      this.__changeObserver.notifyObservers(this.__state, actionType, payload)
+      this.__changeObserver.notifyObservers(this.__state)
     }
   }
 
@@ -145,10 +133,7 @@ class Reactor {
     this.__state = this.__state.set(id, toImmutable(store.getInitialState()))
 
     if (!silent) {
-      this.__changeObserver.notifyObservers(this.__state, 'ATTACH_STORE', {
-        id: id,
-        store: store
-      })
+      this.__changeObserver.notifyObservers(this.__state)
     }
   }
 
@@ -161,9 +146,7 @@ class Reactor {
       this.attachStore(id, store, true)
     })
     if (!silent) {
-      this.__changeObserver.notifyObservers(this.__state, 'ATTACH_STORES', {
-        stores: stores
-      })
+      this.__changeObserver.notifyObservers(this.__state)
     }
   }
 

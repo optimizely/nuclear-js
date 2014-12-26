@@ -1,6 +1,4 @@
 var isArray = require('./utils').isArray
-var isNumber = require('./utils').isNumber
-var isString = require('./utils').isString
 var isFunction = require('./utils').isFunction
 
 /**
