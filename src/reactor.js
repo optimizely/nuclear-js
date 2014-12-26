@@ -45,7 +45,7 @@ class Reactor {
   }
 
   /**
-   * Gets the Immutable state at the keyPath or evaluates a getter
+   * Evaluates a KeyPath or Getter in context of the reactor state
    * @param {KeyPath|Getter} keyPathOrGetter
    * @return {*}
    */
@@ -54,7 +54,7 @@ class Reactor {
   }
 
   /**
-   * Gets the coerced state (to JS object) of the reactor by keyPath
+   * Gets the coerced state (to JS object) of the reactor.evaluate
    * @param {KeyPath|Getter} keyPathOrGetter
    * @return {*}
    */
@@ -124,7 +124,7 @@ class Reactor {
    * @param {Store} store
    * @param {boolean} silent should not notify observers of state change
    */
-  attachStore(id, store, silent) {
+  registerStore(id, store, silent) {
     if (this.__stores.get(id)) {
       console.warn("Store already defiend for id=" + id)
     }
@@ -141,9 +141,9 @@ class Reactor {
    * @param {Array.<string, Store>} stores
    * @param {boolean} silent should not notify observers of state change
    */
-  attachStores(stores, silent) {
+  registerStores(stores, silent) {
     each(stores, (store, id) => {
-      this.attachStore(id, store, true)
+      this.registerStore(id, store, true)
     })
     if (!silent) {
       this.__changeObserver.notifyObservers(this.__state)

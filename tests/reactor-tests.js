@@ -44,7 +44,7 @@ describe('Reactor', () => {
     })
 
     reactor = new Reactor()
-    reactor.attachStores({
+    reactor.registerStores({
       'items': itemStore,
       'taxPercent': taxPercentStore,
     })
