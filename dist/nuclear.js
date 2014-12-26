@@ -123,7 +123,6 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	var Immutable = __webpack_require__(10)
-	var Map = Immutable.Map
 	var logging = __webpack_require__(4)
 	var ChangeObserver = __webpack_require__(5)
 	var Getter = __webpack_require__(6)
@@ -133,9 +132,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	// helper fns
 	var toJS = __webpack_require__(1).toJS
 	var toImmutable = __webpack_require__(1).toImmutable
-	var coerceArray = __webpack_require__(9).coerceArray
 	var each = __webpack_require__(9).each
-	var partial = __webpack_require__(9).partial
 
 
 	/**
@@ -177,9 +174,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @return {*}
 	   */
 	  Reactor.prototype.evaluate=function(keyPathOrGetter) {"use strict";
-	    if (arguments.length === 0) {
-	      keyPathOrGetter = []
-	    }
 	    return this.__evaluator.evaluate(this.__state, keyPathOrGetter)
 	  };
 
@@ -189,7 +183,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @return {*}
 	   */
 	  Reactor.prototype.evaluateToJS=function(keyPathOrGetter) {"use strict";
-	    return toJS(this.evaluate.apply(this, arguments))
+	    return toJS(this.evaluate(keyPathOrGetter))
 	  };
 
 	  /**
@@ -209,19 +203,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @return {function} unwatch function
 	   */
 	  Reactor.prototype.observe=function(getter, handler) {"use strict";
-	    var options = {}
 	    if (arguments.length === 1) {
-	      options.getter = Getter.fromKeyPath([])
-	      options.handler = getter
-	    } else {
-	      if (KeyPath.isKeyPath(getter)) {
-	        getter = Getter.fromKeyPath(getter)
-	      }
-	      options.getter = getter
-	      options.handler = handler
+	      handler = getter
+	      getter = Getter.fromKeyPath([])
+	    } else if (KeyPath.isKeyPath(getter)) {
+	      getter = Getter.fromKeyPath(getter)
 	    }
-
-	    return this.__changeObserver.onChange(options)
+	    return this.__changeObserver.onChange(getter, handler)
 	  };
 
 
@@ -250,7 +238,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    // write the new state to the output stream if changed
 	    if (this.__state !== prevState) {
-	      this.__changeObserver.notifyObservers(this.__state, actionType, payload)
+	      this.__changeObserver.notifyObservers(this.__state)
 	    }
 	  };
 
@@ -269,10 +257,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.__state = this.__state.set(id, toImmutable(store.getInitialState()))
 
 	    if (!silent) {
-	      this.__changeObserver.notifyObservers(this.__state, 'ATTACH_STORE', {
-	        id: id,
-	        store: store
-	      })
+	      this.__changeObserver.notifyObservers(this.__state)
 	    }
 	  };
 
@@ -285,9 +270,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this.attachStore(id, store, true)
 	    }.bind(this))
 	    if (!silent) {
-	      this.__changeObserver.notifyObservers(this.__state, 'ATTACH_STORES', {
-	        stores: stores
-	      })
+	      this.__changeObserver.notifyObservers(this.__state)
 	    }
 	  };
 
@@ -420,9 +403,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	var Immutable = __webpack_require__(10)
-	var Getter = __webpack_require__(6)
 	var hashCode = __webpack_require__(11)
-	var clone = __webpack_require__(9).clone
 	var isEqual = __webpack_require__(12)
 
 	/**
@@ -456,17 +437,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	      if (this.__prevValues.has(code)) {
 	        prevValue = this.__prevValues.get(code)
 	      } else {
-	        prevValue = this.__evaluator.evaluate(prevState, getter, true)
-	        this.__prevValues.set(code, prevValue)
+	        prevValue = this.__evaluator.evaluate(prevState, getter)
+	        this.__prevValues = this.__prevValues.set(code, prevValue)
 	      }
 
-	      var currValue = this.__evaluator.evaluate(newState, getter, true)
+	      var currValue = this.__evaluator.evaluate(newState, getter)
 
 	      if (!isEqual(prevValue, currValue)) {
 	        entry.handler.call(null, currValue)
+	        this.__prevValues = this.__prevValues.set(code, currValue)
 	      }
-
-	      this.__prevValues.set(code, currValue)
 	    }.bind(this))
 	    this.__prevState = newState
 	  };
@@ -474,14 +454,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	  /**
 	   * Specify an getter and a change handler fn
 	   * Handler function is called whenever the value of the getter changes
-	   * @param {object} options
-	   * @param {Getter} options.getter
-	   * @param {function} options.handler
+	   * @param {Getter} getter
+	   * @param {function} handler
 	   * @return {function} unwatch function
 	   */
-	  ChangeObserver.prototype.onChange=function(options) {"use strict";
-	    var entry = clone(options)
+	  ChangeObserver.prototype.onChange=function(getter, handler) {"use strict";
 	    // TODO make observers a map of <Getter> => { handlers }
+	    var entry = {
+	      getter: getter,
+	      handler: handler,
+	    }
 	    this.__observers.push(entry)
 	    // return unwatch function
 	    return function()  {
@@ -600,8 +582,6 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	var isArray = __webpack_require__(9).isArray
-	var isNumber = __webpack_require__(9).isNumber
-	var isString = __webpack_require__(9).isString
 	var isFunction = __webpack_require__(9).isFunction
 
 	/**
@@ -626,7 +606,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	var isImmutable = helpers.isImmutable
 	var toImmutable = helpers.toImmutable
 	var hashCode = __webpack_require__(11)
-	var unwrapDeps = __webpack_require__(6).unwrapDeps
 	var isEqual = __webpack_require__(12)
 	var getComputeFn = __webpack_require__(6).getComputeFn
 	var getDeps = __webpack_require__(6).getDeps
@@ -656,16 +635,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  function Evaluator() {"use strict";
 	    /**
-	     * Mains a list of cached getters
-	     *
 	     * {
 	     *   <hashCode>: {
 	     *     stateHashCode: number,
-	     *     args: any,
-	     *     value: Immutable.List,
+	     *     args: Immutable.List,
+	     *     value: any,
 	     *   }
 	     * }
-	     *
 	     */
 	    this.__cachedGetters = Immutable.Map({})
 	  }
@@ -681,34 +657,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	   *
 	   * @param {Immutable.Map} state
 	   * @param {string|array} getter
-	   * @param {boolean} track whether the dep should be tracked for caching / performance
+	   * @return {any}
 	   */
-	  Evaluator.prototype.evaluate=function(state, keyPathOrGetter, track) {"use strict";
+	  Evaluator.prototype.evaluate=function(state, keyPathOrGetter) {"use strict";
 	    if (isKeyPath(keyPathOrGetter)) {
 	      // if its a keyPath simply return
-	      if (state && state.getIn) {
-	        return state.getIn(keyPathOrGetter)
-	      } else {
-	        // account for the cases when state is a primitive value
-	        return state
-	      }
+	      return state.getIn(keyPathOrGetter)
 	    } else if (!isGetter(keyPathOrGetter)) {
 	      throw new Error("evaluate must be passed a keyPath or Getter")
 	    }
 
 	    // Must be a Getter
-	    var isTracking = false;
 	    var code = hashCode(keyPathOrGetter)
-	    if (track && !this.__cachedGetters.has(code)) {
-	      this.__cachedGetters = this.__cachedGetters.set(code, Immutable.Map({
-	        stateHashCode: null,
-	        value: null,
-	        args: null,
-	      }))
-	      isTracking = true
-	    } else if (this.__cachedGetters.has(code)){
-	      isTracking = true
-	    }
 
 	    // if the value is cached for this dispatch cycle, return the cached value
 	    if (this.__isCached(state, keyPathOrGetter)) {
@@ -719,29 +679,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var prevValue = this.__cachedGetters.getIn([code, 'value'])
 	      var prevArgs = this.__cachedGetters.getIn([code, 'args'])
 	      // getter deps could still be unchanged since we only looked at the unwrapped (keypath, bottom level) deps
-	      var currArgs = toImmutable(getDeps(getter).every(function(getter)  {
-	        return this.evaluate(state, getter, track)
+	      var currArgs = toImmutable(getDeps(keyPathOrGetter).map(function(getter)  {
+	        return this.evaluate(state, getter)
 	      }.bind(this)))
 
+	      // since Getter is a pure functions if the args are the same its a cache hit
 	      if (isEqual(prevArgs, currArgs)) {
-	        // the arguments to this getter are current identical
-	        if (isTracking) {
-	          this.__cacheValue(state, keyPathOrGetter, prevArgs, prevValue)
-	        }
+	        this.__cacheValue(state, keyPathOrGetter, prevArgs, prevValue)
 	        return deref(prevValue)
 	      }
 	    }
 	    // no cache hit evaluate
-	    var deps = getDeps(keyPathOrGetter)
-	    var computeFn = getComputeFn(keyPathOrGetter)
-	    var args = deps.map(function(dep)  {
-	      return this.evaluate(state, dep, track)
-	    }.bind(this))
-	    var evaluatedValue = computeFn.apply(null, args)
+	    var args = getDeps(keyPathOrGetter).map(function(dep)  {return this.evaluate(state, dep);}.bind(this))
+	    var evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
 
-	    if (isTracking) {
-	      this.__cacheValue(state, keyPathOrGetter, args, evaluatedValue)
-	    }
+	    this.__cacheValue(state, keyPathOrGetter, args, evaluatedValue)
 
 	    return evaluatedValue
 	  };
@@ -752,9 +704,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	   */
 	  Evaluator.prototype.__hasStaleValue=function(state, getter) {"use strict";
 	    var code = hashCode(getter)
+	    var cache = this.__cachedGetters
 	    return (
-	      state.has(code) &&
-	      state.getIn([code, 'stateHashCode']) !== state.hashCode()
+	      cache.has(code) &&
+	      cache.getIn([code, 'stateHashCode']) !== state.hashCode()
 	    )
 	  };
 
@@ -4769,34 +4722,37 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var Immutable = __webpack_require__(10)
 	var isGetter = __webpack_require__(6).isGetter
-	var isKeyPath = __webpack_require__(7).isKeyPath
 
 	/**
 	 * Takes a getter and returns the hash code value
 	 *
 	 * If cache argument is true it will freeze the getter
 	 * and cache the hashed value
+	 *
+	 * @param {Getter} getter
+	 * @param {boolean} dontCache
+	 * @return {number}
 	 */
-	module.exports = function(keyPathOrGetter, dontCache) {
-	  if (!isGetter(keyPathOrGetter) && !isKeyPath(keyPathOrGetter)) {
+	module.exports = function(getter, dontCache) {
+	  if (getter.hasOwnProperty('__hashCode')) {
+	    return getter.__hashCode
+	  }
+
+	  if (!isGetter(getter)) {
 	    throw new Error("Invalid getter!  Must be of the form: [<KeyPath>, ...<KeyPath>, <function>]")
 	  }
 
-	  if (keyPathOrGetter.hasOwnProperty('__hashCode')) {
-	    return keyPathOrGetter.__hashCode
-	  }
-
-	  var hashCode = Immutable.fromJS(keyPathOrGetter).hashCode()
+	  var hashCode = Immutable.fromJS(getter).hashCode()
 
 	  if (!dontCache) {
-	    Object.defineProperty(keyPathOrGetter, '__hashCode', {
+	    Object.defineProperty(getter, '__hashCode', {
 	      enumerable: false,
 	      configurable: false,
 	      writable: false,
 	      value: hashCode,
 	    })
 
-	    Object.freeze(keyPathOrGetter)
+	    Object.freeze(getter)
 	  }
 
 	  return hashCode

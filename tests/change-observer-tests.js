@@ -28,10 +28,7 @@ describe('ChangeObserver', () => {
   describe('registering change handlers', () => {
     it("should allow registration of ['foo', identity]", () => {
       var mockFn = jasmine.createSpy()
-      observer.onChange({
-        getter: [['foo'], identity],
-        handler: mockFn,
-      })
+      observer.onChange([['foo'], identity], mockFn)
 
       observer.notifyObservers(initialState.updateIn(['foo', 'bar'], x => 2))
 
@@ -43,10 +40,7 @@ describe('ChangeObserver', () => {
 
     it('should allow registration of a deep string key', () => {
       var mockFn = jasmine.createSpy()
-      observer.onChange({
-        getter: [['foo', 'bar'], identity],
-        handler: mockFn,
-      })
+      observer.onChange([['foo', 'bar'], identity], mockFn)
 
       observer.notifyObservers(initialState.updateIn(['foo', 'bar'], x => {
         return {
@@ -62,14 +56,13 @@ describe('ChangeObserver', () => {
 
     it('should not call the handler if another part of the map changes', () => {
       var mockFn = jasmine.createSpy()
-      observer.onChange({
-        getter: Getter.fromKeyPath(['foo']),
-        handler: mockFn,
-      })
+      var getter = Getter.fromKeyPath(['foo'])
+      observer.onChange(getter, mockFn)
 
       observer.notifyObservers(initialState.set('baz', x => 2))
 
       expect(mockFn.calls.count()).toBe(0)
     })
   })
+  // TODO test the prevValues and registering an observable
 })

@@ -3,7 +3,6 @@ var helpers = require('./immutable-helpers')
 var isImmutable = helpers.isImmutable
 var toImmutable = helpers.toImmutable
 var hashCode = require('./hash-code')
-var unwrapDeps = require('./getter').unwrapDeps
 var isEqual = require('./is-equal')
 var getComputeFn = require('./getter').getComputeFn
 var getDeps = require('./getter').getDeps
@@ -33,16 +32,13 @@ function deref(val) {
 class Evaluator {
   constructor() {
     /**
-     * Mains a list of cached getters
-     *
      * {
      *   <hashCode>: {
      *     stateHashCode: number,
-     *     args: any,
-     *     value: Immutable.List,
+     *     args: Immutable.List,
+     *     value: any,
      *   }
      * }
-     *
      */
     this.__cachedGetters = Immutable.Map({})
   }
@@ -58,34 +54,18 @@ class Evaluator {
    *
    * @param {Immutable.Map} state
    * @param {string|array} getter
-   * @param {boolean} track whether the dep should be tracked for caching / performance
+   * @return {any}
    */
-  evaluate(state, keyPathOrGetter, track) {
+  evaluate(state, keyPathOrGetter) {
     if (isKeyPath(keyPathOrGetter)) {
       // if its a keyPath simply return
-      if (state && state.getIn) {
-        return state.getIn(keyPathOrGetter)
-      } else {
-        // account for the cases when state is a primitive value
-        return state
-      }
+      return state.getIn(keyPathOrGetter)
     } else if (!isGetter(keyPathOrGetter)) {
       throw new Error("evaluate must be passed a keyPath or Getter")
     }
 
     // Must be a Getter
-    var isTracking = false;
     var code = hashCode(keyPathOrGetter)
-    if (track && !this.__cachedGetters.has(code)) {
-      this.__cachedGetters = this.__cachedGetters.set(code, Immutable.Map({
-        stateHashCode: null,
-        value: null,
-        args: null,
-      }))
-      isTracking = true
-    } else if (this.__cachedGetters.has(code)){
-      isTracking = true
-    }
 
     // if the value is cached for this dispatch cycle, return the cached value
     if (this.__isCached(state, keyPathOrGetter)) {
@@ -96,29 +76,21 @@ class Evaluator {
       var prevValue = this.__cachedGetters.getIn([code, 'value'])
       var prevArgs = this.__cachedGetters.getIn([code, 'args'])
       // getter deps could still be unchanged since we only looked at the unwrapped (keypath, bottom level) deps
-      var currArgs = toImmutable(getDeps(getter).every(getter => {
-        return this.evaluate(state, getter, track)
+      var currArgs = toImmutable(getDeps(keyPathOrGetter).map(getter => {
+        return this.evaluate(state, getter)
       }))
 
+      // since Getter is a pure functions if the args are the same its a cache hit
       if (isEqual(prevArgs, currArgs)) {
-        // the arguments to this getter are current identical
-        if (isTracking) {
-          this.__cacheValue(state, keyPathOrGetter, prevArgs, prevValue)
-        }
+        this.__cacheValue(state, keyPathOrGetter, prevArgs, prevValue)
         return deref(prevValue)
       }
     }
     // no cache hit evaluate
-    var deps = getDeps(keyPathOrGetter)
-    var computeFn = getComputeFn(keyPathOrGetter)
-    var args = deps.map(dep => {
-      return this.evaluate(state, dep, track)
-    })
-    var evaluatedValue = computeFn.apply(null, args)
+    var args = getDeps(keyPathOrGetter).map(dep => this.evaluate(state, dep))
+    var evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
 
-    if (isTracking) {
-      this.__cacheValue(state, keyPathOrGetter, args, evaluatedValue)
-    }
+    this.__cacheValue(state, keyPathOrGetter, args, evaluatedValue)
 
     return evaluatedValue
   }
@@ -129,9 +101,10 @@ class Evaluator {
    */
   __hasStaleValue(state, getter) {
     var code = hashCode(getter)
+    var cache = this.__cachedGetters
     return (
-      state.has(code) &&
-      state.getIn([code, 'stateHashCode']) !== state.hashCode()
+      cache.has(code) &&
+      cache.getIn([code, 'stateHashCode']) !== state.hashCode()
     )
   }
 

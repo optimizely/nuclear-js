@@ -100,8 +100,8 @@ describe('Reactor', () => {
         expect(reactor.evaluate(['taxPercent'])).toEqual(0)
       })
 
-      it('should return the whole state when calling reactor.evaluate()', () => {
-        var state = reactor.evaluate()
+      it('should return the whole state when calling reactor.evaluate([])', () => {
+        var state = reactor.evaluate([])
         var expected = Map({
           items: Map({
             all: List(),
@@ -113,7 +113,7 @@ describe('Reactor', () => {
       })
 
       it('should return the whole state coerced to JS when calling reactor.evaluateToJS()', () => {
-        var state = reactor.evaluateToJS()
+        var state = reactor.evaluateToJS([])
         var expected = {
           items: {
             all: [],

@@ -1,7 +1,5 @@
 var Immutable = require('immutable')
-var Getter = require('./getter')
 var hashCode = require('./hash-code')
-var clone = require('./utils').clone
 var isEqual = require('./is-equal')
 
 /**
@@ -35,17 +33,16 @@ class ChangeObserver {
       if (this.__prevValues.has(code)) {
         prevValue = this.__prevValues.get(code)
       } else {
-        prevValue = this.__evaluator.evaluate(prevState, getter, true)
-        this.__prevValues.set(code, prevValue)
+        prevValue = this.__evaluator.evaluate(prevState, getter)
+        this.__prevValues = this.__prevValues.set(code, prevValue)
       }
 
-      var currValue = this.__evaluator.evaluate(newState, getter, true)
+      var currValue = this.__evaluator.evaluate(newState, getter)
 
       if (!isEqual(prevValue, currValue)) {
         entry.handler.call(null, currValue)
+        this.__prevValues = this.__prevValues.set(code, currValue)
       }
-
-      this.__prevValues.set(code, currValue)
     })
     this.__prevState = newState
   }
@@ -53,14 +50,16 @@ class ChangeObserver {
   /**
    * Specify an getter and a change handler fn
    * Handler function is called whenever the value of the getter changes
-   * @param {object} options
-   * @param {Getter} options.getter
-   * @param {function} options.handler
+   * @param {Getter} getter
+   * @param {function} handler
    * @return {function} unwatch function
    */
-  onChange(options) {
-    var entry = clone(options)
+  onChange(getter, handler) {
     // TODO make observers a map of <Getter> => { handlers }
+    var entry = {
+      getter: getter,
+      handler: handler,
+    }
     this.__observers.push(entry)
     // return unwatch function
     return () => {
