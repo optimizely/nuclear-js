@@ -77,10 +77,9 @@ class ChangeObserver {
    * @param {Immutable.Map} prevState
    *
    */
-  reset(prevState, evaluator) {
+  reset(prevState) {
     this.__prevState = prevState
     this.__prevValues = Immutable.Map({})
-    this.__evaluator = evaluator
     this.__observers = []
   }
 }

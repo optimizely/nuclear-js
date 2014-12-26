@@ -169,7 +169,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 
 	  /**
-	   * Gets the Immutable state at the keyPath or evaluates a getter
+	   * Evaluates a KeyPath or Getter in context of the reactor state
 	   * @param {KeyPath|Getter} keyPathOrGetter
 	   * @return {*}
 	   */
@@ -178,7 +178,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  };
 
 	  /**
-	   * Gets the coerced state (to JS object) of the reactor by keyPath
+	   * Gets the coerced state (to JS object) of the reactor.evaluate
 	   * @param {KeyPath|Getter} keyPathOrGetter
 	   * @return {*}
 	   */
@@ -248,7 +248,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @param {Store} store
 	   * @param {boolean} silent should not notify observers of state change
 	   */
-	  Reactor.prototype.attachStore=function(id, store, silent) {"use strict";
+	  Reactor.prototype.registerStore=function(id, store, silent) {"use strict";
 	    if (this.__stores.get(id)) {
 	      console.warn("Store already defiend for id=" + id)
 	    }
@@ -265,9 +265,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @param {Array.<string, Store>} stores
 	   * @param {boolean} silent should not notify observers of state change
 	   */
-	  Reactor.prototype.attachStores=function(stores, silent) {"use strict";
+	  Reactor.prototype.registerStores=function(stores, silent) {"use strict";
 	    each(stores, function(store, id)  {
-	      this.attachStore(id, store, true)
+	      this.registerStore(id, store, true)
 	    }.bind(this))
 	    if (!silent) {
 	      this.__changeObserver.notifyObservers(this.__state)
@@ -481,10 +481,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @param {Immutable.Map} prevState
 	   *
 	   */
-	  ChangeObserver.prototype.reset=function(prevState, evaluator) {"use strict";
+	  ChangeObserver.prototype.reset=function(prevState) {"use strict";
 	    this.__prevState = prevState
 	    this.__prevValues = Immutable.Map({})
-	    this.__evaluator = evaluator
 	    this.__observers = []
 	  };
 
