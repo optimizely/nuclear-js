@@ -8,6 +8,7 @@ var Evaluator = require('./evaluator')
 // helper fns
 var toJS = require('./immutable-helpers').toJS
 var toImmutable = require('./immutable-helpers').toImmutable
+var isImmutableValue = require('./immutable-helpers').isImmutableValue
 var each = require('./utils').each
 
 
@@ -26,6 +27,8 @@ class Reactor {
       return new Reactor(config)
     }
     config = config || {}
+
+    this.debug = !!config.debug
 
     /**
      * The state for the whole cluster
@@ -95,21 +98,33 @@ class Reactor {
    * @param {object|undefined} payload
    */
   dispatch(actionType, payload) {
+    var debug = this.debug
     var prevState = this.__state
 
     this.__state = this.__state.withMutations(state => {
-      logging.dispatchStart(actionType, payload)
+      if (this.debug) {
+        logging.dispatchStart(actionType, payload)
+      }
 
       // let each core handle the message
       this.__stores.forEach((store, id) => {
         var currState = state.get(id)
         var newState = store.handle(currState, actionType, payload)
+
+        if (debug && newState === undefined) {
+          throw new Error("Store handler must return a value, did you forget a return statement")
+        }
+
         state.set(id, newState)
 
-        logging.coreReact(id, currState, newState)
+        if (this.debug) {
+          logging.coreReact(id, currState, newState)
+        }
       })
 
-      logging.dispatchEnd(state)
+      if (this.debug) {
+        logging.dispatchEnd(state)
+      }
     })
 
     // write the new state to the output stream if changed
@@ -126,11 +141,17 @@ class Reactor {
    */
   registerStore(id, store, silent) {
     if (this.__stores.get(id)) {
-      console.warn("Store already defiend for id=" + id)
+      console.warn("Store already defined for id=" + id)
+    }
+
+    var initialState = store.getInitialState()
+
+    if (this.debug && !isImmutableValue(initialState)) {
+      throw new Error("Store getInitialState() must return an immutable value, did you forget to call toImmutable")
     }
 
     this.__stores = this.__stores.set(id, store)
-    this.__state = this.__state.set(id, toImmutable(store.getInitialState()))
+    this.__state = this.__state.set(id, initialState)
 
     if (!silent) {
       this.__changeObserver.notifyObservers(this.__state)
@@ -154,9 +175,20 @@ class Reactor {
    * Resets the state of a reactor and returns back to initial state
    */
   reset() {
+    var debug = this.debug
+    var prevState = this.__state
+
     this.__state = Immutable.Map().withMutations(state => {
       this.__stores.forEach((store, id) => {
-        state.set(id, toImmutable(store.getInitialState()))
+        var storeState = prevState.get(id)
+        var resetStoreState = store.handleReset(storeState)
+        if (debug && resetStoreState === undefined) {
+          throw new Error("Store handleReset() must return a value, did you forget a return statement")
+        }
+        if (debug && !isImmutableValue(resetStoreState)) {
+          throw new Error("Store reset state must be an immutable value, did you forget to call toImmutable")
+        }
+        state.set(id, resetStoreState)
       })
     })
 

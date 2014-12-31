@@ -5,90 +5,91 @@ var Nuclear = require('../src/main')
 var Reactor = require('../src/main').Reactor
 var Store = require('../src/main').Store
 var Getter = require('../src/main').Getter
+var toImmutable = require('../src/immutable-helpers').toImmutable
 
 
 describe('Reactor', () => {
-  var checkoutActions, reactor, taxPercentGetter, subtotalGetter, taxGetter, totalGetter
-
-  beforeEach(() => {
-
-    var itemStore = Store({
-      getInitialState() {
-        return {
-          all: [],
-        }
-      },
-
-      initialize() {
-        this.on('addItem', (state, payload) => {
-          return state.update('all', items => {
-            return items.push(Map({
-              name: payload.name,
-              price: payload.price,
-            }))
-          })
-        })
-      },
-    })
-
-    var taxPercentStore = Store({
-      getInitialState() {
-        return 0
-      },
-
-      initialize() {
-        this.on('setTax', (state, payload) => {
-          return payload
-        })
-      }
-    })
-
-    reactor = new Reactor()
-    reactor.registerStores({
-      'items': itemStore,
-      'taxPercent': taxPercentStore,
-    })
-
-    subtotalGetter = [
-      ['items', 'all'],
-      (items) => {
-        return items.reduce((total, item) => {
-          return total + item.get('price')
-        }, 0)
-      }
-    ]
-
-    taxGetter = [
-      subtotalGetter,
-      ['taxPercent'],
-      (subtotal, taxPercent) => {
-        return (subtotal * (taxPercent / 100))
-      }
-    ]
-
-    totalGetter = [
-      subtotalGetter,
-      taxGetter,
-      (subtotal, tax) => {
-        return Math.round(subtotal + tax, 2)
-      }
-    ]
-
-    checkoutActions = {
-      addItem(name, price) {
-        reactor.dispatch('addItem', {
-          name: name,
-          price: price
-        })
-      },
-
-      setTaxPercent(percent) {
-        reactor.dispatch('setTax', percent)
-      }
-    }
-  })
-
   describe('Reactor with no initial state', () => {
+    var checkoutActions, reactor, taxPercentGetter, subtotalGetter, taxGetter, totalGetter
+
+    beforeEach(() => {
+      var itemStore = Store({
+        getInitialState() {
+          return toImmutable({
+            all: [],
+          })
+        },
+
+        initialize() {
+          this.on('addItem', (state, payload) => {
+            return state.update('all', items => {
+              return items.push(Map({
+                name: payload.name,
+                price: payload.price,
+              }))
+            })
+          })
+        },
+      })
+
+      var taxPercentStore = Store({
+        getInitialState() {
+          return 0
+        },
+
+        initialize() {
+          this.on('setTax', (state, payload) => {
+            return payload
+          })
+        }
+      })
+
+      reactor = new Reactor({
+        debug: true
+      })
+      reactor.registerStores({
+        'items': itemStore,
+        'taxPercent': taxPercentStore,
+      })
+
+      subtotalGetter = [
+        ['items', 'all'],
+        (items) => {
+          return items.reduce((total, item) => {
+            return total + item.get('price')
+          }, 0)
+        }
+      ]
+
+      taxGetter = [
+        subtotalGetter,
+        ['taxPercent'],
+        (subtotal, taxPercent) => {
+          return (subtotal * (taxPercent / 100))
+        }
+      ]
+
+      totalGetter = [
+        subtotalGetter,
+        taxGetter,
+        (subtotal, tax) => {
+          return Math.round(subtotal + tax, 2)
+        }
+      ]
+
+      checkoutActions = {
+        addItem(name, price) {
+          reactor.dispatch('addItem', {
+            name: name,
+            price: price
+          })
+        },
+
+        setTaxPercent(percent) {
+          reactor.dispatch('setTax', percent)
+        }
+      }
+    })
     afterEach(() => {
       reactor.reset()
     })
@@ -224,4 +225,74 @@ describe('Reactor', () => {
       })
     })
   }) // Reactor with no initial state
+
+  describe("reactor#reset", () => {
+    var reactor
+
+    beforeEach(() => {
+      var standardStore = Store({
+        getInitialState() {
+          return toImmutable([])
+        },
+
+        initialize() {
+          this.on('addItem', (state, item) => {
+            return state.push(item)
+          })
+        },
+      })
+
+      var persistentStore = Store({
+        getInitialState() {
+          return toImmutable([])
+        },
+
+        initialize() {
+          this.on('addItem', (state, item) => {
+            return state.push(item)
+          })
+        },
+
+        handleReset(state) {
+          debugger
+          return state
+        }
+      })
+
+      reactor = new Reactor({
+        debug: true
+      })
+      reactor.registerStores({
+        standard: standardStore,
+        persistent: persistentStore,
+      })
+    })
+
+    afterEach(() => {
+      reactor.reset()
+    })
+
+    it("should go back to initial state for normal stores", () => {
+      var item = { foo: 'bar' }
+      reactor.dispatch('addItem', item)
+
+      expect(reactor.evaluateToJS(['standard'])).toEqual([item])
+
+      reactor.reset()
+
+      expect(reactor.evaluateToJS(['standard'])).toEqual([])
+    })
+
+    it("should respect the handleReset method for stores that override it", () => {
+      var item = { foo: 'bar' }
+      reactor.dispatch('addItem', item)
+
+      debugger
+      expect(reactor.evaluateToJS(['persistent'])).toEqual([item])
+
+      reactor.reset()
+
+      expect(reactor.evaluateToJS(['persistent'])).toEqual([item])
+    })
+  })
 })

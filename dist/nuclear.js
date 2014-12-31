@@ -69,6 +69,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	// export the immutable library
 	exports.Immutable = __webpack_require__(10)
 
+	/**
+	 * @return {boolean}
+	 */
+	exports.isKeyPath = __webpack_require__(4).isKeyPath
+
+	/**
+	 * @return {boolean}
+	 */
+	exports.isGetter = __webpack_require__(5).isGetter
+
 	// expose helper functions
 	exports.toJS = helpers.toJS
 	exports.toImmutable = helpers.toImmutable
@@ -80,6 +90,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	var Immutable = __webpack_require__(10)
+	var isObject = __webpack_require__(6).isObject
 
 	/**
 	 * A collection of helpers for the ImmutableJS library
@@ -92,6 +103,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	function isImmutable(obj) {
 	  return Immutable.Iterable.isIterable(obj)
 	}
+
+	/**
+	 * Returns true if the value is an ImmutableJS data structure
+	 * or a javascript primitive that is immutable (stirng, number, etc)
+	 * @param {*} obj
+	 * @return {boolean}
+	 */
+	function isImmutableValue(obj) {
+	  return (
+	    isImmutable(obj) ||
+	    !isObject(obj)
+	  )
+	}
+
 	/**
 	 * Converts an Immutable Sequence to JS object
 	 * Can be called on any type
@@ -116,6 +141,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.toJS = toJS
 	exports.toImmutable = toImmutable
 	exports.isImmutable = isImmutable
+	exports.isImmutableValue = isImmutableValue
 
 
 /***/ },
@@ -123,16 +149,17 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	var Immutable = __webpack_require__(10)
-	var logging = __webpack_require__(4)
-	var ChangeObserver = __webpack_require__(5)
-	var Getter = __webpack_require__(6)
-	var KeyPath = __webpack_require__(7)
-	var Evaluator = __webpack_require__(8)
+	var logging = __webpack_require__(7)
+	var ChangeObserver = __webpack_require__(8)
+	var Getter = __webpack_require__(5)
+	var KeyPath = __webpack_require__(4)
+	var Evaluator = __webpack_require__(9)
 
 	// helper fns
 	var toJS = __webpack_require__(1).toJS
 	var toImmutable = __webpack_require__(1).toImmutable
-	var each = __webpack_require__(9).each
+	var isImmutableValue = __webpack_require__(1).isImmutableValue
+	var each = __webpack_require__(6).each
 
 
 	/**
@@ -150,6 +177,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      return new Reactor(config)
 	    }
 	    config = config || {}
+
+	    this.debug = !!config.debug
 
 	    /**
 	     * The state for the whole cluster
@@ -219,21 +248,33 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @param {object|undefined} payload
 	   */
 	  Reactor.prototype.dispatch=function(actionType, payload) {"use strict";
+	    var debug = this.debug
 	    var prevState = this.__state
 
 	    this.__state = this.__state.withMutations(function(state)  {
-	      logging.dispatchStart(actionType, payload)
+	      if (this.debug) {
+	        logging.dispatchStart(actionType, payload)
+	      }
 
 	      // let each core handle the message
 	      this.__stores.forEach(function(store, id)  {
 	        var currState = state.get(id)
 	        var newState = store.handle(currState, actionType, payload)
+
+	        if (debug && newState === undefined) {
+	          throw new Error("Store handler must return a value, did you forget a return statement")
+	        }
+
 	        state.set(id, newState)
 
-	        logging.coreReact(id, currState, newState)
-	      })
+	        if (this.debug) {
+	          logging.coreReact(id, currState, newState)
+	        }
+	      }.bind(this))
 
-	      logging.dispatchEnd(state)
+	      if (this.debug) {
+	        logging.dispatchEnd(state)
+	      }
 	    }.bind(this))
 
 	    // write the new state to the output stream if changed
@@ -250,11 +291,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	   */
 	  Reactor.prototype.registerStore=function(id, store, silent) {"use strict";
 	    if (this.__stores.get(id)) {
-	      console.warn("Store already defiend for id=" + id)
+	      console.warn("Store already defined for id=" + id)
+	    }
+
+	    var initialState = store.getInitialState()
+
+	    if (this.debug && !isImmutableValue(initialState)) {
+	      throw new Error("Store getInitialState() must return an immutable value, did you forget to call toImmutable")
 	    }
 
 	    this.__stores = this.__stores.set(id, store)
-	    this.__state = this.__state.set(id, toImmutable(store.getInitialState()))
+	    this.__state = this.__state.set(id, initialState)
 
 	    if (!silent) {
 	      this.__changeObserver.notifyObservers(this.__state)
@@ -278,9 +325,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * Resets the state of a reactor and returns back to initial state
 	   */
 	  Reactor.prototype.reset=function() {"use strict";
+	    var debug = this.debug
+	    var prevState = this.__state
+
 	    this.__state = Immutable.Map().withMutations(function(state)  {
 	      this.__stores.forEach(function(store, id)  {
-	        state.set(id, toImmutable(store.getInitialState()))
+	        var storeState = prevState.get(id)
+	        var resetStoreState = store.handleReset(storeState)
+	        if (debug && resetStoreState === undefined) {
+	          throw new Error("Store handleReset() must return a value, did you forget a return statement")
+	        }
+	        if (debug && !isImmutableValue(resetStoreState)) {
+	          throw new Error("Store reset state must be an immutable value, did you forget to call toImmutable")
+	        }
+	        state.set(id, resetStoreState)
 	      })
 	    }.bind(this))
 
@@ -297,7 +355,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	var Map = __webpack_require__(10).Map
-	var extend = __webpack_require__(9).extend
+	var extend = __webpack_require__(6).extend
 
 	/**
 	 * Stores define how a certain domain of the application should respond to actions
@@ -350,6 +408,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	  };
 
 	  /**
+	   * Pure function taking the current state of store and returning
+	   * the new state after a Nuclear reactor has been reset
+	   *
+	   * Overridable
+	   */
+	  Store.prototype.handleReset=function(state) {"use strict";
+	    return this.getInitialState()
+	  };
+
+	  /**
 	   * Binds an action type => handler
 	   */
 	  Store.prototype.on=function(actionType, handler) {"use strict";
@@ -368,6 +436,150 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 4 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var isArray = __webpack_require__(6).isArray
+	var isFunction = __webpack_require__(6).isFunction
+
+	/**
+	 * Checks if something is simply a keyPath and not a getter
+	 * @param {*} toTest
+	 * @return {boolean}
+	 */
+	exports.isKeyPath = function(toTest) {
+	  return (
+	    isArray(toTest) &&
+	    !isFunction(toTest[toTest.length - 1])
+	  )
+	}
+
+
+/***/ },
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Immutable = __webpack_require__(10)
+	var isFunction = __webpack_require__(6).isFunction
+	var isArray = __webpack_require__(6).isArray
+	var isKeyPath = __webpack_require__(4).isKeyPath
+
+	/**
+	 * Getter helper functions
+	 * A getter is an array with the form:
+	 * [<KeyPath>, ...<KeyPath>, <function>]
+	 */
+	var identity = function(x)  {return x;}
+
+	/**
+	 * Checks if something is a getter literal, ex: ['dep1', 'dep2', function(dep1, dep2) {...}]
+	 * @param {*} toTest
+	 * @return {boolean}
+	 */
+	function isGetter(toTest) {
+	  return (isArray(toTest) && isFunction(toTest[toTest.length - 1]))
+	}
+
+
+	/**
+	 * Recursive function to flatten deps of a getter
+	 * @param {Getter} getter
+	 * @return {Array.<KeyPath>} unique flatten deps
+	 */
+	function unwrapDeps(getter) {
+	  var accum = Immutable.Set()
+	  var deps = getter.slice(0, getter.length - 1)
+
+	  return accum.withMutations(function(accum)  {
+	    deps.forEach(function(dep)  {
+	      isGetter(dep)
+	        ? accum.union(unwrapDeps(dep))
+	        : accum.add(dep)
+	    })
+	    return accum
+	  })
+	}
+
+	/**
+	 * Returns the compute function from a getter
+	 * @param {Getter} getter
+	 * @return {function}
+	 */
+	function getComputeFn(getter) {
+	  return getter[getter.length - 1]
+	}
+
+	/**
+	 * Returns an array of deps from a getter
+	 * @param {Getter} getter
+	 * @return {function}
+	 */
+	function getDeps(getter) {
+	  return getter.slice(0, getter.length - 1)
+	}
+
+	/**
+	 * @param {KeyPath}
+	 * @return {Getter}
+	 */
+	function fromKeyPath(keyPath) {
+	  if (!isKeyPath(keyPath)) {
+	    throw new Error("Cannot create Getter from KeyPath: " + keyPath)
+	  }
+
+	  return [keyPath, identity]
+	}
+
+
+	module.exports = {
+	  unwrapDeps: unwrapDeps,
+	  isGetter: isGetter,
+	  getComputeFn: getComputeFn,
+	  getDeps: getDeps,
+	  fromKeyPath: fromKeyPath,
+	}
+
+
+/***/ },
+/* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var _ = __webpack_require__(13);
+
+	exports.clone = _.clone
+
+	exports.cloneDeep = _.cloneDeep
+
+	exports.extend = _.extend
+
+	exports.each = _.each
+
+	exports.partial = _.partial
+
+	exports.isArray = _.isArray
+
+	exports.isObject = _.isObject
+
+	exports.isFunction = _.isFunction
+
+	exports.isString = _.isString
+
+	exports.isNumber = _.isNumber
+
+	/**
+	 * Ensures that the inputted value is an array
+	 * @param {*} val
+	 * @return {array}
+	 */
+	exports.coerceArray = function(val) {
+	  if (!exports.isArray(val)) {
+	    return [val]
+	  }
+	  return val
+	}
+
+
+/***/ },
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -399,7 +611,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 5 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var Immutable = __webpack_require__(10)
@@ -492,112 +704,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 6 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var Immutable = __webpack_require__(10)
-	var isFunction = __webpack_require__(9).isFunction
-	var isArray = __webpack_require__(9).isArray
-	var isKeyPath = __webpack_require__(7).isKeyPath
-
-	/**
-	 * Getter helper functions
-	 * A getter is an array with the form:
-	 * [<KeyPath>, ...<KeyPath>, <function>]
-	 */
-	var identity = function(x)  {return x;}
-
-	/**
-	 * Checks if something is a getter literal, ex: ['dep1', 'dep2', function(dep1, dep2) {...}]
-	 * @param {*} toTest
-	 * @return {boolean}
-	 */
-	function isGetter(toTest) {
-	  return (isArray(toTest) && isFunction(toTest[toTest.length - 1]))
-	}
-
-
-	/**
-	 * Recursive function to flatten deps of a getter
-	 * @param {Getter} getter
-	 * @return {Array.<KeyPath>} unique flatten deps
-	 */
-	function unwrapDeps(getter) {
-	  var accum = Immutable.Set()
-	  var deps = getter.slice(0, getter.length - 1)
-
-	  return accum.withMutations(function(accum)  {
-	    deps.forEach(function(dep)  {
-	      isGetter(dep)
-	        ? accum.union(unwrapDeps(dep))
-	        : accum.add(dep)
-	    })
-	    return accum
-	  })
-	}
-
-	/**
-	 * Returns the compute function from a getter
-	 * @param {Getter} getter
-	 * @return {function}
-	 */
-	function getComputeFn(getter) {
-	  return getter[getter.length - 1]
-	}
-
-	/**
-	 * Returns an array of deps from a getter
-	 * @param {Getter} getter
-	 * @return {function}
-	 */
-	function getDeps(getter) {
-	  return getter.slice(0, getter.length - 1)
-	}
-
-	/**
-	 * @param {KeyPath}
-	 * @return {Getter}
-	 */
-	function fromKeyPath(keyPath) {
-	  if (!isKeyPath(keyPath)) {
-	    throw new Error("Cannot create Getter from KeyPath: " + keyPath)
-	  }
-
-	  return [keyPath, identity]
-	}
-
-
-	module.exports = {
-	  unwrapDeps: unwrapDeps,
-	  isGetter: isGetter,
-	  getComputeFn: getComputeFn,
-	  getDeps: getDeps,
-	  fromKeyPath: fromKeyPath,
-	}
-
-
-/***/ },
-/* 7 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var isArray = __webpack_require__(9).isArray
-	var isFunction = __webpack_require__(9).isFunction
-
-	/**
-	 * Checks if something is simply a keyPath and not a getter
-	 * @param {*} toTest
-	 * @return {boolean}
-	 */
-	exports.isKeyPath = function(toTest) {
-	  return (
-	    isArray(toTest) &&
-	    !isFunction(toTest[toTest.length - 1])
-	  )
-	}
-
-
-/***/ },
-/* 8 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var Immutable = __webpack_require__(10)
@@ -606,13 +713,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	var toImmutable = helpers.toImmutable
 	var hashCode = __webpack_require__(11)
 	var isEqual = __webpack_require__(12)
-	var getComputeFn = __webpack_require__(6).getComputeFn
-	var getDeps = __webpack_require__(6).getDeps
-	var isKeyPath = __webpack_require__(7).isKeyPath
-	var isGetter = __webpack_require__(6).isGetter
-	var isObject = __webpack_require__(9).isObject
-	var isArray = __webpack_require__(9).isArray
-	var cloneDeep = __webpack_require__(9).cloneDeep
+	var getComputeFn = __webpack_require__(5).getComputeFn
+	var getDeps = __webpack_require__(5).getDeps
+	var isKeyPath = __webpack_require__(4).isKeyPath
+	var isGetter = __webpack_require__(5).isGetter
+	var isObject = __webpack_require__(6).isObject
+	var isArray = __webpack_require__(6).isArray
+	var cloneDeep = __webpack_require__(6).cloneDeep
 
 
 	/**
@@ -756,45 +863,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 	module.exports = Evaluator
-
-
-/***/ },
-/* 9 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var _ = __webpack_require__(13);
-
-	exports.clone = _.clone
-
-	exports.cloneDeep = _.cloneDeep
-
-	exports.extend = _.extend
-
-	exports.each = _.each
-
-	exports.partial = _.partial
-
-	exports.isArray = _.isArray
-
-	exports.isObject = _.isObject
-
-	exports.isFunction = _.isFunction
-
-	exports.isString = _.isString
-
-	exports.isNumber = _.isNumber
-
-	/**
-	 * Ensures that the inputted value is an array
-	 * @param {*} val
-	 * @return {array}
-	 */
-	exports.coerceArray = function(val) {
-	  if (!exports.isArray(val)) {
-	    return [val]
-	  }
-	  return val
-	}
 
 
 /***/ },
@@ -4720,7 +4788,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	var Immutable = __webpack_require__(10)
-	var isGetter = __webpack_require__(6).isGetter
+	var isGetter = __webpack_require__(5).isGetter
 
 	/**
 	 * Takes a getter and returns the hash code value
