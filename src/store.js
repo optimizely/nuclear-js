@@ -52,6 +52,16 @@ class Store {
   }
 
   /**
+   * Pure function taking the current state of store and returning
+   * the new state after a Nuclear reactor has been reset
+   *
+   * Overridable
+   */
+  handleReset(state) {
+    return this.getInitialState()
+  }
+
+  /**
    * Binds an action type => handler
    */
   on(actionType, handler) {
