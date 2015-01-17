@@ -47,9 +47,9 @@ that we will touch on momentarily.
 
 #### Reactor
 
-In Nuclear a Reactor is the container that holds your app state, it's where you register stores, dispatch actions and read the current
-state of your system.  Reactor's are the only stateful part of Nuclear and have only 3 API methods you REALLY need to know: `dispatch`, `get`, and `observe`.
-Don't worry extensive API docs will be provided for all of these methods
+In Nuclear a Reactor is the container that holds your app state. It's where you register stores, dispatch actions and read the current
+state of your system.  Reactors are the only stateful part of Nuclear and have only 3 API methods you REALLY need to know: `dispatch`, `get`, and `observe`.
+Don't worry, extensive API docs will be provided for all of these methods
 
 #### Stores
 
@@ -59,12 +59,11 @@ are self managing state, providing a single canonical place to define the behavi
 
 #### KeyPaths
 
-KeyPaths are a pointer to some piece of your application state.  They can be represented a `String` or `Array`
+KeyPaths are a pointer to some piece of your application state.  They can be represented as a `String` or `Array`
 
 `'items'` Is a valid keypath that would lookup the items section of your app state, analagous to `state['items']` in javascript.
 
-`'foo.bar'` and `['foo', 'bar']` would be equivalent keypaths. Tip: Use array keypaths when needing a dynamic keypath or
-need to reference an numerical key.
+`'foo.bar'` and `['foo', 'bar']` would be equivalent keypaths. Tip: Use array keypaths when you need a dynamic keypath or a reference to a numerical key.
 
 #### Getters
 
@@ -190,7 +189,7 @@ console.log(reactor.get(getTotal)) // 11
 
 ### Lets do something more interesting...
 
-Imagine we want to know anything the total is over 100.  Let's use `reactor.observe`
+Imagine we want to be alerted anytime the total is over 100.  Let's use `reactor.observe`
 
 ```js
 var over100 = Getter(getTotal, total => total > 100)
@@ -376,7 +375,7 @@ unidirectional data flow and a single synchronous dispatcher.
 
 - Stores do not hold their own state, or are accessible by other parts of the system.  They simply model a part of the application domain over time.
 
-- Stores dont mutate themselves, instead each handler is a pure function that transforms the current state into a new state.
+- Stores don't mutate themselves, instead each handler is a pure function that transforms the current state into a new state.
 
 - Because Getters are used whenever data from two or more stores needs to be combined there is no need for `dispatcher.waitsFor`
 
@@ -389,7 +388,7 @@ different immutable maps is simply a `===` operation (constant time) and the map
 
 #### `Reactor#dispatch(messageType, messagePayload)`
 
-Dispatches a message to all registered Store. This process is done syncronously, all registered `Store` are passed this message and all computeds are re-evaluated (efficiently).  After a dispatch, a Reactor will emit the new state on the `reactor.changeEmitter`
+Dispatches a message to all registered Store. This process is done syncronously, all registered `Store` are passed this message and all computed values are re-evaluated (efficiently).  After a dispatch, a Reactor will emit the new state on the `reactor.changeEmitter`
 
 ex: `reactor.dispatch('addUser', { name: 'jordan' })`
 
