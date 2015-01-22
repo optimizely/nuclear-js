@@ -145,12 +145,9 @@ var taxPercentStore = Store({
   }
 })
 
-var reactor = Reactor({
-  stores: {
-    items: itemStore,
-    taxPercent: taxPercentStore
-  }
-})
+var reactor = Reactor()
+reactor.attachStore('items', itemStore)
+reactor.attachStore('taxPercent', taxPercentStore)
 
 console.log(reactor.get('items')) // List []
 console.log(reactor.get('taxPercent')) // 0
