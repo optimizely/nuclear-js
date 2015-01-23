@@ -54,49 +54,52 @@ Don't worry extensive API docs will be provided for all of these methods
 #### Stores
 
 Stores define how a portion of the application state will behave over time, they also provide the initial state. Once a store has been attached to a Reactor you will
-never reference it directly, calling `reactor.dispatch(actionType, payload)` will ensure that all store recieve the action and get a chance to update themselves.  Stores
+never reference it directly, calling `reactor.dispatch(actionType, payload)` will ensure that all stores receive the action and get a chance to update themselves.  Stores
 are self managing state, providing a single canonical place to define the behavior a domain of your application over time.
 
 #### KeyPaths
 
-KeyPaths are a pointer to some piece of your application state.  They can be represented a `String` or `Array`
+KeyPaths are a pointer to some piece of your application state.  They can be represented as a `String` or an `Array`
 
 `'items'` Is a valid keypath that would lookup the items section of your app state, analagous to `state['items']` in javascript.
 
-`'foo.bar'` and `['foo', 'bar']` would be equivalent keypaths. Tip: Use array keypaths when needing a dynamic keypath or
-need to reference an numerical key.
+`['foo', 'bar']` is another valid keypath, analagous to `state['foo']['bar']` in javascript
 
 #### Getters
 
-Getters are quite possibly the most powerful abstraction in Nuclear and are used everywhere.  They abstract the reading of some piece of app state combined with a
-transformation (optional).
+As described above, the state of a reactor is hidden away internally behind the [Stores](#stores) abstraction.
+In order to get a hold of part of that state, you need to ask the [Reactor](#reactor) for it using a simple protocol referred to, informally, as a Getter.
 
-**Examples:**
+Getters can take 2 forms:
+
+  1. A [KeyPath](#keypaths) as described above
+  2. An array with the form `[  [keypath | getter], [keypath | getter], ..., tranformFunction]`
+  Note - Often you'll pass the Getter to `reactor.evaluate` to get its value, but we'll touch on the reactor API later.
+
+If you've used [AngularJS](https://angularjs.org/), the 2nd form will seem familiar.  It's essentially a way of specifying
+which app values get injected into the transform function at the end.  Here's an example of the form itself,
+but keep in mind that it may make more sense in the context of the examples below,
 
 ```js
-var Getter = require('nuclear-js').Getter
+// Our first getter, takes in the `items` portion of the app state and
+// returns (presumably) the sum of `item.price * item.quantity` for all the items
+var getSubtotal = ['items', function(items) { ... })]
 
-var getItems = Getter('items') // when a function is not supplied simply uses identity function
-var items = reactor.get(getItems) // returns a list of items
-
-// optionally a function can be supplied as the last argument to transform the value
-var itemSize = Getter('items', items => items.size) // using es6 arrow functions
-var moreThanFive = Getter(itemSize, size => size > 5) // getters can be composed together
-
-// Getters can take multiple values and combine + transform
-var filteredUsers = Getter(
-  'users',
-  'userNameFilter',
-  (users, username) => {
-    users.filter(user => {
-      return user.get('username').indexOf(username) > -1
-    })
-  })
+// This Getter requests 2 values be passed into it's transform function - the result
+// of the getSubtotal Getter and the `taxPercent` value from the app state.
+var getTotal = [getSubtotal, 'taxPercent', function(subtotal, taxPercent) { ... }];
 ```
 
-Getters can reference any part of the app state, and combine and transform multiple values together.  Because of this there is no need for NuclearJS Store's to know
-about any other part of the system (including other Stores). Getters provide a canonical way to reference some state or computable state, they are simply pure functions
-with dependency injection thus providing a very simple way to test.
+Notice that you can use getters as dependencies to other getters.  This is an extremely powerful abstraction, and one
+that you'll undoubtedly want to become familiar with in your nuclear journey.
+
+But you need to know one thing about getter transform functions - they MUST be pure functions (that is, a given set input values results in a [deterministic](http://en.wikipedia.org/wiki/Deterministic_algorithm) output).
+By making the transform functions pure, you can test Getters easier, compose them easier, and nuclear can [memoize](http://en.wikipedia.org/wiki/Memoization)
+calls to them, making Getter dependency resolution very performant.
+
+__For the astute reader__ - You probably already noticed if you have experience in functional languages, but because Getters
+are simply arrays full of strings and pure functions, they are serializable. Since JS can stringify pure functions,
+your getters are nothing more than data that could be stored, sent over the wire, etc.
 
 ## Back To Our Example
 
@@ -149,51 +152,51 @@ var reactor = Reactor()
 reactor.attachStore('items', itemStore)
 reactor.attachStore('taxPercent', taxPercentStore)
 
-console.log(reactor.get('items')) // List []
-console.log(reactor.get('taxPercent')) // 0
+// Let's use a Getter (the first form, a [KeyPath](#keypaths)) to retrieve parts of the app state
+console.log(reactor.evaluate('items')) // List []
+console.log(reactor.evaluate('taxPercent')) // 0
 
 reactor.dispatch('addItem', { name: 'Soap', price: 5, quantity: 2 })
 
-console.log(reactor.get('items')) // List [ Map { name: 'Soap', price:5, quantity: 2 } ]
+console.log(reactor.evaluate('items')) // List [ Map { name: 'Soap', price:5, quantity: 2 } ]
 ```
 
 ### Computing Subtotal, Tax and Total
 
 ```js
-var Getter = require('nuclear-js').Getter
 
-var getSubtotal = Getter('items', items => {
+var getSubtotal = ['items', items => {
   return items.reduce((total, item) => {
     return total + (item.get('price') * item.get('quantity'))
   }, 0)
-})
+}]
 
-var getTax = Getter(getSubtotal, 'taxPercent', (subtotal, taxPercent) => {
+var getTax = [getSubtotal, 'taxPercent', (subtotal, taxPercent) => {
   return subtotal * (taxPercent / 100)
-})
+}]
 
-var getTotal = Getter(getSubtotal, getTax, (subtotal, tax) => subtotal + tax)
+var getTotal = [getSubtotal, getTax, (subtotal, tax) => subtotal + tax ]
 
-console.log(reactor.get(getSubtotal)) // 10
-console.log(reactor.get(getTax)) // 0
-console.log(reactor.get(getTotal)) // 10
+console.log(reactor.evaluate(getSubtotal)) // 10
+console.log(reactor.evaluate(getTax)) // 0
+console.log(reactor.evaluate(getTotal)) // 10
 
-reactor.dispach('setTaxPercent', 10)
+reactor.dispatch('setTaxPercent', 10)
 
-console.log(reactor.get(getSubtotal)) // 11
-console.log(reactor.get(getTax)) // 1
-console.log(reactor.get(getTotal)) // 11
+console.log(reactor.evaluate(getSubtotal)) // 11
+console.log(reactor.evaluate(getTax)) // 1
+console.log(reactor.evaluate(getTotal)) // 11
 ```
 
 ### Lets do something more interesting...
 
-Imagine we want to know anything the total is over 100.  Let's use `reactor.observe`
+Imagine we want to know any time the total is over 100.  Let's use `reactor.observe`
 
 ```js
-var over100 = Getter(getTotal, total => total > 100)
+var getOver100 = [getTotal, total => total > 100];
 
-reactor.observe(getTotal, total => {
-  if (total > 100) {
+reactor.observe(getOver100, isOver100 => {
+  if (isOver100) {
     alert('Shopping cart over 100!')
   }
 })
@@ -218,15 +221,15 @@ var isOverBudget = Getter(getTotal, 'budget', (total, budget) => {
 })
 
 reactor.observe(isOverBudget, isOver => {
-  // this will be automatically reevaluated only when the total or budget changes
+  // this will be automatically re-evaluated only when the total or budget changes
   if (isOver) {
-    var budget = reactor.get('budget')
+    var budget = reactor.evaluate('budget')
     alert("Is over budget of " + budget)
   }
 })
 ```
 
-**Using this pattern of composing Getters together the majority of your system becomes purely functional transforms.**
+**By using this pattern of composing Getters together, the majority of your system becomes purely functional transforms.**
 
 ### Hooking up a UI: React
 
@@ -251,9 +254,9 @@ var ShoppingCart = React.createClass({
       tax: getTax,
       total: getTotal,
       // or inline a getter
-      expensiveItems: Getter('items', items => {
+      expensiveItems: ['items', items => {
         return items.filter(item => item > 100)
-      })
+      }]
     }
   },
 
@@ -373,7 +376,7 @@ unidirectional data flow and a single synchronous dispatcher.
 
 - Stores do not hold their own state, or are accessible by other parts of the system.  They simply model a part of the application domain over time.
 
-- Stores dont mutate themselves, instead each handler is a pure function that transforms the current state into a new state.
+- Stores don't mutate themselves, instead each handler is a pure function that transforms the current state into a new state.
 
 - Because Getters are used whenever data from two or more stores needs to be combined there is no need for `dispatcher.waitsFor`
 
@@ -386,27 +389,26 @@ different immutable maps is simply a `===` operation (constant time) and the map
 
 #### `Reactor#dispatch(messageType, messagePayload)`
 
-Dispatches a message to all registered Store. This process is done syncronously, all registered `Store` are passed this message and all computeds are re-evaluated (efficiently).  After a dispatch, a Reactor will emit the new state on the `reactor.changeEmitter`
+Dispatches a message to all registered Store. This process is done synchronously, all registered `Store` are passed this message and all computeds are re-evaluated (efficiently).  After a dispatch, a Reactor will emit the new state on the `reactor.changeEmitter`
 
 ex: `reactor.dispatch('addUser', { name: 'jordan' })`
 
-#### `Reactor#get(...keyPath, [transformFn])`
+#### `Reactor#evaluate(...keyPath, [transformFn])`
 
-Returns the immutable value for some KeyPath or Getter in the reactor state. Returns `undefined` if a keyPath doesnt have a value.
+Returns the immutable value for some KeyPath or Getter in the reactor state. Returns `undefined` if a keyPath doesn't have a value.
 
 ```js
-reactor.get('users.active')
-reactor.get(['users', 'active'])
-reactor.get('users.active', 'usernameFilter', function(activeUsers, filter) {
+reactor.evaluate(['users', 'active'])
+reactor.evaluate('users.active', 'usernameFilter', function(activeUsers, filter) {
   return activeUsers.filter(function(user) {
     return user.get('username').indexOf(filter) !== -1
   }
 })
 ```
 
-#### `Reactor#getJS(...keyPath, [transformFn])`
+#### `Reactor#evaluateToJS(...keyPath, [transformFn])`
 
-Same as `get` but coerces the value to a plain JS before returning
+Same as `evaluate` but coerces the value to a plain JS before returning
 
 #### `Reactor#observe(keyPathOrGetter, handlerFn)`
 
