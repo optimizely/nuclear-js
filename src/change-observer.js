@@ -1,9 +1,6 @@
-var Getter = require('./getter')
-var evaluate = require('./evaluate')
-var hasChanged = require('./has-changed')
-var coerceArray = require('./utils').coerceArray
-var KeyPath = require('./key-path')
-var clone = require('./utils').clone
+var Immutable = require('immutable')
+var hashCode = require('./hash-code')
+var isEqual = require('./is-equal')
 
 /**
  * ChangeObserver is an object that contains a set of subscriptions
@@ -14,54 +11,76 @@ var clone = require('./utils').clone
 class ChangeObserver {
   /**
    * @param {Immutable.Map} initialState
-   * @param {EventEmitter} changeEmitter
+   * @param {Evaluator} evaluator
    */
-  constructor(initialState, changeEmitter) {
-    this.__changeHandlers = []
+  constructor(initialState, evaluator) {
     this.__prevState = initialState
-
-    // add the change listener and store the unlisten function
-    this.__unlistenFn = changeEmitter.addChangeListener(currState => {
-      this.__changeHandlers.forEach(entry => {
-        var prev = (entry.prefix) ? evaluate(this.__prevState, entry.prefix) : this.__prevState
-        var curr = (entry.prefix) ? evaluate(currState, entry.prefix) : currState
-
-        if (hasChanged(prev, curr, entry.getter.flatDeps)) {
-          var newValue = evaluate(curr, entry.getter)
-          entry.handler.call(null, newValue)
-        }
-      })
-      this.__prevState = currState
-    })
+    this.__evaluator = evaluator
+    this.__prevValues = Immutable.Map({})
+    this.__observers = []
   }
 
   /**
-   * Specify an array of keyPaths as dependencies and
-   * a changeHandler fn
-   *
-   * options.getter
-   * options.handler
-   * options.prefix
-   * @param {object} options
+   * @param {Immutable.Map} newState
+   */
+  notifyObservers(newState) {
+    this.__observers.forEach(entry => {
+      var getter = entry.getter
+      var code = hashCode(getter)
+      var prevState = this.__prevState
+      var prevValue
+
+      if (this.__prevValues.has(code)) {
+        prevValue = this.__prevValues.get(code)
+      } else {
+        prevValue = this.__evaluator.evaluate(prevState, getter)
+        this.__prevValues = this.__prevValues.set(code, prevValue)
+      }
+
+      var currValue = this.__evaluator.evaluate(newState, getter)
+
+      if (!isEqual(prevValue, currValue)) {
+        entry.handler.call(null, currValue)
+        this.__prevValues = this.__prevValues.set(code, currValue)
+      }
+    })
+    this.__prevState = newState
+  }
+
+  /**
+   * Specify an getter and a change handler fn
+   * Handler function is called whenever the value of the getter changes
+   * @param {Getter} getter
+   * @param {function} handler
    * @return {function} unwatch function
    */
-  onChange(options) {
-    var entry = clone(options)
-    this.__changeHandlers.push(entry)
+  onChange(getter, handler) {
+    // TODO make observers a map of <Getter> => { handlers }
+    var entry = {
+      getter: getter,
+      handler: handler,
+    }
+    this.__observers.push(entry)
     // return unwatch function
     return () => {
-      var ind  = this.__changeHandlers.indexOf(entry)
+      // TODO untrack from change emitter
+      var ind  = this.__observers.indexOf(entry)
       if (ind > -1) {
-        this.__changeHandlers.splice(ind, 1)
+        this.__observers.splice(ind, 1)
       }
     }
   }
 
   /**
-   * Clean up
+   * Resets and clears all observers and reinitializes back to the supplied
+   * previous state
+   * @param {Immutable.Map} prevState
+   *
    */
-  destroy() {
-    this.__unlistenFn()
+  reset(prevState) {
+    this.__prevState = prevState
+    this.__prevValues = Immutable.Map({})
+    this.__observers = []
   }
 }
 

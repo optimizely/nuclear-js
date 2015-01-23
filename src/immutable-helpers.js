@@ -1,4 +1,5 @@
 var Immutable = require('immutable')
+var isObject = require('./utils').isObject
 
 /**
  * A collection of helpers for the ImmutableJS library
@@ -11,6 +12,20 @@ var Immutable = require('immutable')
 function isImmutable(obj) {
   return Immutable.Iterable.isIterable(obj)
 }
+
+/**
+ * Returns true if the value is an ImmutableJS data structure
+ * or a javascript primitive that is immutable (stirng, number, etc)
+ * @param {*} obj
+ * @return {boolean}
+ */
+function isImmutableValue(obj) {
+  return (
+    isImmutable(obj) ||
+    !isObject(obj)
+  )
+}
+
 /**
  * Converts an Immutable Sequence to JS object
  * Can be called on any type
@@ -35,3 +50,4 @@ function toImmutable(arg) {
 exports.toJS = toJS
 exports.toImmutable = toImmutable
 exports.isImmutable = isImmutable
+exports.isImmutableValue = isImmutableValue

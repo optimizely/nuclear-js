@@ -5,107 +5,107 @@ var Nuclear = require('../src/main')
 var Reactor = require('../src/main').Reactor
 var Store = require('../src/main').Store
 var Getter = require('../src/main').Getter
+var toImmutable = require('../src/immutable-helpers').toImmutable
 
 
 describe('Reactor', () => {
-  var checkoutActions, reactor, tax, total
+  describe('Reactor with no initial state', () => {
+    var checkoutActions, reactor, taxPercentGetter, subtotalGetter, taxGetter, totalGetter
 
-  beforeEach(() => {
-
-    var itemStore = Store({
-      getInitialState() {
-        return {
-          all: [],
-        }
-      },
-
-      initialize() {
-        this.on('addItem', (state, payload) => {
-          return state.update('all', items => {
-            return items.push(Map({
-              name: payload.name,
-              price: payload.price,
-            }))
+    beforeEach(() => {
+      var itemStore = Store({
+        getInitialState() {
+          return toImmutable({
+            all: [],
           })
-        })
+        },
 
-        this.computed('subtotal', ['all', (items) => {
+        initialize() {
+          this.on('addItem', (state, payload) => {
+            return state.update('all', items => {
+              return items.push(Map({
+                name: payload.name,
+                price: payload.price,
+              }))
+            })
+          })
+        },
+      })
+
+      var taxPercentStore = Store({
+        getInitialState() {
+          return 0
+        },
+
+        initialize() {
+          this.on('setTax', (state, payload) => {
+            return payload
+          })
+        }
+      })
+
+      reactor = new Reactor({
+        debug: true
+      })
+      reactor.registerStores({
+        'items': itemStore,
+        'taxPercent': taxPercentStore,
+      })
+
+      subtotalGetter = [
+        ['items', 'all'],
+        (items) => {
           return items.reduce((total, item) => {
             return total + item.get('price')
           }, 0)
-        }])
-      },
-    })
+        }
+      ]
 
-    var taxPercentStore = Store({
-      getInitialState() {
-        return 0
-      },
+      taxGetter = [
+        subtotalGetter,
+        ['taxPercent'],
+        (subtotal, taxPercent) => {
+          return (subtotal * (taxPercent / 100))
+        }
+      ]
 
-      initialize() {
-        this.on('setTax', (state, payload) => {
-          return payload
-        })
+      totalGetter = [
+        subtotalGetter,
+        taxGetter,
+        (subtotal, tax) => {
+          return Math.round(subtotal + tax, 2)
+        }
+      ]
+
+      checkoutActions = {
+        addItem(name, price) {
+          reactor.dispatch('addItem', {
+            name: name,
+            price: price
+          })
+        },
+
+        setTaxPercent(percent) {
+          reactor.dispatch('setTax', percent)
+        }
       }
     })
-
-    reactor = Reactor({
-      stores: {
-        'items': itemStore,
-        'taxPercent': taxPercentStore,
-      }
-    })
-
-    tax = Getter(
-      'items.subtotal',
-      'taxPercent',
-      (subtotal, taxPercent) => {
-        return (subtotal * (taxPercent / 100))
-      }
-    )
-
-    total = Getter(
-      'items.subtotal',
-      tax,
-      (subtotal, tax) => {
-        var total = subtotal + tax
-        return Math.round(total, 2)
-      }
-    )
-
-    checkoutActions = reactor.bindActions({
-      addItem(reactor, name, price) {
-        reactor.dispatch('addItem', {
-          name: name,
-          price: price
-        })
-      },
-
-      setTaxPercent(reactor, percent) {
-        reactor.dispatch('setTax', percent)
-      }
-    })
-  })
-
-  describe('Reactor with no initial state', () => {
     afterEach(() => {
       reactor.reset()
     })
 
     describe('initialization', () => {
       it('should initialize with the core level computeds', () => {
-        expect(reactor.getJS('items.all')).toEqual([])
+        expect(reactor.evaluateToJS(['items', 'all'])).toEqual([])
 
-        expect(reactor.get('items.subtotal')).toBe(0)
-        expect(reactor.get('taxPercent')).toEqual(0)
+        expect(reactor.evaluate(['taxPercent'])).toEqual(0)
       })
 
-      it('should return the whole state when calling reactor.get()', () => {
-        var state = reactor.get()
+      it('should return the whole state when calling reactor.evaluate([])', () => {
+        var state = reactor.evaluate([])
         var expected = Map({
           items: Map({
             all: List(),
-            subtotal: 0,
           }),
           taxPercent: 0,
         })
@@ -113,12 +113,11 @@ describe('Reactor', () => {
         expect(Immutable.is(state, expected)).toBe(true)
       })
 
-      it('should return the whole state coerced to JS when calling reactor.getJS()', () => {
-        var state = reactor.getJS()
+      it('should return the whole state coerced to JS when calling reactor.evaluateToJS()', () => {
+        var state = reactor.evaluateToJS([])
         var expected = {
           items: {
             all: [],
-            subtotal: 0,
           },
           taxPercent: 0,
         }
@@ -135,24 +134,11 @@ describe('Reactor', () => {
 
       it('should update all state', () => {
         checkoutActions.addItem(item.name, item.price)
-        expect(reactor.getJS('items.all')).toEqual([item])
+        expect(reactor.evaluateToJS(['items', 'all'])).toEqual([item])
 
-        expect(reactor.get('items.subtotal')).toBe(10)
-        expect(reactor.get('taxPercent')).toEqual(0)
-        expect(reactor.get(tax)).toEqual(0)
-        expect(reactor.get(total)).toEqual(10)
-      })
-
-      it('should update all computed after another action', () => {
-        checkoutActions.addItem(item.name, item.price)
-        checkoutActions.setTaxPercent(10)
-
-        expect(reactor.getJS('items.all')).toEqual([item])
-
-        expect(reactor.get('items.subtotal')).toBe(10)
-        expect(reactor.get('taxPercent')).toEqual(10)
-        expect(reactor.get(tax)).toEqual(1)
-        expect(reactor.get(total)).toEqual(11)
+        expect(reactor.evaluate(['taxPercent'])).toEqual(0)
+        expect(reactor.evaluate(taxGetter)).toEqual(0)
+        expect(reactor.evaluate(totalGetter)).toEqual(10)
       })
 
       it("should emit the state of the reactor to a handler registered with observe()", () => {
@@ -166,10 +152,8 @@ describe('Reactor', () => {
             all: [
               item
             ],
-            subtotal: 10
           },
           taxPercent: 0,
-          total: 10,
         })
 
         var firstCallArg = mockFn.calls.argsFor(0)
@@ -191,7 +175,7 @@ describe('Reactor', () => {
     describe('#observe', () => {
       it('should invoke a change handler if the specific keypath changes', () => {
         var mockFn = jasmine.createSpy()
-        reactor.observe('taxPercent', mockFn)
+        reactor.observe(['taxPercent'], mockFn)
 
         checkoutActions.setTaxPercent(5)
 
@@ -200,7 +184,7 @@ describe('Reactor', () => {
       })
       it('should not invoke a change handler if another keypath changes', () => {
         var mockFn = jasmine.createSpy()
-        reactor.observe('taxPercent', mockFn)
+        reactor.observe(['taxPercent'], mockFn)
 
         checkoutActions.addItem('item', 1)
 
@@ -210,7 +194,7 @@ describe('Reactor', () => {
         var mockFn = jasmine.createSpy()
         checkoutActions.addItem('item', 100)
 
-        reactor.observe(total, mockFn)
+        reactor.observe(totalGetter, mockFn)
 
         checkoutActions.setTaxPercent(5)
 
@@ -220,8 +204,7 @@ describe('Reactor', () => {
 
       it('should not invoke a change handler if a getters deps dont change', () => {
         var mockFn = jasmine.createSpy()
-        var doubleTax = Getter('taxPercent', x => 2*x)
-        reactor.observe(doubleTax, mockFn)
+        reactor.observe(['taxPercent'], mockFn)
 
         checkoutActions.addItem('item', 100)
 
@@ -232,7 +215,7 @@ describe('Reactor', () => {
         var mockFn = jasmine.createSpy()
         checkoutActions.addItem('item', 100)
 
-        var unwatch = reactor.observe(total, mockFn)
+        var unwatch = reactor.observe(totalGetter, mockFn)
 
         unwatch()
 
@@ -243,68 +226,73 @@ describe('Reactor', () => {
     })
   }) // Reactor with no initial state
 
-  describe("#loadState", () => {
-    var initialState = Map({
-      items: Map({
-        all: List([
-          Map({
-            name: 'item 1',
-            price: 10,
-          }),
-          Map({
-            name: 'item 2',
-            price: 90,
-          }),
-        ]),
-      }),
+  describe("reactor#reset", () => {
+    var reactor
 
-      taxPercent: 20
-    })
+    beforeEach(() => {
+      var standardStore = Store({
+        getInitialState() {
+          return toImmutable([])
+        },
 
-    it('should load the entire app state and call any changeObservers', () => {
-      var mockFn = jasmine.createSpy()
-      reactor.observe(mockFn)
-
-      reactor.loadState(initialState)
-
-      expect(mockFn.calls.count()).toEqual(1)
-
-      var expected = Map({
-        items: Map({
-          all: List([
-            Map({
-              name: 'item 1',
-              price: 10,
-            }),
-            Map({
-              name: 'item 2',
-              price: 90,
-            }),
-          ]),
-          subtotal: 100
-        }),
-
-        taxPercent: 20
+        initialize() {
+          this.on('addItem', (state, item) => {
+            return state.push(item)
+          })
+        },
       })
 
-      expect(mockFn.calls.argsFor(0)[0]).toEqual(expected)
+      var persistentStore = Store({
+        getInitialState() {
+          return toImmutable([])
+        },
 
-      expect(reactor.get('items.subtotal')).toBe(100)
+        initialize() {
+          this.on('addItem', (state, item) => {
+            return state.push(item)
+          })
+        },
+
+        handleReset(state) {
+          debugger
+          return state
+        }
+      })
+
+      reactor = new Reactor({
+        debug: true
+      })
+      reactor.registerStores({
+        standard: standardStore,
+        persistent: persistentStore,
+      })
     })
 
-    it('should load state for specific store', () => {
-      reactor.loadState(initialState)
+    afterEach(() => {
+      reactor.reset()
+    })
 
-      var mockFn = jasmine.createSpy()
-      reactor.observe('taxPercent', mockFn)
+    it("should go back to initial state for normal stores", () => {
+      var item = { foo: 'bar' }
+      reactor.dispatch('addItem', item)
 
+      expect(reactor.evaluateToJS(['standard'])).toEqual([item])
 
-      reactor.loadState('taxPercent', 30)
+      reactor.reset()
 
-      expect(mockFn.calls.count()).toEqual(1)
-      expect(mockFn.calls.argsFor(0)).toEqual([30])
+      expect(reactor.evaluateToJS(['standard'])).toEqual([])
+    })
 
-      expect(reactor.get(total)).toBe(130)
+    it("should respect the handleReset method for stores that override it", () => {
+      var item = { foo: 'bar' }
+      reactor.dispatch('addItem', item)
+
+      debugger
+      expect(reactor.evaluateToJS(['persistent'])).toEqual([item])
+
+      reactor.reset()
+
+      expect(reactor.evaluateToJS(['persistent'])).toEqual([item])
     })
   })
 })

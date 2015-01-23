@@ -28,7 +28,7 @@
     "stateless"
   ],
   "dependencies": {
-    "immutable": "^3.0.x",
+    "immutable": "^3.4.x",
     "lodash": "^2.4.1"
   },
   "devDependencies": {
