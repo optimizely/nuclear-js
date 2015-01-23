@@ -14,7 +14,7 @@ var cloneDeep = require('./utils').cloneDeep
 
 
 /**
- * Dereferences a value, if its a mutable value makes a copy
+ * Dereferences a value by making a copy if it's mutable
  */
 function deref(val) {
   if (isImmutable(val)) {

@@ -1,5 +1,5 @@
-var isArray = require('./utils').isArray
 var isFunction = require('./utils').isFunction
+var flatten = require('lodash').flatten
 
 /**
  * Checks if something is simply a keyPath and not a getter
@@ -7,8 +7,12 @@ var isFunction = require('./utils').isFunction
  * @return {boolean}
  */
 exports.isKeyPath = function(toTest) {
+
+  // make sure it's an array
+  toTest = flatten([toTest])
+
   return (
-    isArray(toTest) &&
+    toTest.length &&
     !isFunction(toTest[toTest.length - 1])
   )
 }
