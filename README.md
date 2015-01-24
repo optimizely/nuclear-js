@@ -382,14 +382,14 @@ unidirectional data flow and a single synchronous dispatcher.
 
 - Reactor.dispatch waits for every Store to receive the action before notifying subscribers, this ensures no renders can happen before all stores have handled the action.
 
-- Immutability allows more granular change observation.  You no longer have to listen for change events at the store level.  Comparing the any part of two
+- Immutability allows more granular change observation.  You no longer have to listen for change events at the store level.  Comparing any part of two
 different immutable maps is simply a `===` operation (constant time) and the map lookup itself is `O(log32)`.
 
 ## Reactor API
 
 #### `Reactor#dispatch(messageType, messagePayload)`
 
-Dispatches a message to all registered Store. This process is done syncronously, all registered `Store` are passed this message and all computeds are re-evaluated (efficiently).  After a dispatch, a Reactor will emit the new state on the `reactor.changeEmitter`
+Dispatches a message to all registered Stores. This process is done syncronously, all registered `Store`s are passed this message and all computeds are re-evaluated (efficiently).  After a dispatch, a Reactor will emit the new state on the `reactor.changeEmitter`
 
 ex: `reactor.dispatch('addUser', { name: 'jordan' })`
 
