@@ -59,11 +59,9 @@ are self managing state, providing a single canonical place to define the behavi
 
 #### KeyPaths
 
-KeyPaths are a pointer to some piece of your application state.  They can be represented as a `String` or an `Array`
+KeyPaths are a pointer to some piece of your application state.  They can be represented as a `Array<String>`
 
-`'items'` Is a valid keypath that would lookup the items section of your app state, analagous to `state['items']` in javascript.
-
-`['foo', 'bar']` is another valid keypath, analagous to `state['foo']['bar']` in javascript
+`['foo', 'bar']` is an example of a valid keypath, analagous to `state['foo']['bar']` in javascript
 
 #### Getters
 
@@ -83,11 +81,25 @@ but keep in mind that it may make more sense in the context of the examples belo
 ```js
 // Our first getter, takes in the `items` portion of the app state and
 // returns (presumably) the sum of `item.price * item.quantity` for all the items
-var getSubtotal = ['items', function(items) { ... })]
+var subtotalGetter = [
+  // a KeyPath
+  ['items'],
+  // and a transform function
+  function(items) { ... }
+]
 
 // This Getter requests 2 values be passed into it's transform function - the result
-// of the getSubtotal Getter and the `taxPercent` value from the app state.
-var getTotal = [getSubtotal, 'taxPercent', function(subtotal, taxPercent) { ... }];
+// of the subtotalGetter and the `taxPercent` value from the app state.
+var totalGetter = [
+  // A Getter
+  subtotalGetter,
+  // A KeyPath
+  ['taxPercent'],
+  // Composition Function
+  function(subtotal, taxPercent) {
+    return (subtotal * taxPercent) + subtotal
+  }
+]
 ```
 
 Notice that you can use getters as dependencies to other getters.  This is an extremely powerful abstraction, and one
@@ -107,16 +119,15 @@ First lets create the `itemStore` and `taxPercentStore` and hook it up to our re
 
 ```js
 var Map = require('immutable').Map
-var Reactor = require('nuclear-js').Reactor
-var Store = require('nuclear-js').Store
+var List = require('immutable').List
+var Nuclear = require('nuclear-js')
 
-var itemStore = Store({
-  // the parameter is optional, if not supplied will default to `{}`
-  // stores can be any data structure including primitives
+var itemStore = Nuclear.Store({
+  // the parameter is optional, if not supplied will default to an `Immutable.Map({})`
+  // Store state must be an ImmutableJS data structure or an immutable javascript primitive
+  // like Number or String
   getInitialState: function() {
-    // any non-primitive value will be coerced into its immutable counterpart
-    // so `{}` becomes Immutable.Map({}) and `[]` becomes Immutable.List([])
-    return []
+    return Immutable.List()
   },
 
   initialize: function() {
@@ -134,7 +145,7 @@ var itemStore = Store({
   }
 })
 
-var taxPercentStore = Store({
+var taxPercentStore = Nuclear.Store({
   getInitialState: function() {
     return 0
   },
@@ -149,43 +160,62 @@ var taxPercentStore = Store({
 })
 
 var reactor = Reactor()
-reactor.attachStore('items', itemStore)
-reactor.attachStore('taxPercent', taxPercentStore)
+reactor.registerStores({
+  items: itemStore,
+  taxPercent: taxPercentStore,
+})
 
 // Let's use a Getter (the first form, a [KeyPath](#keypaths)) to retrieve parts of the app state
-console.log(reactor.evaluate('items')) // List []
-console.log(reactor.evaluate('taxPercent')) // 0
+console.log(reactor.evaluate(['items'])) // List []
+console.log(reactor.evaluate(['taxPercent'])) // 0
 
-reactor.dispatch('addItem', { name: 'Soap', price: 5, quantity: 2 })
+reactor.dispatch('addItem', {
+  name: 'Soap',
+  price: 5,
+  quantity: 2,
+})
 
-console.log(reactor.evaluate('items')) // List [ Map { name: 'Soap', price:5, quantity: 2 } ]
+console.log(reactor.evaluate(['items'])) // List [ Map { name: 'Soap', price:5, quantity: 2 } ]
 ```
 
 ### Computing Subtotal, Tax and Total
 
 ```js
+var subtotalGetter = [
+  ['items'],
+  function(items) {
+    // items is of type `Immutable.List`
+    return items.reduce(function(total, items) {
+      return total + (item.get('price') * item.get('quantity'))
+    }, 0)
+  }
+]
 
-var getSubtotal = ['items', items => {
-  return items.reduce((total, item) => {
-    return total + (item.get('price') * item.get('quantity'))
-  }, 0)
-}]
+var taxGetter = [
+  subtotalGetter,
+  ['taxPercent'],
+  function(subtotal, taxPercent) {
+    return subtotal * (taxPercent / 100)
+  }
+]
 
-var getTax = [getSubtotal, 'taxPercent', (subtotal, taxPercent) => {
-  return subtotal * (taxPercent / 100)
-}]
+var totalGetter = [
+  subtotalGetter,
+  taxGetter,
+  function(subtotal, tax) {
+    return subtotal + tax
+  }
+]
 
-var getTotal = [getSubtotal, getTax, (subtotal, tax) => subtotal + tax ]
-
-console.log(reactor.evaluate(getSubtotal)) // 10
-console.log(reactor.evaluate(getTax)) // 0
-console.log(reactor.evaluate(getTotal)) // 10
+console.log(reactor.evaluate(subtotalGetter)) // 10
+console.log(reactor.evaluate(taxGetter)) // 0
+console.log(reactor.evaluate(totalGetter)) // 10
 
 reactor.dispatch('setTaxPercent', 10)
 
-console.log(reactor.evaluate(getSubtotal)) // 11
-console.log(reactor.evaluate(getTax)) // 1
-console.log(reactor.evaluate(getTotal)) // 11
+console.log(reactor.evaluate(subtotalGetter)) // 11
+console.log(reactor.evaluate(taxGetter)) // 1
+console.log(reactor.evaluate(totalGetter)) // 11
 ```
 
 ### Lets do something more interesting...
@@ -193,9 +223,14 @@ console.log(reactor.evaluate(getTotal)) // 11
 Imagine we want to know any time the total is over 100.  Let's use `reactor.observe`
 
 ```js
-var getOver100 = [getTotal, total => total > 100];
+var over100Getter = [
+  getTotal,
+  function(total) {
+    return total > 100
+  }
+]
 
-reactor.observe(getOver100, isOver100 => {
+reactor.observe(over100Getter, function(isOver100) {
   if (isOver100) {
     alert('Shopping cart over 100!')
   }
@@ -205,25 +240,34 @@ reactor.observe(getOver100, isOver100 => {
 Actually that wasn't that interesting... lets make the threshold dynamic
 
 ```js
-var budgetStore = Store({
+var budgetStore = Nuclear.Store({
   getInitialState: function() {
     return Infinity
   },
   initialize: function() {
-    this.on('setBudget', (currentBudget, newBudget) => newBudget)
+    this.on('setBudget', function(currentBudget, newBudget) {
+      return newBudget
+    }
   }
 })
 
-reactor.attachStore('budget', budgetStore) // stores can be attached at any time
-
-var isOverBudget = Getter(getTotal, 'budget', (total, budget) => {
-  return total > budget
+// stores can be attached at any time
+reactor.registerStores({
+  budget: budgetStore,
 })
 
-reactor.observe(isOverBudget, isOver => {
+var isOverBudget = [
+  totalGetter,
+  ['budget'],
+  function(total, budget) {
+    return total > budget
+  }
+]
+
+reactor.observe(isOverBudget, function(isOver) {
   // this will be automatically re-evaluated only when the total or budget changes
   if (isOver) {
-    var budget = reactor.evaluate('budget')
+    var budget = reactor.evaluate(['budget'])
     alert("Is over budget of " + budget)
   }
 })
