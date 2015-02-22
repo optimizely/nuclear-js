@@ -55,16 +55,12 @@ function flattenDeps(deps) {
 
   var coercedDeps = coerceDeps(deps)
 
-  accum = accum.withMutations(accum => {
-    coercedDeps.forEach((dep) => {
-      if (isGetter(dep)) {
-        accum.union(flattenDeps(dep.deps))
-      } else {
-        accum = accum.add(dep)
-      }
-    })
-
-    return accum
+  coercedDeps.forEach((dep) => {
+    if (isGetter(dep)) {
+      accum = accum.union(flattenDeps(dep.deps))
+    } else {
+      accum = accum.add(dep)
+    }
   })
 
   return accum.toJS()

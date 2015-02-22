@@ -124,6 +124,22 @@ describe('Getter', () => {
     it('#flattenDeps', () => {
       expect(getter2.flatDeps).toEqual([['dep1'], ['dep2'], ['multi']])
     })
+
+    it("should prevent nested evaluate calls", () => {
+      var state = Immutable.Map({
+        dep1: 1,
+        dep2: 2,
+        multi: 3,
+      })
+
+      var getter3 = Getter('multi', (multi) => {
+        return multi * evaluate(state, getter1)
+      })
+
+      expect(function () { evaluate(state, getter3) }).toThrow(
+        new Error("Evaluate may not be called within a Getters computeFn")
+      )
+    })
   })
 
   describe("#fromArgs", () => {
