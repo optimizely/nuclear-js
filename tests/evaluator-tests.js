@@ -123,5 +123,18 @@ describe('Evaluator', () => {
       expect(currentProjectSpy.calls.count()).toBe(2)
       expect(currentProjectDescriptionSpy.calls.count()).toBe(1)
     })
-  })
+
+    it("should prevent nested evaluate calls", () => {
+      var nestedEvaluateGetter = [
+        currentProjectGetter,
+        (projects) => {
+          return evaluator.evaluate(state, currentProjectDescriptionGetter)
+        }
+      ]
+
+      expect(function () { evaluator.evaluate(state, nestedEvaluateGetter) }).toThrow(
+        new Error("Evaluate may not be called within a Getters computeFn")
+      )
+    })
+ })
 })
