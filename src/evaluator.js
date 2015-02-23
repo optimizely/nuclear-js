@@ -12,6 +12,8 @@ var isObject = require('./utils').isObject
 var isArray = require('./utils').isArray
 var cloneDeep = require('./utils').cloneDeep
 
+// Keep track of whether we are currently executing a Getter's computeFn
+var __applyingComputeFn = false;
 
 /**
  * Dereferences a value, if its a mutable value makes a copy
@@ -88,7 +90,17 @@ class Evaluator {
     }
     // no cache hit evaluate
     var args = getDeps(keyPathOrGetter).map(dep => this.evaluate(state, dep))
+
+    // This indicates that we have called evaluate within the body of a computeFn.
+    // Throw an error as this will lead to inconsistent caching
+    if (__applyingComputeFn === true) {
+      __applyingComputeFn = false
+      throw new Error("Evaluate may not be called within a Getters computeFn")
+    }
+
+    __applyingComputeFn = true
     var evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
+    __applyingComputeFn = false
 
     this.__cacheValue(state, keyPathOrGetter, args, evaluatedValue)
 
