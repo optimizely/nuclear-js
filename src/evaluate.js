@@ -1,9 +1,6 @@
 var KeyPath = require('./key-path')
 var Getter = require('./getter')
 
-
-var isEvaluating = false;
-
 /**
  * General purpose getter function
  */
@@ -35,14 +32,7 @@ module.exports = function evaluate(state, getter) {
   } else if (Getter.isGetter(getter)) {
     // its of type Getter
     var values = getter.deps.map(evaluate.bind(null, state))
-    if (isEvaluating === true) {
-      isEvaluating = false
-      throw new Error("Evaluate may not be called within a Getters computeFn")
-    }
-    isEvaluating = true
-    var returnValue = getter.computeFn.apply(null, values)
-    isEvaluating = false
-    return returnValue
+    return getter.computeFn.apply(null, values)
   } else {
     throw new Error("Evaluate must be passed a keyPath or Getter")
   }
