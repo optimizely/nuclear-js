@@ -24,6 +24,8 @@ class ChangeObserver {
    * @param {Immutable.Map} newState
    */
   notifyObservers(newState) {
+    var currentValues = Immutable.Map()
+
     this.__observers.forEach(entry => {
       var getter = entry.getter
       var code = hashCode(getter)
@@ -41,10 +43,11 @@ class ChangeObserver {
 
       if (!isEqual(prevValue, currValue)) {
         entry.handler.call(null, currValue)
-        this.__prevValues = this.__prevValues.set(code, currValue)
+        currentValues = currentValues.set(code, currValue)
       }
     })
     this.__prevState = newState
+    this.__prevValues = currentValues
   }
 
   /**
