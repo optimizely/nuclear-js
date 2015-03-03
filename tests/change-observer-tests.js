@@ -63,6 +63,21 @@ describe('ChangeObserver', () => {
 
       expect(mockFn.calls.count()).toBe(0)
     })
+
+    describe("when two of the same getter are registered", () => {
+      it("should call the handler functions of both", () => {
+        var getter = [['foo'], identity];
+        var mockFn1 = jasmine.createSpy()
+        var mockFn2 = jasmine.createSpy()
+        observer.onChange(getter, mockFn1)
+        observer.onChange(getter, mockFn2)
+
+        observer.notifyObservers(initialState.updateIn(['foo', 'bar'], x => 2))
+
+        expect(mockFn1.calls.count()).toBe(1)
+        expect(mockFn2.calls.count()).toBe(1)
+      })
+    })
   })
   // TODO test the prevValues and registering an observable
 })
