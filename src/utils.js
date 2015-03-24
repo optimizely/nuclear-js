@@ -8,8 +8,6 @@ exports.each = _.each
 
 exports.partial = _.partial
 
-exports.isFunction = _.isFunction
-
 /**
  * Ensures that the inputted value is an array
  * @param {*} val
@@ -47,6 +45,15 @@ exports.isString = function(val) {
  */
 exports.isArray = Array.isArray || function(val) {
   return objectToString(val) === '[object Array]'
+}
+
+/**
+ * Checks if the passed in value is a function
+ * @param {*} val
+ * @return {boolean}
+ */
+exports.isFunction = function(val) {
+  return toString.call(val) === '[object Function]'
 }
 
 /**

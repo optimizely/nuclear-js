@@ -66,4 +66,32 @@ describe('Utils', () => {
       expect(result).toBe(true)
     })
   })
+
+  describe('#isFunction', () => {
+    it('correctly identifies a non-function as not a function', () => {
+      var result = Utils.isFunction(1)
+      expect(result).toBe(false)
+    })
+
+    it('correctly identifies a RegEx as not a function', () => {
+      var result = Utils.isFunction(/something/)
+      expect(result).toBe(false)
+    })
+
+    it('correctly identifies a function decleration as a function', () => {
+      var result = Utils.isFunction(()=>{})
+      expect(result).toBe(true)
+    })
+
+    it('correctly identifies a function expression as a function', () => {
+      var testCase = () => {}
+      var result = Utils.isFunction(testCase)
+      expect(result).toBe(true)
+    })
+
+    it('correctly identifies a method as a function', () => {
+      var result = Utils.isFunction(Utils.isFunction)
+      expect(result).toBe(true)
+    })
+  })
 })
