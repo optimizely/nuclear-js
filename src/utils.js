@@ -14,8 +14,6 @@ exports.isFunction = _.isFunction
 
 exports.isString = _.isString
 
-exports.isNumber = _.isNumber
-
 /**
  * Ensures that the inputted value is an array
  * @param {*} val
@@ -26,4 +24,14 @@ exports.coerceArray = function(val) {
     return [val]
   }
   return val
+}
+
+/**
+ * Checks if the passed in value is a number
+ * @param {*} val
+ * @return {boolean}
+ */
+exports.isNumber = function(val) {
+  return typeof val == 'number' ||
+    val && typeof val == 'object' && toString.call(val) === '[object Number]'
 }
