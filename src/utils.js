@@ -12,8 +12,6 @@ exports.isArray = _.isArray
 
 exports.isFunction = _.isFunction
 
-exports.isString = _.isString
-
 /**
  * Ensures that the inputted value is an array
  * @param {*} val
@@ -32,6 +30,24 @@ exports.coerceArray = function(val) {
  * @return {boolean}
  */
 exports.isNumber = function(val) {
-  return typeof val == 'number' ||
-    val && typeof val == 'object' && toString.call(val) === '[object Number]'
+  return typeof val == 'number' || objectToString(val) === '[object Number]'
+}
+
+/**
+ * Checks if the passed in value is a string
+ * @param {*} val
+ * @return {boolean}
+ */
+exports.isString = function(val) {
+  return typeof val == 'string' || objectToString(val) === '[object String]'
+}
+
+/**
+ * Returns the text value representation of an object
+ * @private
+ * @param {*} obj
+ * @return {string}
+ */
+function objectToString(obj) {
+  return obj && typeof obj == 'object' && toString.call(obj)
 }

@@ -37,4 +37,16 @@ describe('Utils', () => {
       expect(result).toBe(true)
     })
   })
+
+  describe('#isString', () => {
+    it('correctly identifies a non-string as not a string', () => {
+      var result = Utils.isString(1)
+      expect(result).toBe(false)
+    })
+
+    it('correctly identifies a string as a string', () => {
+      var result = Utils.isString('string')
+      expect(result).toBe(true)
+    })
+  })
 })
