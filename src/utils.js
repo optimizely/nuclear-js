@@ -2,8 +2,6 @@ var _ = require('lodash');
 
 exports.clone = _.clone
 
-exports.extend = _.extend
-
 exports.each = _.each
 
 exports.partial = _.partial
@@ -54,6 +52,31 @@ exports.isArray = Array.isArray || function(val) {
  */
 exports.isFunction = function(val) {
   return toString.call(val) === '[object Function]'
+}
+
+/**
+ * Extends an object with the properties of additional objects
+ * @param {object} obj
+ * @param {object} objects
+ * @return {object}
+ */
+exports.extend = function(obj) {
+  var length = arguments.length
+
+  if (!obj || length < 2) return obj || {}
+
+  for (var index = 1; index < length; index++) {
+    var source = arguments[index]
+    var keys = Object.keys(source)
+    var l = keys.length
+
+    for (var i = 0; i < l; i++) {
+      var key = keys[i]
+      obj[key] = source[key]
+    }
+  }
+
+  return obj
 }
 
 /**

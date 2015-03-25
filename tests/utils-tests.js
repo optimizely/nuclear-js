@@ -94,4 +94,56 @@ describe('Utils', () => {
       expect(result).toBe(true)
     })
   })
+
+  describe('#extend', () => {
+    it('extends an object with the attributes of another', () => {
+      expect(Utils.extend({}, { a: 1 })).toEqual({ a: 1 })
+    })
+
+    it('overrides source properties with destination properties', () => {
+      expect(Utils.extend({ a: 1 }, { a: 2 }).a).toBe(2)
+    })
+
+    it('maintains destination properties not in source', () => {
+      expect(Utils.extend({ a: 1 }, { b: 2 }).a).toBeDefined()
+    })
+
+    it('can extend from multiple sources', () => {
+      var result = Utils.extend({ a: 1 }, { b: 2 }, { c: 3})
+      expect(result).toEqual({ a: 1, b: 2, c: 3})
+    })
+
+    it('sets property priority from right to left', () => {
+      var result = Utils.extend({ a: 1 }, { a: 2, b: 2 }, { b: 3 })
+      expect(result).toEqual({ a: 2, b: 3 })
+    })
+
+    it('skips over non-plain objects', () => {
+      var result = Utils.extend({ a: 1 }, /something/, { b: 2 })
+      expect(result).toEqual({ a: 1, b: 2 })
+    })
+
+    it('returns an empty object when arguments are not defined', () => {
+      expect(Utils.extend()).toEqual({})
+    })
+
+    it('returns the original object when only one argument is passed', () => {
+      var obj = {}
+      expect(Utils.extend(obj)).toBe(obj)
+    })
+
+    it('copies all properties from source', () => {
+      var obj = { a: 1 }
+      obj.b = 2
+      expect(Utils.extend({}, obj).a).toBe(1)
+      expect(Utils.extend({}, obj).b).toBe(2)
+    })
+
+    it('does not extend inherited properties', () => {
+      var F = function() {}
+      F.prototype = { a: 1 }
+      var obj = new F()
+      expect(Utils.extend({ a: 10 }).a).toEqual(10)
+    })
+  })
 })
