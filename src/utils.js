@@ -55,6 +55,15 @@ exports.isFunction = function(val) {
 }
 
 /**
+ * Checks if the passed in value is af type Object
+ * @param {*} val
+ * @return {boolean}
+ */
+exports.isObject = function(obj) {
+  var type = typeof obj
+  return type === 'function' || type === 'object' && !!obj
+}
+
  * Extends an object with the properties of additional objects
  * @param {object} obj
  * @param {object} objects

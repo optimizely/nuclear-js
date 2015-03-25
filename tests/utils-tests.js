@@ -95,6 +95,41 @@ describe('Utils', () => {
     })
   })
 
+  describe('#isObject', () => {
+    it('identifies an array as an Object type', () => {
+      expect(Utils.isObject([])).toBe(true)
+    })
+
+    it('identifies an object literal as an Object type', () => {
+      expect(Utils.isObject({})).toBe(true)
+    })
+
+    it('identifies the arguments object as an Object type', () => {
+      expect(Utils.isObject(arguments)).toBe(true)
+    })
+
+    it('identifies a function as an Object type', () => {
+      expect(Utils.isObject(()=>{})).toBe(true)
+    })
+
+    it('identifies a regex as an Object type', () => {
+      expect(Utils.isObject(/something/)).toBe(true)
+    })
+
+    it('identifies primitives and non-objects as not of type Object', () => {
+      expect(Utils.isObject(1)).not.toBe(true)
+      expect(Utils.isObject('something')).not.toBe(true)
+      expect(Utils.isObject(false)).not.toBe(true)
+      expect(Utils.isObject(void 0)).not.toBe(true)
+      expect(Utils.isObject(null)).not.toBe(true)
+    })
+
+    it('identifies instances as Object types', () => {
+      expect(Utils.isObject(new Number(0))).toBe(true)
+      expect(Utils.isObject(new String(''))).toBe(true)
+      expect(Utils.isObject(new Boolean(''))).toBe(true)
+    })
+  })
   describe('#extend', () => {
     it('extends an object with the attributes of another', () => {
       expect(Utils.extend({}, { a: 1 })).toEqual({ a: 1 })
