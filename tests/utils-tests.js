@@ -130,6 +130,7 @@ describe('Utils', () => {
       expect(Utils.isObject(new Boolean(''))).toBe(true)
     })
   })
+
   describe('#extend', () => {
     it('extends an object with the attributes of another', () => {
       expect(Utils.extend({}, { a: 1 })).toEqual({ a: 1 })
@@ -179,6 +180,42 @@ describe('Utils', () => {
       F.prototype = { a: 1 }
       var obj = new F()
       expect(Utils.extend({ a: 10 }).a).toEqual(10)
+    })
+  })
+
+  describe('#clone', () => {
+    it('clones a simple array', () => {
+      var arr = [1, 2, 3]
+      var result = Utils.clone(arr)
+      expect(result).toEqual(arr)
+    })
+
+    it('clones object literals', () => {
+      var obj = { a: 1, b: 2, c: 3  }
+      var result = Utils.clone(obj)
+      expect(result).toEqual(obj)
+    })
+
+    it('does not share shallow attributes between objects', () => {
+      var obj = { a: 1 }
+      var result = Utils.clone(obj)
+      result.a = 10
+      expect(obj.a === 1 && result.a === 10).toBe(true)
+    })
+
+    it('shares changes to deep attributes between objects', () => {
+      var obj = { a: 1, b: 2, c: [1, 2, 3] }
+      var result = Utils.clone(obj)
+      result.c.push(4)
+      expect(obj.c[obj.c.length - 1]).toBe(4)
+    })
+
+    it('does not clone non objects', () => {
+      expect(Utils.clone(1)).toBe(1)
+      expect(Utils.clone(undefined)).toBe(void 0)
+      expect(Utils.clone('some string')).toBe('some string')
+      expect(Utils.clone(null)).toBe(null)
+      expect(Utils.clone(true)).toBe(true)
     })
   })
 })

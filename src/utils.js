@@ -1,7 +1,5 @@
 var _ = require('lodash');
 
-exports.clone = _.clone
-
 exports.each = _.each
 
 exports.partial = _.partial
@@ -64,6 +62,7 @@ exports.isObject = function(obj) {
   return type === 'function' || type === 'object' && !!obj
 }
 
+/**
  * Extends an object with the properties of additional objects
  * @param {object} obj
  * @param {object} objects
@@ -86,6 +85,16 @@ exports.extend = function(obj) {
   }
 
   return obj
+}
+
+/**
+ * Creates a shallow clone of an object
+ * @param {object} obj
+ * @return {object}
+ */
+exports.clone = function(obj) {
+  if (!exports.isObject(obj)) return obj
+  return exports.isArray(obj) ? obj.slice() : exports.extend({}, obj)
 }
 
 /**
