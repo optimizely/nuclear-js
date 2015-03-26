@@ -218,4 +218,99 @@ describe('Utils', () => {
       expect(Utils.clone(true)).toBe(true)
     })
   })
+
+  describe('#each', () => {
+    var once = ['once']
+
+    describe('when iterating over an array', () => {
+      var arr = [1, 2, 3]
+
+      it('provides the value and iteration count to the iteratee', () => {
+        var values = []
+        var counts = []
+        Utils.each(arr, (val, i) => {
+          values.push(val)
+          counts.push(++i)
+        })
+        expect(values).toEqual(arr)
+        expect(counts).toEqual(arr)
+      })
+
+      it('accepts the context for the iteratee', () => {
+        var obj = { add: 5 }
+        var result = 0
+        Utils.each(arr, function(val, i) {
+          result += this.add
+        }, obj)
+        expect(result).toBe(15)
+      })
+
+      it('provides the collection to the iteratee', () => {
+        Utils.each(once, (val, i, collection) => {
+          expect(collection).toBe(once)
+        })
+      })
+
+      it('iterates the length of the collection', () => {
+        var spy = jasmine.createSpy('eachSpy')
+        Utils.each(arr, (val, i) => spy())
+        expect(spy.calls.count()).toBe(arr.length)
+      })
+    })
+
+    describe('when iterating over an object', () => {
+      var obj = { a: 1, b: 2 }
+      var values = []
+      var keys = []
+
+      obj.constructor.prototype.c = 3
+
+      Utils.each(obj, (v, k) => {
+        values.push(v)
+        keys.push(k)
+      })
+
+      it('provides the value and key to the iteratee', () => {
+        expect(values).toEqual([1, 2])
+        expect(keys).toEqual(['a', 'b'])
+      })
+
+      it('does not iterate over the inherited properites', () => {
+        expect(values).not.toContain(3)
+      })
+    })
+
+    it('is resiliant to collection property changes during iteration', () => {
+      var changingObj = { 0: 0, 1: 1 }
+      var count = 0
+      Utils.each(changingObj, (v, k, collection) => {
+        if (count < 10) changingObj[++count] = v + 1
+      })
+      expect(count).toBe(2)
+      expect(changingObj).toEqual({ 0: 0, 1: 1, 2: 2 })
+    })
+
+    it('is resiliant to collection length changes during iteration', () => {
+      var result = []
+      var count = 0
+      Utils.each(once, (v, i) => {
+       if (count < 10) result.push(++count)
+      })
+      expect(count).toBe(1)
+      expect(result).toEqual([1])
+    })
+
+    it('exits iteration when false is explicitly returned', () => {
+      var result = 0
+      Utils.each([1, 2], (v, i) => {
+        if (i > 0) return false
+        result += v
+      })
+      expect(result).toBe(1)
+    })
+
+    it('returns the collection', () => {
+      expect(Utils.each(once, ()=>{})).toBe(once)
+    })
+  })
 })

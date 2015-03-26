@@ -1,7 +1,5 @@
 var _ = require('lodash');
 
-exports.each = _.each
-
 exports.partial = _.partial
 
 /**
@@ -98,6 +96,43 @@ exports.clone = function(obj) {
 }
 
 /**
+ * Iterates over a collection of elements yielding each iteration to an
+ * iteratee. The iteratee may be bound to the context argument and is invoked
+ * each time with three arguments (value, index|key, collection). Iteration may
+ * be exited early by explicitly returning false.
+ * @param {array|object|string} collection
+ * @param {function} iteratee
+ * @param {*} context
+ * @return {array|object|string}
+ */
+exports.each = function(collection, iteratee, context) {
+  var length = collection ? collection.length : 0
+  var i = -1
+  var keys, origIteratee
+
+  if (context) {
+    origIteratee = iteratee
+    iteratee = function(value, index, collection) {
+      return origIteratee.call(context, value, index, collection)
+    }
+  }
+
+  if (isLength(length)) {
+    while (++i < length) {
+      if (iteratee(collection[i], i, collection) === false) break
+    }
+  } else {
+    keys = Object.keys(collection)
+    length = keys.length
+    while (++i < length) {
+      if (iteratee(collection[keys[i]], keys[i], collection) === false) break
+    }
+  }
+
+  return collection
+}
+
+/**
  * Returns the text value representation of an object
  * @private
  * @param {*} obj
@@ -105,4 +140,17 @@ exports.clone = function(obj) {
  */
 function objectToString(obj) {
   return obj && typeof obj == 'object' && toString.call(obj)
+}
+
+/**
+ * Checks if the value is a valid array-like length.
+ * @private
+ * @param {*} val
+ * @return {bool}
+ */
+function isLength(val) {
+  return typeof val == 'number'
+    && val > -1
+    && val % 1 == 0
+    && val <= Number.MAX_SAFE_INTEGER
 }
