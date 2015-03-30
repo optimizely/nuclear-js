@@ -313,4 +313,21 @@ describe('Utils', () => {
       expect(Utils.each(once, ()=>{})).toBe(once)
     })
   })
+
+  describe('#partial', () => {
+    it('partially applies function arguments', () => {
+      var func = (greeting, name) => greeting + ' ' + name
+      var result = Utils.partial(func, 'hello')
+      expect(result('nuclear')).toBe('hello nuclear')
+    })
+
+    it('does not alter context', () => {
+      var obj = { name: 'nuclear' }
+      var func = function(greeting, mark) {
+        return greeting + ' ' + this.name + mark
+      }
+      obj.greet = Utils.partial(func, 'hello')
+      expect(obj.greet('!')).toBe('hello nuclear!')
+    })
+  })
 })

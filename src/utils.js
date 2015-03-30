@@ -1,7 +1,3 @@
-var _ = require('lodash');
-
-exports.partial = _.partial
-
 /**
  * Ensures that the inputted value is an array
  * @param {*} val
@@ -130,6 +126,23 @@ exports.each = function(collection, iteratee, context) {
   }
 
   return collection
+}
+
+/**
+ * Returns a new function the invokes `func` with `partialArgs` prepended to
+ * any passed into the new function. Acts like `Array.prototype.bind`, except
+ * it does not alter `this` context.
+ * @param {function} func
+ * @param {*} partialArgs
+ * @return {function}
+ */
+exports.partial = function(func) {
+  var slice = Array.prototype.slice
+  var partialArgs = slice.call(arguments, 1)
+
+  return function() {
+    return func.apply(this, partialArgs.concat(slice.call(arguments)))
+  }
 }
 
 /**
