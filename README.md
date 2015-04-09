@@ -2,6 +2,335 @@
 
 Reactive, immutable state modelling.
 
+### How is NuclearJS different from other Flux implementations
+
+1.  All app state is in a singular immutable map, think Om.  
+
+2.  State is not spread out through stores, instead stores are a declarative way of describing some top-level domain of your app state.
+  For each key in the app state map a store declares the initial state of that key and how that piece of the app state reacts over time
+  to actions dispatched on the flux system.
+
+3.  Stores are not reference-able nor have any `getX` methods on them.  Instead Nuclear uses a functional lens concept called **getters**.
+  In fact, the use of getters obviates the need for any store to know about another store, eliminating the confusing `store.waitsFor` method found
+  in other flux implementations.
+
+4.  NuclearJS is insanely efficient - change detection granularity is infinitessimal, you can listen to when the state of an entire store changes or a specific subsection
+of that store or even the answer to a getter.  Since NuclearJS is built on top of ImmutableJS then the comparison of `state1 !== state2` is by reference and constant time.o
+When used with React a component `render` will only occur if and only if any of the getters it is observing change.
+
+## Lets see some examples
+
+Lets see what the original [Flux Chat Example](https://github.com/facebook/flux/tree/master/examples/flux-chat) looks like in NuclearJS.
+
+##### `flux.js`
+
+```js
+var Nuclear = require('nuclear-js')
+var toImmutable = Nuclear.toImmutable
+
+var flux = new Nuclear.Reactor()
+
+flux.registerStores({
+  currentThreadID: require('./current-thread-id-store'),
+  messages: require('./message-store'),
+})
+
+module.exports = flux
+```
+
+### Stores
+
+##### `message-store.js`
+
+```js
+var Nuclear = require('nuclear-js')
+var toImmutable = Nuclear.toImmutable
+
+module.exports = new Nuclear.Store({
+  getInitialState() {
+    // for Nuclear to be so efficient all state must be immutable data
+    return toImmutable([])
+  },
+
+  initialize() {
+    // all action handlers are pure functions that take the current state and payload
+    this.on('ADD_MESSAGE', addMessage)
+    this.on('CLICK_THREAD', setMessagesRead)
+  }
+})
+
+/**
+ * @type Message
+ * id {GUID}
+ * threadID {GUID}
+ * threadName {GUID}
+ * authorName {String}
+ * text {String}
+ * isRead {Boolean}
+ * timestamp {Timestamp}
+ */
+
+/**
+ * @param {Immutable.Map}
+ * @param {Object} payload
+ * @param {Message} payload.message
+ */
+function addMessage(state, { messages }) {
+  // use standard ImmutableJS methods to transform state when handling an action
+  return state.push(message);
+}
+
+/**
+ * Mark all messages for a thread as "read"
+ * @param {Immutable.Map}
+ * @param {Object} payload
+ * @param {GUID} payload.threadID
+ */
+function setMessagesRead(state, { threadID }) {
+  return state
+    .filter(msg => msg.get('threadID') === threadID)
+    .map(msg => msg.set('isRead', true))
+}
+```
+
+##### `current-thread-id-store.js`
+
+```js
+var Nuclear = require('nuclear-js')
+var toImmutable = Nuclear.toImmutable
+
+module.exports = new Nuclear.Store({
+  getInitialState() {
+    // only keeps track of the current threadID
+    return null
+  },
+
+  initialize() {
+    // all action handlers are pure functions that take the current state and payload
+    this.on('CLICK_THREAD', setCurrentThreadID)
+  }
+})
+
+function setCurrentThreadID(state, { threadID }) {
+  // return the new value of the store's state
+  return threadID
+}
+```
+
+At this point defined how our application manages state over time by creating and registering the `MessageStore` and `ThreadStore`.  When defining
+stores there is no need to worry about computable state like the most recent message in each thread, this is all handled through getters.
+
+### Getters
+
+Getters can take 2 forms:
+
+  1. A KeyPath such as `['messages']` which equates to a `state.getIn(['messages'])` on the app state `Immutable.Map`.  
+  2. An array with the form `[  [keypath | getter], [keypath | getter], ..., tranformFunction]`
+
+##### `getters.js`
+
+```js
+// it is idiomatic to facade all data access through getters, that way a component only has to subscribe to a getter making it agnostic
+// to the underyling stores / data transformation that is taking place
+exports.messages = ['messages']
+
+// use a Getter to compose the list of messages and transform into a thread view
+exports.threads = [
+  exports.messages,
+  /**
+   * @param {Immutable.List<Message>}
+   */
+  function(messages) {
+    /** Construct a map that looks like
+     * Map {
+     *   <threadID>: {
+     *     threadID: <GUID>,
+     *     threadName: <String>,
+     *     messages: List<Message>,
+     *     lastMessage: <Message>,
+     *   }
+     * }
+     */
+    return toImmutable({}).withMutations(threads => {
+      messages.forEach(msg => {
+        var threadID = msg.get('threadID')
+        if (!threads.has(threadID)) {
+          threads.set(threadID, toImmutable({
+            threadID: threadID,
+            threadName: msg.get('threadName'),
+            messages: toImmutable([]),
+          }))
+        }
+        threads.updateIn([threadID, 'messages'], msgList => msgList.push(msg))
+      })
+
+      // sort messages and expose the lastMessage
+      threads.map(thread => {
+        var sortedMessages = thread.get('messages').sortBy(msg => msg.get('timestamp'));
+        return thread
+          .set('messages', sortedMessages)
+          .set('lastMessage', sortedMessages.last())
+      })
+    });
+  },
+]
+
+exports.currentThread = [
+  ['currentThreadID'],
+  exports.threads,
+  (currentThreadID, threadsMap) => {
+    if (!currentThreadID) {
+      // default to the last thread
+      return threadsMap
+        .sortby(thread => thread.getIn(['lastMessage', 'timestamp']))
+        .last().get('id')
+    } else {
+      return threadsMap.get(currentThreadID)
+    }
+  }
+]
+
+exports.unreadCount = [
+  exports.threads,
+  threads => {
+    return threads.reduce((accum, thread) => {
+      if (thread.getIn(['lastMessage', 'isUnread'])) {
+        accum++
+      }
+      return accum
+    }, 0)
+  }
+]
+```
+
+At this point we've abstracted all the functionality of the `MessageStore`, `ThreadStore` and `UnreadThreadStore` into
+`MessageStore`, `CurrentThreadIDStore` and a few getters...pretty powerful stuff!
+
+### ActionCreators
+
+##### `message-actions.js`
+
+```js
+var flux = require('./flux');
+
+exports.receiveAll = function(messages) {
+  messages.forEach(message => {
+    flux.dispatch('ADD_MESSAGE', { message })
+  })
+}
+
+exports.createMessage = function(message, threadName) {
+  var timestamp = Date.now()
+  var id = 'm_' + timestamp
+  var threadID = message.threadID || ('t_' + Date.now())
+  var createdMessage = {
+    id: id,
+    threadID: threadID,
+    threadName: threadName,
+    authorName: message.authorName,
+    text: message.text,
+    timestamp: timestamp,
+  }
+
+  flux.dispatch('ADD_MESSAGE', {
+    message: createdMessage,
+  })
+}
+
+exports.clickThread = function(threadID) {
+  flux.dispatch('CLICK_THREAD', { threadID })
+}
+```
+
+### Hooking it up to a component
+
+###### `ThreadSection.react.js`
+
+```js
+var React = require('react')
+var flux = require('./flux')
+var getters = require('./getters')
+var ThreadListItem = require('../components/ThreadListItem.react');
+
+module.exports = React.createClass({
+  // give the component the Nuclear ReactMixin to automatically subscribe to getters
+  mixins: [flux.ReactMixin],
+
+  getDataBindings() {
+    threads: getters.threads,
+    currentThread: getters.currentThread,
+    unreadCount: getters.unreadCount,
+  },
+
+  render: function() {
+    var threadListItems = this.state.threads.map(thread => {
+      return (
+        <ThreadListItem
+          key={thread.get('id')}
+          thread={thread}
+          currentThreadID={this.state.currentThread.get('id')}
+        />
+      );
+    }, this);
+    var unread =
+      this.state.unreadCount === 0 ?
+      null :
+      <span>Unread threads: {this.state.unreadCount}</span>;
+    return (
+      <div className="thread-section">
+        <div className="thread-count">
+          {unread}
+        </div>
+        <ul className="thread-list">
+          {threadListItems}
+        </ul>
+      </div>
+    );
+  },
+})
+```
+
+`flux.ReactMixin` handles all of the pub/sub between the flux system and component and will only render the component via a `setState`
+call whenever any of the subscribed getters' value changes.  The mixin will also automatically unsubscribe from observation when the
+component is unmounted.
+
+##### `ThreadListItem.react.js`
+
+```js
+var MessageActions = require('../message-actions');
+var React = require('react');
+var cx = require('react/lib/cx');
+
+module.exports = React.createClass({
+  _clickThread: funtion() {
+    MessageActions.clickThread(this.props.thread.get('id'))
+  },
+  
+  render: function() {
+    var thread = this.props.thread;
+    var lastMessage = thread.get('lastMessage');
+
+    return (
+      <li
+        className={cx({
+          'thread-list-item': true,
+          'active': thread.get('id') === this.props.currentThreadID
+        })}
+        onClick={this._clickThread}>
+        <h5 className="thread-name">{thread.get('name')}</h5>
+        <div className="thread-time">
+          {lastMessage.get('date')}
+        </div>
+        <div className="thread-last-message">
+          {lastMessage.get('text')}
+        </div>
+      </li>
+    );
+  },
+});
+```
+
+
 ## Introduction
 
 NuclearJS is an Immutable implementation of [Flux Architecture](https://github.com/facebook/flux).
