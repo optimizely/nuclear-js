@@ -67,7 +67,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.Store = __webpack_require__(3)
 
 	// export the immutable library
-	exports.Immutable = __webpack_require__(10)
+	exports.Immutable = __webpack_require__(11)
 
 	/**
 	 * @return {boolean}
@@ -89,7 +89,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 1 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Immutable = __webpack_require__(10)
+	var Immutable = __webpack_require__(11)
 	var isObject = __webpack_require__(6).isObject
 
 	/**
@@ -148,12 +148,13 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 2 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Immutable = __webpack_require__(10)
+	var Immutable = __webpack_require__(11)
 	var logging = __webpack_require__(7)
 	var ChangeObserver = __webpack_require__(8)
 	var Getter = __webpack_require__(5)
 	var KeyPath = __webpack_require__(4)
 	var Evaluator = __webpack_require__(9)
+	var createReactMixin = __webpack_require__(10)
 
 	// helper fns
 	var toJS = __webpack_require__(1).toJS
@@ -180,6 +181,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    this.debug = !!config.debug
 
+	    this.ReactMixin = createReactMixin(this)
 	    /**
 	     * The state for the whole cluster
 	     */
@@ -354,7 +356,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Map = __webpack_require__(10).Map
+	var Map = __webpack_require__(11).Map
 	var extend = __webpack_require__(6).extend
 
 	/**
@@ -458,7 +460,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Immutable = __webpack_require__(10)
+	var Immutable = __webpack_require__(11)
 	var isFunction = __webpack_require__(6).isFunction
 	var isArray = __webpack_require__(6).isArray
 	var isKeyPath = __webpack_require__(4).isKeyPath
@@ -543,7 +545,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var _ = __webpack_require__(13);
+	var _ = __webpack_require__(14);
 
 	exports.clone = _.clone
 
@@ -614,9 +616,9 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Immutable = __webpack_require__(10)
-	var hashCode = __webpack_require__(11)
-	var isEqual = __webpack_require__(12)
+	var Immutable = __webpack_require__(11)
+	var hashCode = __webpack_require__(12)
+	var isEqual = __webpack_require__(13)
 
 	/**
 	 * ChangeObserver is an object that contains a set of subscriptions
@@ -710,12 +712,12 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Immutable = __webpack_require__(10)
+	var Immutable = __webpack_require__(11)
 	var helpers = __webpack_require__(1)
 	var isImmutable = helpers.isImmutable
 	var toImmutable = helpers.toImmutable
-	var hashCode = __webpack_require__(11)
-	var isEqual = __webpack_require__(12)
+	var hashCode = __webpack_require__(12)
+	var isEqual = __webpack_require__(13)
 	var getComputeFn = __webpack_require__(5).getComputeFn
 	var getDeps = __webpack_require__(5).getDeps
 	var isKeyPath = __webpack_require__(4).isKeyPath
@@ -882,6 +884,56 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var each = __webpack_require__(6).each
+	/**
+	 * @param {Reactor} reactor
+	 */
+	module.exports = function(reactor) {
+	  return {
+	    getInitialState: function() {
+	      return getState(reactor, this.getDataBindings())
+	    },
+
+	    componentDidMount: function() {
+	      var component = this
+	      var dataBindings = this.getDataBindings()
+	      component.__unwatchFns = []
+	      each(this.getDataBindings(), function(getter, key) {
+	        var unwatchFn = reactor.observe(getter, function(val) {
+	          var newState = {};
+	          newState[key] = val;
+	          component.setState(newState)
+	        })
+
+	        component.__unwatchFns.push(unwatchFn)
+	      })
+	    },
+
+	    componentWillUnmount: function() {
+	      while (this.__unwatchFns.length) {
+	        this.__unwatchFns.shift()()
+	      }
+	    }
+	  }
+	}
+
+	/**
+	 * Returns a mapping of the getDataBinding keys to
+	 * the reactor values
+	 */
+	function getState(reactor, data) {
+	  var state = {}
+	  for (var key in data) {
+	    state[key] = reactor.evaluate(data[key])
+	  }
+	  return state
+	}
+
+
+/***/ },
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -4799,10 +4851,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Immutable = __webpack_require__(10)
+	var Immutable = __webpack_require__(11)
 	var isGetter = __webpack_require__(5).isGetter
 
 	/**
@@ -4842,10 +4894,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Immutable = __webpack_require__(10)
+	var Immutable = __webpack_require__(11)
 	/**
 	 * Is equal by value check
 	 */
@@ -4855,7 +4907,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(module, global) {/**
@@ -12016,10 +12068,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	}.call(this));
 	
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(14)(module), (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(15)(module), (function() { return this; }())))
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = function(module) {
