@@ -130,6 +130,8 @@ Getters can take 2 forms:
 ##### `getters.js`
 
 ```js
+var toImmutable = require('nuclear-js').toImmutable
+
 // it is idiomatic to facade all data access through getters, that way a component only has to subscribe to a getter making it agnostic
 // to the underyling stores / data transformation that is taking place
 exports.messages = ['messages']
@@ -451,7 +453,7 @@ var Map = require('immutable').Map
 var List = require('immutable').List
 var Nuclear = require('nuclear-js')
 
-var itemStore = Nuclear.Store({
+var itemStore = new Nuclear.Store({
   // the parameter is optional, if not supplied will default to an `Immutable.Map({})`
   // Store state must be an ImmutableJS data structure or an immutable javascript primitive
   // like Number or String
@@ -474,7 +476,7 @@ var itemStore = Nuclear.Store({
   }
 })
 
-var taxPercentStore = Nuclear.Store({
+var taxPercentStore = new Nuclear.Store({
   getInitialState: function() {
     return 0
   },
@@ -488,7 +490,7 @@ var taxPercentStore = Nuclear.Store({
   }
 })
 
-var reactor = Reactor()
+var reactor = new Nuclear.Reactor()
 reactor.registerStores({
   items: itemStore,
   taxPercent: taxPercentStore,
@@ -766,17 +768,26 @@ Dispatches a message to all registered Stores. This process is done syncronously
 
 ex: `reactor.dispatch('addUser', { name: 'jordan' })`
 
-#### `Reactor#evaluate(...keyPath, [transformFn])`
+#### `Reactor#evaluate(Getter | KeyPath)`
 
 Returns the immutable value for some KeyPath or Getter in the reactor state. Returns `undefined` if a keyPath doesn't have a value.
 
 ```js
 reactor.evaluate(['users', 'active'])
-reactor.evaluate('users.active', 'usernameFilter', function(activeUsers, filter) {
-  return activeUsers.filter(function(user) {
-    return user.get('username').indexOf(filter) !== -1
-  }
-})
+reactor.evaluate([
+  ['users', 'active'],
+  ['filters', 'username'],
+  /**
+   * @param {Immutable.List} activeUsers
+   * @param {String} usernameFilter
+   * @return {Immutable.List}
+   */
+  function(activeUsers, usernameFilter) {
+    return activeUsers.filter(function(user) {
+      return user.get('username').indexOf(usernameFilter) !== -1
+    }
+  },
+])
 ```
 
 #### `Reactor#evaluateToJS(...keyPath, [transformFn])`
