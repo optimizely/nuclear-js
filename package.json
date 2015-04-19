@@ -42,6 +42,7 @@
     "karma-chrome-launcher": "^0.1.5",
     "webpack-dev-server": "^1.6.6",
     "karma-webpack": "^1.3.1",
-    "karma-jasmine-html-reporter": "^0.1.5"
+    "karma-jasmine-html-reporter": "^0.1.5",
+    "react": "^0.13.2"
   }
 }
