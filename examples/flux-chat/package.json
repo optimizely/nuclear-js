@@ -1,6 +1,6 @@
 {
   "name": "flux-chat",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Flux chat example written in NuclearJS",
   "main": "flux.js",
   "author": "Jordan Garcia",
@@ -17,14 +17,6 @@
     "jsx-loader": "^0.13.1"
   },
   "scripts": {
-    "start": "watchify -o js/bundle.js -v -d js/main.js",
-    "build": "browserify . -t [envify --NODE_ENV production] | uglifyjs -cm > js/bundle.min.js",
-    "test": "jest"
-  },
-  "browserify": {
-    "transform": [
-      "reactify",
-      "envify"
-    ]
+    "start": "./node_modules/webpack/bin/webpack.js --watch --progress"
   }
 }
