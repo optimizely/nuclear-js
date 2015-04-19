@@ -254,7 +254,6 @@ describe('Reactor', () => {
         },
 
         handleReset(state) {
-          debugger
           return state
         }
       })
@@ -287,7 +286,6 @@ describe('Reactor', () => {
       var item = { foo: 'bar' }
       reactor.dispatch('addItem', item)
 
-      debugger
       expect(reactor.evaluateToJS(['persistent'])).toEqual([item])
 
       reactor.reset()
