@@ -12,7 +12,7 @@
 
 var MessageComposer = require('./MessageComposer.react');
 var MessageListItem = require('./MessageListItem.react');
-var Message = require('../modules/message');
+var Chat = require('../modules/chat');
 var flux = require('../flux');
 var React = require('react');
 
@@ -30,7 +30,7 @@ var MessageSection = React.createClass({
 
   getDataBindings() {
     return {
-      thread: Message.getters.currentThread,
+      thread: Chat.getters.currentThread,
     }
   },
 

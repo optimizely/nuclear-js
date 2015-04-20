@@ -12,7 +12,7 @@
 
 var React = require('react');
 var flux = require('../flux');
-var Message = require('../modules/message');
+var Chat = require('../modules/chat');
 
 var ThreadListItem = require('./ThreadListItem.react');
 
@@ -21,9 +21,9 @@ var ThreadSection = React.createClass({
 
   getDataBindings() {
     return {
-      threads: Message.getters.threads,
-      unreadCount: Message.getters.unreadCount,
-      currentThreadID: Message.getters.currentThreadID,
+      threads: Chat.getters.threads,
+      unreadCount: Chat.getters.unreadCount,
+      currentThreadID: Chat.getters.currentThreadID,
     }
   },
 

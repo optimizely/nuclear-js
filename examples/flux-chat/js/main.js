@@ -1,13 +1,13 @@
-var Message = require('./modules/message')
+var Chat = require('./modules/chat')
 var mockData = require('./mock-data')
 var flux = require('./flux')
 var ChatApp = require('./components/ChatApp.react');
 
-Message.actions.receiveAll(mockData)
+Chat.actions.receiveAll(mockData)
 // if there is no current thread select the latest
-if (!flux.evaluate(Message.getters.currentThread)) {
-  var latestThread = flux.evaluate(Message.getters.latestThread)
-  Message.actions.clickThread(latestThread.get('threadID'));
+if (!flux.evaluate(Chat.getters.currentThread)) {
+  var latestThread = flux.evaluate(Chat.getters.latestThread)
+  Chat.actions.clickThread(latestThread.get('threadID'));
 }
 
 var React = require('react');
