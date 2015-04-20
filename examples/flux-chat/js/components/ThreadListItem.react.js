@@ -11,7 +11,7 @@
  */
 
 var React = require('react');
-var Message = require('../modules/message');
+var Chat = require('../modules/chat');
 var cx = require('react/lib/cx');
 
 var ReactPropTypes = React.PropTypes;
@@ -48,7 +48,7 @@ var ThreadListItem = React.createClass({
   _onClick: function() {
     var threadID = this.props.thread.get('threadID')
     if (this.props.currentThreadID !== threadID) {
-      Message.actions.clickThread(threadID);
+      Chat.actions.clickThread(threadID);
     }
   }
 

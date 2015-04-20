@@ -10,7 +10,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-var Message = require('../modules/message');
+var Chat = require('../modules/chat');
 var React = require('react');
 
 var ENTER_KEY_CODE = 13;
@@ -46,7 +46,7 @@ var MessageComposer = React.createClass({
       event.preventDefault();
       var text = this.state.text.trim();
       if (text) {
-        Message.actions.createMessage(text, this.props.threadID);
+        Chat.actions.createMessage(text, this.props.threadID);
       }
       this.setState({text: ''});
     }
