@@ -254,7 +254,6 @@ describe('Reactor', () => {
         },
 
         handleReset(state) {
-          debugger
           return state
         }
       })
@@ -287,12 +286,92 @@ describe('Reactor', () => {
       var item = { foo: 'bar' }
       reactor.dispatch('addItem', item)
 
-      debugger
       expect(reactor.evaluateToJS(['persistent'])).toEqual([item])
 
       reactor.reset()
 
       expect(reactor.evaluateToJS(['persistent'])).toEqual([item])
+    })
+  })
+
+  describe("when a reactor is observing mutable values", () => {
+    var reactor
+    var observeSpy
+
+    beforeEach(() => {
+      observeSpy = jasmine.createSpy('observe')
+
+      var mapStore = Store({
+        getInitialState() {
+          return toImmutable({})
+        },
+
+        initialize() {
+          this.on('set', (state, payload) => {
+            return state.set(payload.key, payload.value)
+          })
+        },
+      })
+
+      var keyStore = Store({
+        getInitialState() {
+          return 'foo'
+        },
+
+        initialize() {
+          this.on('setKey', (state, payload) => {
+            return payload
+          })
+        },
+      })
+
+      reactor = new Reactor({
+        debug: true
+      })
+      reactor.registerStores({
+        mapStore: mapStore,
+        keyStore: keyStore,
+      })
+    })
+
+    afterEach(() => {
+      reactor.reset()
+    })
+
+    it("should go back to initial state for normal stores", () => {
+      function Foo(val) {
+        this.val = val
+      }
+
+      var item = new Foo('bar')
+      var item2 = new Foo('baz')
+
+      var getter = [
+        ['mapStore'],
+        ['keyStore'],
+        (map, key) => {
+          return map.get(key)
+        }
+      ]
+
+      var value = reactor.evaluate(getter)
+
+      reactor.observe(getter, (fooValue) => {
+        observeSpy(fooValue)
+      })
+
+      reactor.dispatch('set', {
+        key: 'foo',
+        value: item,
+      })
+
+      expect(observeSpy.calls.count()).toBe(1)
+
+      reactor.dispatch('set', {
+        key: 'foo',
+        value: item2,
+      })
+      expect(observeSpy.calls.count()).toBe(2)
     })
   })
 })

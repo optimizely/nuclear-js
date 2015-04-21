@@ -1,6 +1,421 @@
 # NuclearJS
 
-Reactive, immutable state modelling.
+Traditional Flux architecture built with ImmutableJS data structures.
+
+## How NuclearJS differs from other Flux implementations
+
+1.  All app state is in a singular immutable map, think Om.  In development you can see your entire application state at every point in time thanks to awesome
+debugging tools built into NuclearJS.
+
+2.  State is not spread out through stores, instead stores are a declarative way of describing some top-level domain of your app state.
+  For each key in the app state map a store declares the initial state of that key and how that piece of the app state reacts over time
+  to actions dispatched on the flux system.
+
+3.  Stores are not reference-able nor have any `getX` methods on them.  Instead Nuclear uses a functional lens concept called **getters**.
+  In fact, the use of getters obviates the need for any store to know about another store, eliminating the confusing `store.waitsFor` method found
+  in other flux implementations.
+
+4.  NuclearJS is insanely efficient - change detection granularity is infinitessimal, you can even observe computed state where several pieces of the state
+map are combined togther an run through a transform function.  Nuclear is smart enough to know when the value of any computed changes and only call its observer
+if and only if its value changed in a way that is orders of magntitude more efficient than traditional dirty checking.  It does this by leveraging ImmutableJS data
+structure and using a `state1 !== state2` reference comparison which runs in constant time.
+
+5.  Automatic data observation / rendering -- automatic re-rendering is built in for React in the form a very lightweight mixin.  It is also easily possible to build the
+same functionality for any UI framework such as VueJS, AngularJS and even Backbone.
+
+6.  NuclearJS is not a side-project, its used as the defacto Flux implementation that powers all of Optimizely.  It is well tested and will continue to be maintained for the foreseeable future.
+  Our current codebase has over dozens of stores, actions and getters, we even share our prescribed method of large scale code organization and testing strategies.
+
+## Design Philosophy
+
+- **Simple over Easy** - The purpose of NuclearJS isn't to write the most expressive TodoMVC anyone's ever seen.  The goal of NuclearJS is to provide a way to model data that is easy to reason about and decouple at very large scale.
+
+- **Immutable** - A means for less defensive programming, more predictability and better performance
+
+- **Functional** - The framework should be implemented functionally wherever appropriate.  This reduces incidental complexity and pairs well with Immutability.
+
+- **Smallest Amount of State Possible** - Using Nuclear should encourage the modelling of your application state in the most minimal way possible.
+
+- **Decoupled** - A NuclearJS system should be able to function without any sort of UI or frontend.  It should be backend/frontend agnostic and be able to run on a NodeJS server.
+
+## Lets see some examples
+
+Lets see what the original [Flux Chat Example](https://github.com/facebook/flux/tree/master/examples/flux-chat) looks like in NuclearJS.
+
+All of the above code lives in [examples/flux-chat](./examples/flux-chat)
+
+##### `flux.js`
+
+```js
+// create the Nuclear reactor instance, this will act as our dispatcher and interface for data fetching
+var Nuclear = require('nuclear-js')
+
+module.exports = new Nuclear.Reactor({
+  debug: true,
+})
+```
+
+### Modules
+
+The prescribed way of code organization in NuclearJS is to group all stores, actions and getters of the same domain in a module.
+
+##### Example Module File Structure
+
+For the flux-chat example we will create a chat module that holds all of the domain logic for the chat aspect.  For smaller projects
+there may only need to be one module, but for larger projects using many modules makes your codebase very decoupled and much easier to manage.
+
+```js
+modules/chat
+├── stores/
+    └── thread-store.js
+    └── current-thread-id-store.js
+├── actions.js // exports functions that call flux.dispatch
+├── action-types.js // constants for the flux action types
+├── getters.js // getters exposed by the module providing read access to module's stores
+├── index.js // MAIN ENTRY POINT - facade that exposes a public api for the module
+└── tests.js // module unit tests that test the modules stores, getters, and actions
+```
+
+##### `modules/chat/index.js`
+
+```js
+var flux = require('../../flux')
+
+flux.registerStores({
+  currentThreadID: require('./stores/current-thread-id-store'),
+  threads: require('./stores/thread-store'),
+})
+
+module.exports = {
+  actions: require('./actions'),
+
+  getters: require('./getters'),
+}
+```
+
+- Modules expose single public API, the `index.js` file.  It is improper for an outside piece of code to a require any file within the module
+except the `index.js` file.
+
+- Stores are registered lazily through the module's index.js.  This may seem weird at first, but in NuclearJS stores are more of an implementation detail
+and not ever directly referenceable.
+
+- Data access to the module's store values is done entire through the getters it exposes.  This provides a decoupling between the store implementation and how
+the outside world references the state that a module manages.  A getter is a contract between the outside world and the module that a particular piece of information
+is accessible.  The evaluator of a getter does not care about the underyling store representation.
+
+### Stores
+
+##### `modules/chat/stores/thread-store.js`
+
+```js
+var Nuclear = require('nuclear-js')
+var toImmutable = Nuclear.toImmutable
+var actionTypes = require('../action-types')
+
+module.exports = new Nuclear.Store({
+  getInitialState() {
+    // for Nuclear to be so efficient all state must be immutable data
+    // mapping of threadID => Thread
+    return toImmutable({})
+  },
+
+  initialize() {
+    // all action handlers are pure functions that take the current state and payload
+    this.on(actionTypes.ADD_MESSAGE, addMessage)
+    this.on(actionTypes.CLICK_THREAD, setMessagesRead)
+  }
+})
+
+/**
+ * @type Message
+ * id {GUID}
+ * threadID {GUID}
+ * threadName {GUID}
+ * authorName {String}
+ * text {String}
+ * isRead {Boolean}
+ * timestamp {Timestamp}
+ */
+
+/**
+ * @param {Immutable.Map}
+ * @param {Object} payload
+ * @param {Message} payload.message
+ */
+function addMessage(state, { message }) {
+  var msg = toImmutable(message)
+  var threadID = msg.get('threadID')
+
+  return state.withMutations(threads => {
+    // use standard ImmutableJS methods to transform state when handling an action
+    if (!threads.has(threadID)) {
+      threads.set(threadID, toImmutable({
+        threadID: threadID,
+        threadName: msg.get('threadName'),
+        messages: toImmutable([]),
+      }))
+    }
+
+    // push new message into thread and sort by message timestamp
+    threads.update(threadID, thread => {
+      var sortedMessages = thread.get('messages')
+        .push(msg)
+        .sortBy(msg => msg.get('timestamp'))
+
+      return thread.set('messages', sortedMessages)
+    })
+  })
+}
+
+/**
+ * Mark all messages for a thread as "read"
+ * @param {Immutable.Map}
+ * @param {Object} payload
+ * @param {GUID} payload.threadID
+ */
+function setMessagesRead(state, { threadID }) {
+  return state.updateIn([threadID, 'messages'], messages => {
+    return messages.map(msg => msg.set('isRead', true))
+  })
+}
+```
+
+##### `modules/message/stores/current-thread-id-store.js`
+
+```js
+var Nuclear = require('nuclear-js')
+var toImmutable = Nuclear.toImmutable
+var actionTypes = require('../action-types')
+
+module.exports = new Nuclear.Store({
+  getInitialState() {
+    // only keeps track of the current threadID
+    return null
+  },
+
+  initialize() {
+    // all action handlers are pure functions that take the current state and payload
+    this.on(actionTypes.CLICK_THREAD, setCurrentThreadID)
+  }
+})
+
+function setCurrentThreadID(state, { threadID }) {
+  // return the new value of the store's state
+  return threadID
+}
+```
+
+At this point defined how our application manages state over time by creating and registering the thread store and currentThreadID store.
+When defining stores there is no need to worry about computable state like the most recent message in each thread, this is all handled through getters.
+
+### Getters
+
+Getters can take 2 forms:
+
+  1. A KeyPath such as `['messages']` which equates to a `state.getIn(['messages'])` on the app state `Immutable.Map`.  
+  2. An array with the form `[  [keypath | getter], [keypath | getter], ..., tranformFunction]`
+
+##### `modules/chat/getters.js`
+
+```js
+// it is idiomatic to facade all data access through getters, that way a component only has to subscribe to a getter making it agnostic
+// to the underyling stores / data transformation that is taking place
+exports.threadsMap = ['threads']
+
+exports.threads = [
+  exports.threadsMap,
+  threadsMap => threadsMap.toList()
+]
+
+exports.currentThread = [
+  ['currentThreadID'],
+  exports.threadsMap,
+  (currentThreadID, threadsMap) => threadsMap.get(currentThreadID)
+]
+
+exports.latestThread = [
+  exports.threads,
+  threads => {
+    return threads
+      .sortBy(thread => {
+        thread.get('messages').last().get('timestamp')
+      })
+      .last()
+  }
+]
+
+
+exports.currentThreadID = [
+  exports.currentThread,
+  thread => thread ? thread.get('threadID') : null
+]
+
+exports.unreadCount = [
+  exports.threads,
+  threads => {
+    return threads.reduce((accum, thread) => {
+      if (!thread.get('messages').last().get('isRead')) {
+        accum++
+      }
+      return accum
+    }, 0)
+  }
+]
+```
+
+Since stores are registered on the Nuclear Reactor by the module's index file, then a module is the only part of the system that knows the
+store ids, if this information need to be made public, the module will export a getter of the form `[<storeId>]`
+
+
+### Actions
+
+##### `module/chat/actions.js`
+
+```js
+var flux = require('../../flux')
+var actionTypes = require('./action-types')
+var getters = require('./getters')
+
+/**
+ * Handles the receiving of messages into the flux system
+ * @param {Message[]} messages
+ */
+exports.receiveAll = function(messages) {
+  messages.forEach(message => {
+    flux.dispatch(actionTypes.ADD_MESSAGE, { message })
+  })
+}
+
+/**
+ * Creates a message
+ * @param {String} text
+ * @param {GUID} threadName
+ */
+exports.createMessage = function(text, threadID) {
+  var timestamp = Date.now()
+  var id = 'm_' + timestamp
+  var threadName = flux.evaluate([
+    getters.threadsMap,
+    threadsMap => threadsMap.getIn([threadID, 'threadName'])
+  ])
+  var authorName = 'Jordan'
+
+  flux.dispatch(actionTypes.ADD_MESSAGE, {
+    message: { id, threadID, threadName, authorName, timestamp, text }
+  })
+}
+
+exports.clickThread = function(threadID) {
+  flux.dispatch(actionTypes.CLICK_THREAD, { threadID })
+}
+```
+
+### Hooking it up to a component
+
+###### `components/ThreadSection.react.js`
+
+```js
+var React = require('react');
+var flux = require('../flux');
+var Chat = require('../modules/chat');
+
+var ThreadListItem = require('./ThreadListItem.react');
+
+var ThreadSection = React.createClass({
+  mixins: [flux.ReactMixin],
+
+  getDataBindings() {
+    return {
+      threads: Chat.getters.threads,
+      unreadCount: Chat.getters.unreadCount,
+      currentThreadID: Chat.getters.currentThreadID,
+    }
+  },
+
+  render: function() {
+    var threadListItems = this.state.threads.map(thread => {
+      return (
+        <ThreadListItem
+          key={thread.get('threadID')}
+          thread={thread}
+          currentThreadID={this.state.currentThreadID}
+        />
+      );
+    }, this);
+    var unread =
+      this.state.unreadCount === 0 ?
+      null :
+      <span>Unread threads: {this.state.unreadCount}</span>;
+    return (
+      <div className="thread-section">
+        <div className="thread-count">
+          {unread}
+        </div>
+        <ul className="thread-list">
+          {threadListItems}
+          </ul>
+      </div>
+    );
+  },
+});
+
+module.exports = ThreadSection;
+```
+
+`flux.ReactMixin` handles all of the pub/sub between the flux system and component and will only render the component via a `setState`
+call whenever any of the subscribed getters' value changes.  The mixin will also automatically unsubscribe from observation when the
+component is unmounted.
+
+##### `ThreadListItem.react.js`
+
+```js
+var React = require('react');
+var Chat = require('../modules/chat');
+var cx = require('react/lib/cx');
+
+var ReactPropTypes = React.PropTypes;
+
+var ThreadListItem = React.createClass({
+
+  propTypes: {
+    thread: ReactPropTypes.object,
+    currentThreadID: ReactPropTypes.string
+  },
+
+  render: function() {
+    var thread = this.props.thread;
+    var lastMessage = thread.get('messages').last();
+    var dateString = (new Date(lastMessage.get('timestamp'))).toLocaleTimeString()
+    return (
+      <li
+        className={cx({
+          'thread-list-item': true,
+          'active': thread.get('threadID') === this.props.currentThreadID
+        })}
+        onClick={this._onClick}>
+        <h5 className="thread-name">{thread.get('threadName')}</h5>
+        <div className="thread-time">
+          {dateString}
+        </div>
+        <div className="thread-last-message">
+          {lastMessage.get('text')}
+        </div>
+      </li>
+    );
+  },
+
+  _onClick: function() {
+    var threadID = this.props.thread.get('threadID')
+    if (this.props.currentThreadID !== threadID) {
+      Chat.actions.clickThread(threadID);
+    }
+  }
+
+});
+
+module.exports = ThreadListItem;
+```
+
 
 ## Introduction
 
@@ -122,7 +537,7 @@ var Map = require('immutable').Map
 var List = require('immutable').List
 var Nuclear = require('nuclear-js')
 
-var itemStore = Nuclear.Store({
+var itemStore = new Nuclear.Store({
   // the parameter is optional, if not supplied will default to an `Immutable.Map({})`
   // Store state must be an ImmutableJS data structure or an immutable javascript primitive
   // like Number or String
@@ -145,7 +560,7 @@ var itemStore = Nuclear.Store({
   }
 })
 
-var taxPercentStore = Nuclear.Store({
+var taxPercentStore = new Nuclear.Store({
   getInitialState: function() {
     return 0
   },
@@ -159,7 +574,7 @@ var taxPercentStore = Nuclear.Store({
   }
 })
 
-var reactor = Reactor()
+var reactor = new Nuclear.Reactor()
 reactor.registerStores({
   items: itemStore,
   taxPercent: taxPercentStore,
@@ -402,34 +817,9 @@ In `shopping-cart.html`
 </table>
 ```
 
-## Coming soon
+## API Documentation
 
-- Handle asnychronous data in a NuclearJS system
-
-- A collaborative shopping cart using Websockets
-
-- Structure for very large apps built with NuclearJS modules
-
-
-## Differences between NuclearJS and Vanilla Flux
-
-First off, NuclearJS is an implementation of Flux Architecture.  It shares many of the same fundamental concepts, such as
-unidirectional data flow and a single synchronous dispatcher.  
-
-##### Here is where it differs:
-
-- Stores do not hold their own state, or are accessible by other parts of the system.  They simply model a part of the application domain over time.
-
-- Stores don't mutate themselves, instead each handler is a pure function that transforms the current state into a new state.
-
-- Because Getters are used whenever data from two or more stores needs to be combined there is no need for `dispatcher.waitsFor`
-
-- Reactor.dispatch waits for every Store to receive the action before notifying subscribers, this ensures no renders can happen before all stores have handled the action.
-
-- Immutability allows more granular change observation.  You no longer have to listen for change events at the store level.  Comparing the any part of two
-different immutable maps is simply a `===` operation (constant time) and the map lookup itself is `O(log32)`.
-
-## Reactor API
+### Reactor
 
 #### `Reactor#dispatch(messageType, messagePayload)`
 
@@ -437,17 +827,26 @@ Dispatches a message to all registered Store. This process is done synchronously
 
 ex: `reactor.dispatch('addUser', { name: 'jordan' })`
 
-#### `Reactor#evaluate(...keyPath, [transformFn])`
+#### `Reactor#evaluate(Getter | KeyPath)`
 
 Returns the immutable value for some KeyPath or Getter in the reactor state. Returns `undefined` if a keyPath doesn't have a value.
 
 ```js
 reactor.evaluate(['users', 'active'])
-reactor.evaluate('users.active', 'usernameFilter', function(activeUsers, filter) {
-  return activeUsers.filter(function(user) {
-    return user.get('username').indexOf(filter) !== -1
-  }
-})
+reactor.evaluate([
+  ['users', 'active'],
+  ['filters', 'username'],
+  /**
+   * @param {Immutable.List} activeUsers
+   * @param {String} usernameFilter
+   * @return {Immutable.List}
+   */
+  function(activeUsers, usernameFilter) {
+    return activeUsers.filter(function(user) {
+      return user.get('username').indexOf(usernameFilter) !== -1
+    }
+  },
+])
 ```
 
 #### `Reactor#evaluateToJS(...keyPath, [transformFn])`
@@ -456,25 +855,135 @@ Same as `evaluate` but coerces the value to a plain JS before returning
 
 #### `Reactor#observe(keyPathOrGetter, handlerFn)`
 
+Takes a getter or keyPath and calls the handlerFn with the evaluated value whenever the getter or keyPath changes.
 
-## Design Philosophy
+**Note**:  You cannot call `flux.dispatch` within the handle function of a `flux.observe`.  This violates one of the fundamental
+design patterns in Flux architecture, which forbids cascading dispatches on the system which cause highly unpredictive systems.
 
-- **Simple over Easy** - The purpose of NuclearJS isn't to write the most expressive TodoMVC anyone's ever seen.  The goal of NuclearJS is to provide a way to model data that is easy to reason about and decouple at very large scale.
+```js
+reactor.observe([
+  ['items']
+  function(items) {
+    console.log('items changed');
+  }
+])
+```
 
-- **Immutable** - A means for less defensive programming, more predictability and better performance
+#### `Reactor#registerStores(stores, silent)`
 
-- **Functional** - The framework should be implemented functionally wherever appropriate.  This reduces incidental complexity and pairs well with Immutability
+`stores` - an object of storeId => store instance
 
-- **Smallest Amount of State Possible** - Using Nuclear should encourage the modelling of your application state in the most minimal way possible.
+`silent` (optional) a boolean that if true, will not cause any observers to be evaluated if the newly added stores change a getter value.
 
-- **Decoupled** - A NuclearJS system should be able to function without any sort of UI or frontend.  It should be backend/frontend agnostic and be able to run on a NodeJS server.
+```js
+reactor.registerStores({
+  'threads': require('./stores/thread-store'),
+  'currentThreadID': require('./stores/current-thread-id-store'),
+})
+```
 
-## Tools / Addons
+#### `Reactor#reset()`
 
-- [NuclearVueMixin](https://github.com/jordangarcia/nuclear-vue-mixin) Keeps Vue ViewModels data in sync with a reactor.
-- [NuclearReactMixin](https://github.com/jordangarcia/nuclear-react-mixin) Keeps React components always in sync with a Nuclear.Reactor.  Uses immutability to call set state only when the data behind a component actually changes (inspired by Om).
+Causes all stores to be reset to their initial state.  Extremely useful for testing, just put a `reactor.reset()` call in your `afterEach` blocks.
 
-## Examples
+#### `Reactor#ReactMixin`
 
-- [TodoMVC](https://github.com/jordangarcia/todomvc-nuclear-react) **currently out of date**
-- [Tetris](https://github.com/jordangarcia/tetris) **currently out of date**
+Exposes the ReactMixin to do automatic data binding.
+
+```js
+var ThreadSection = React.createClass({
+  mixins: [flux.ReactMixin],
+
+  getDataBindings() {
+    return {
+      threads: Chat.getters.threads,
+      unreadCount: Chat.getters.unreadCount,
+      currentThreadID: Chat.getters.currentThreadID,
+    }
+  },
+
+  render: function() {
+    var threadListItems = this.state.threads.map(thread => {
+      return (
+        <ThreadListItem
+          key={thread.get('threadID')}
+          thread={thread}
+          currentThreadID={this.state.currentThreadID}
+        />
+      );
+    }, this);
+    var unread =
+      this.state.unreadCount === 0 ?
+      null :
+      <span>Unread threads: {this.state.unreadCount}</span>;
+    return (
+      <div className="thread-section">
+        <div className="thread-count">
+          {unread}
+        </div>
+        <ul className="thread-list">
+          {threadListItems}
+          </ul>
+      </div>
+    );
+  },
+});
+```
+
+### Constructors
+
+#### `Nuclear.Reactor`
+
+```js
+var reactor = new Nuclear.Reactor(config)
+```
+
+**Configuration Options**
+
+`config.debug` Boolean - if true it will log the entire app state for every dispatch.
+
+#### `Nuclear.Store`
+
+```js
+module.exports = new Nuclear.Store({
+  getInitialState: function() {
+    // method must return an immutable value for NuclearJS to take advantage of efficient equality checks
+    return toImmutable({})
+  },
+
+  initialize: function() {
+    // sets up action handlers via `this.on`
+    this.on('SOME_ACTION', function(state, payload) {
+      // action handler takes state + payload and returns new state
+    })
+  },
+})
+```
+
+### Utilties
+
+NuclearJS comes with several utility functions that are exposed on the `Nuclear` variable.
+
+#### `Nuclear.Immutable`
+
+Provides access to the ImmutableJS `Immutable` object.
+
+#### `Nuclear.toImmutable(value)`
+
+Coerces a value to its immutable counterpart, can be called on any type safely.  It will convert Objects to `Immutable.Map` and Arrays to `Immutable.List`
+
+#### `Nuclear.toJS(value)`
+
+Will coerce an Immutable value to its mutable counterpart.  Can be called on non immutable values safely.
+
+#### `Nuclear.isImmutable(value)` : Boolean
+
+Returns true if the value is an ImmutableJS data structure.
+
+#### `Nuclear.isKeyPath(value)` : Boolean
+
+Returns true if the value is the format of a valid keyPath
+
+#### `Nuclear.isGetter(value)` : Boolean
+
+Returns true if the value is the format of a valid getter
