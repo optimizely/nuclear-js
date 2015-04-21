@@ -136,5 +136,44 @@ describe('Evaluator', () => {
         new Error("Evaluate may not be called within a Getters computeFn")
       )
     })
- })
+  })
+
+  describe("when evaluating a getter that returns a mutable value", () => {
+    it("should return a reference to that value", () => {
+      var proj1 = { id: 1, description: 'proj 1' }
+      var proj2 = { id: 2, description: 'proj 2' }
+      var proj3 = { id: 3, description: 'proj 3' }
+
+      var projects = Immutable.Map([
+        [1, proj1],
+        [2, proj2],
+      ])
+
+      var state = toImmutable({
+        projects: projects,
+        session: {
+          currentProjectId: 1
+        },
+      })
+
+      var currentProjectGetter = [
+        ['projects'],
+        ['session', 'currentProjectId'],
+        (projects, currentProjectId) => {
+          return projects.get(currentProjectId)
+        }
+      ]
+
+      var result = evaluator.evaluate(state, currentProjectGetter)
+      expect(result).toBe(proj1);
+      // evaluate again to make sure the cached value is still by reference
+      var result2 = evaluator.evaluate(state, currentProjectGetter)
+      expect(result2).toBe(proj1);
+      // update state test the `hasStaleValue` codepath
+      var state1 = state.update('projects', projects => projects.set(3, proj3))
+
+      var result3 = evaluator.evaluate(state1, currentProjectGetter)
+      expect(result3).toBe(proj1);
+    })
+  })
 })
