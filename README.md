@@ -417,21 +417,6 @@ module.exports = ThreadListItem;
 ```
 
 
-## Introduction
-
-NuclearJS is an Immutable implementation of [Flux Architecture](https://github.com/facebook/flux).
-Nuclear provides a very decoupled solution to modelling state in a frontend system, leading to much
-thinner UI components, easier testability and more predictability.  In fact, when done right, a Nuclear
-powered frontend will have **ZERO** state in UI components.
-
-NuclearJS is UI framework agnostic. It pairs well with almost every popular UI framework, since its only 
-concern is state modelling and provides a very pleasant and simple to use API.
-
-Currently there is out of the box support for automatic data syncing to React Components with the [NuclearReactMixin](https://github.com/jordangarcia/nuclear-react-mixin)
-and VueJS ViewModels with the [NuclearVueMixin](https://github.com/jordangarcia/nuclear-vue-mixin).  Each mixin is quite simple and expect
-support for other library in the near future.
-
-
 ## Core Concepts
 
 The easiest way to think about how NuclearJS is modelling the state of your system is to imagine it all as a single map (or Javascript object).  If you are familiar with Om
@@ -692,14 +677,13 @@ reactor.observe(isOverBudget, function(isOver) {
 
 ### Hooking up a UI: React
 
-Syncing reactor stores and React component state is effortless using the [NuclearReactMixin](https://github.com/jordangarcia/nuclear-react-mixin).
+Syncing reactor stores and React component state is effortless using `reactor.ReactMixin`
 
 ```js
 var React = require('react')
-var NuclearReactMixin = require('nuclear-react-mixin')
 
 var ShoppingCart = React.createClass({
-  mixins: [NuclearReactMixin(reactor)],
+  mixins: [react.ReactMixin],
 
   // simply implement this function to keep a components state
   // in sync with a Nuclear Reactor
