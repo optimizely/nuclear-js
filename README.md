@@ -195,8 +195,8 @@ Imagine we want to know anything the total is over 100.  Let's use `reactor.obse
 ```js
 var over100 = Getter(getTotal, total => total > 100)
 
-reactor.observe(getTotal, total => {
-  if (total > 100) {
+reactor.observe(over100, isOver => {
+  if (isOver) {
     alert('Shopping cart over 100!')
   }
 })
