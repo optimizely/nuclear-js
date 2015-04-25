@@ -259,11 +259,16 @@ describe('Utils', () => {
     })
 
     describe('when iterating over an object', () => {
-      var obj = { a: 1, b: 2 }
       var values = []
       var keys = []
 
-      obj.constructor.prototype.c = 3
+      var ObjProto = {
+        c: 3,
+      }
+
+      var obj = Object.create(ObjProto)
+      obj.a = 1
+      obj.b = 2
 
       Utils.each(obj, (v, k) => {
         values.push(v)

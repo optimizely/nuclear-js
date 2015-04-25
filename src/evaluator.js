@@ -10,7 +10,6 @@ var isKeyPath = require('./key-path').isKeyPath
 var isGetter = require('./getter').isGetter
 var isObject = require('./utils').isObject
 var isArray = require('./utils').isArray
-var cloneDeep = require('./utils').cloneDeep
 
 // Keep track of whether we are currently executing a Getter's computeFn
 var __applyingComputeFn = false;
