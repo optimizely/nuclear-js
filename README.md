@@ -16,7 +16,7 @@ debugging tools built into NuclearJS.
   in other flux implementations.
 
 4.  NuclearJS is insanely efficient - change detection granularity is infinitessimal, you can even observe computed state where several pieces of the state
-map are combined togther an run through a transform function.  Nuclear is smart enough to know when the value of any computed changes and only call its observer
+map are combined togther and run through a transform function.  Nuclear is smart enough to know when the value of any computed changes and only call its observer
 if and only if its value changed in a way that is orders of magntitude more efficient than traditional dirty checking.  It does this by leveraging ImmutableJS data
 structure and using a `state1 !== state2` reference comparison which runs in constant time.
 
