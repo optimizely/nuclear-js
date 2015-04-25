@@ -7,7 +7,7 @@
 - [x] Dedupe docs and make sure they are organized
 - [x] Document module pattern and prescribed way of testing NuclearJS modules
 - [x] Document util methods such as `toImmutable`
-- [ ] Ensure that flux.observe is called correctly when using mutable POJO data
+- [x] Ensure that flux.observe is called correctly when using mutable POJO data
 - [ ] Create release documentation with API breaking changes and migration guide
 
 ## Planned for 0.6.1
