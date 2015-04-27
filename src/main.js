@@ -27,3 +27,5 @@ exports.isGetter = require('./getter').isGetter
 exports.toJS = helpers.toJS
 exports.toImmutable = helpers.toImmutable
 exports.isImmutable = helpers.isImmutable
+
+exports.createReactMixin = require('./create-react-mixin')
