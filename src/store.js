@@ -14,7 +14,10 @@ class Store {
 
     this.__handlers = Map({})
 
-    extend(this, config)
+    if (config) {
+      // allow `MyStore extends Store` syntax without throwing error
+      extend(this, config)
+    }
 
     this.initialize()
   }

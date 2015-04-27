@@ -84,13 +84,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.toImmutable = helpers.toImmutable
 	exports.isImmutable = helpers.isImmutable
 
+	exports.createReactMixin = __webpack_require__(6)
+
 
 /***/ },
 /* 1 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var Immutable = __webpack_require__(11)
-	var isObject = __webpack_require__(6).isObject
+	var isObject = __webpack_require__(7).isObject
 
 	/**
 	 * A collection of helpers for the ImmutableJS library
@@ -149,18 +151,18 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	var Immutable = __webpack_require__(11)
-	var logging = __webpack_require__(7)
-	var ChangeObserver = __webpack_require__(8)
+	var logging = __webpack_require__(8)
+	var ChangeObserver = __webpack_require__(9)
 	var Getter = __webpack_require__(5)
 	var KeyPath = __webpack_require__(4)
-	var Evaluator = __webpack_require__(9)
-	var createReactMixin = __webpack_require__(10)
+	var Evaluator = __webpack_require__(10)
+	var createReactMixin = __webpack_require__(6)
 
 	// helper fns
 	var toJS = __webpack_require__(1).toJS
 	var toImmutable = __webpack_require__(1).toImmutable
 	var isImmutableValue = __webpack_require__(1).isImmutableValue
-	var each = __webpack_require__(6).each
+	var each = __webpack_require__(7).each
 
 
 	/**
@@ -357,7 +359,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	var Map = __webpack_require__(11).Map
-	var extend = __webpack_require__(6).extend
+	var extend = __webpack_require__(7).extend
 
 	/**
 	 * Stores define how a certain domain of the application should respond to actions
@@ -372,7 +374,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    this.__handlers = Map({})
 
-	    extend(this, config)
+	    if (config) {
+	      // allow `MyStore extends Store` syntax without throwing error
+	      extend(this, config)
+	    }
 
 	    this.initialize()
 	  }
@@ -440,8 +445,8 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var isArray = __webpack_require__(6).isArray
-	var isFunction = __webpack_require__(6).isFunction
+	var isArray = __webpack_require__(7).isArray
+	var isFunction = __webpack_require__(7).isFunction
 
 	/**
 	 * Checks if something is simply a keyPath and not a getter
@@ -461,8 +466,8 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	var Immutable = __webpack_require__(11)
-	var isFunction = __webpack_require__(6).isFunction
-	var isArray = __webpack_require__(6).isArray
+	var isFunction = __webpack_require__(7).isFunction
+	var isArray = __webpack_require__(7).isArray
 	var isKeyPath = __webpack_require__(4).isKeyPath
 
 	/**
@@ -543,6 +548,56 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var each = __webpack_require__(7).each
+	/**
+	 * @param {Reactor} reactor
+	 */
+	module.exports = function(reactor) {
+	  return {
+	    getInitialState: function() {
+	      return getState(reactor, this.getDataBindings())
+	    },
+
+	    componentDidMount: function() {
+	      var component = this
+	      var dataBindings = this.getDataBindings()
+	      component.__unwatchFns = []
+	      each(this.getDataBindings(), function(getter, key) {
+	        var unwatchFn = reactor.observe(getter, function(val) {
+	          var newState = {};
+	          newState[key] = val;
+	          component.setState(newState)
+	        })
+
+	        component.__unwatchFns.push(unwatchFn)
+	      })
+	    },
+
+	    componentWillUnmount: function() {
+	      while (this.__unwatchFns.length) {
+	        this.__unwatchFns.shift()()
+	      }
+	    }
+	  }
+	}
+
+	/**
+	 * Returns a mapping of the getDataBinding keys to
+	 * the reactor values
+	 */
+	function getState(reactor, data) {
+	  var state = {}
+	  for (var key in data) {
+	    state[key] = reactor.evaluate(data[key])
+	  }
+	  return state
+	}
+
+
+/***/ },
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -717,7 +772,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 7 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -749,7 +804,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 8 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var Immutable = __webpack_require__(11)
@@ -845,7 +900,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 9 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var Immutable = __webpack_require__(11)
@@ -858,8 +913,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	var getDeps = __webpack_require__(5).getDeps
 	var isKeyPath = __webpack_require__(4).isKeyPath
 	var isGetter = __webpack_require__(5).isGetter
-	var isObject = __webpack_require__(6).isObject
-	var isArray = __webpack_require__(6).isArray
+	var isObject = __webpack_require__(7).isObject
+	var isArray = __webpack_require__(7).isArray
 
 	// Keep track of whether we are currently executing a Getter's computeFn
 	var __applyingComputeFn = false;
@@ -999,56 +1054,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 	module.exports = Evaluator
-
-
-/***/ },
-/* 10 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var each = __webpack_require__(6).each
-	/**
-	 * @param {Reactor} reactor
-	 */
-	module.exports = function(reactor) {
-	  return {
-	    getInitialState: function() {
-	      return getState(reactor, this.getDataBindings())
-	    },
-
-	    componentDidMount: function() {
-	      var component = this
-	      var dataBindings = this.getDataBindings()
-	      component.__unwatchFns = []
-	      each(this.getDataBindings(), function(getter, key) {
-	        var unwatchFn = reactor.observe(getter, function(val) {
-	          var newState = {};
-	          newState[key] = val;
-	          component.setState(newState)
-	        })
-
-	        component.__unwatchFns.push(unwatchFn)
-	      })
-	    },
-
-	    componentWillUnmount: function() {
-	      while (this.__unwatchFns.length) {
-	        this.__unwatchFns.shift()()
-	      }
-	    }
-	  }
-	}
-
-	/**
-	 * Returns a mapping of the getDataBinding keys to
-	 * the reactor values
-	 */
-	function getState(reactor, data) {
-	  var state = {}
-	  for (var key in data) {
-	    state[key] = reactor.evaluate(data[key])
-	  }
-	  return state
-	}
 
 
 /***/ },

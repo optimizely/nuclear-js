@@ -91,4 +91,12 @@ describe('Store', () => {
       expect(newState).toBe(1);
     })
   })
+
+  describe("store with no config", () => {
+    it("should allow creation of a store without a config", () => {
+      expect(function() {
+        var store = new Store()
+      }).not.toThrow();
+    })
+  })
 })
