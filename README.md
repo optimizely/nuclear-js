@@ -553,8 +553,8 @@ var taxPercentStore = new Nuclear.Store({
   initialize: function() {
     // this will get called via `reactor.dispatch('setTaxPercent', 10)`
     // where the payload is a primitive value (number)
-    this.on('setTaxPercent', function(percent, value) {
-      return value
+    this.on('setTaxPercent', function(oldPercent, newPercent) {
+      return newPercent
     })
   }
 })
@@ -624,7 +624,7 @@ Imagine we want to know any time the total is over 100.  Let's use `reactor.obse
 
 ```js
 var over100Getter = [
-  getTotal,
+  totalGetter,
   function(total) {
     return total > 100
   }
@@ -683,7 +683,7 @@ Syncing reactor stores and React component state is effortless using `reactor.Re
 var React = require('react')
 
 var ShoppingCart = React.createClass({
-  mixins: [react.ReactMixin],
+  mixins: [reactor.ReactMixin],
 
   // simply implement this function to keep a components state
   // in sync with a Nuclear Reactor
@@ -807,7 +807,7 @@ In `shopping-cart.html`
 
 #### `Reactor#dispatch(messageType, messagePayload)`
 
-Dispatches a message to all registered Stores. This process is done syncronously, all registered `Store`s are passed this message and all computeds are re-evaluated (efficiently).  After a dispatch, a Reactor will emit the new state on the `reactor.changeEmitter`
+Dispatches a message to all registered Stores. This process is done synchronously, all registered `Store`s are passed this message and all computeds are re-evaluated (efficiently).  After a dispatch, a Reactor will emit the new state on the `reactor.changeEmitter`
 
 ex: `reactor.dispatch('addUser', { name: 'jordan' })`
 
@@ -944,7 +944,7 @@ module.exports = new Nuclear.Store({
 })
 ```
 
-### Utilties
+### Utilities
 
 NuclearJS comes with several utility functions that are exposed on the `Nuclear` variable.
 
