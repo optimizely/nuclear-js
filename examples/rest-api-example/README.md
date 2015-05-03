@@ -34,14 +34,29 @@ the new state automatically by subscribing to a getter.
 **component A** is saving some entity to the server, the response then dispatches an action that updates the `restApiCache` store causing both **component A**
 and **component B** to be updated.  The pattern ensures all components are in sync because the source of truth is completely external to all components.
 
+## A RestApi Entity Module
+
 #### Functional creation of entity actions
 
 This patterns relies on the `createApiActions(model)` function which takes a generic model object that defines how to do `save`, `fetch`, `fetchAll` and `delete`
 and then wraps each of those functions with the appropriate `Flux.dispatch` calls.
 
-See the [Example User Model](./src/modules/user/model.js) in the code or checkout the following:
+`./modules/project/actions.js`
 
-**Example model**
+```js
+var RestApi = require('../rest-api')
+var model = require('./model')
+
+var projectApiActions = RestApi.createApiActions(model)
+
+module.exports = _.extend({}, projectApiActions, {
+  // additional project actions go here
+})
+```
+
+See the [Example User Model](./src/modules/user/model.js) in the code or the following:
+
+`./modules/project/model.js`
 
 ```js
 var $ = require('jquery')
@@ -111,18 +126,29 @@ exports.delete = function(instance) {
 }
 ```
 
-**Creating Project actions**
+`./modules/project/getters.js`
 
 ```js
 var RestApi = require('../rest-api')
 var model = require('./model')
 
-var projectApiActions = RestApi.createApiActions(model)
+exports.entityMap = RestApi.createEntityMapGetter(model)
 
-module.exports = _.extend({}, projectApiActions, {
-  // additional project actions go here
-})
+exports.byId = RestApi.createByIdGetter(model)
 ```
+
+#### Putting everything together
+
+
+`./modules/project/index.js`
+
+```js
+exports.actions = require('./actions')
+
+exports.getters = require('./getters')
+```
+
+index file provides the modules public interface
 
 **Usage**
 
@@ -151,7 +177,7 @@ Project.actions.save(newProject).then(function() {
 })
 ```
 
-#### Model interface
+## Model Interface
 
 The following interface is required for a model to properly work with `createApiActions`
 
