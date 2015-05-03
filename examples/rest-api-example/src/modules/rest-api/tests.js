@@ -21,15 +21,16 @@ describe("modules/rest-api", function() {
     Flux.reset()
   })
 
+  var generatedId = 4
+
+  var instances = {
+    1: { id: 1, name: 'instance 1', category: 'foo' },
+    2: { id: 2, name: 'instance 2', category: 'foo' },
+    3: { id: 3, name: 'instance 3', category: 'bar' },
+  }
+
   describe("#createApiActions", function() {
     var apiActions
-    var generatedId = 4
-
-    var instances = {
-      1: { id: 1, name: 'instance 1', category: 'foo' },
-      2: { id: 2, name: 'instance 2', category: 'foo' },
-      3: { id: 3, name: 'instance 3', category: 'bar' },
-    }
 
     describe("when the apiActions are successful", function() {
       var fetchSpy, fetchAllSpy, saveSpy, deleteSpy
@@ -404,6 +405,44 @@ describe("modules/rest-api", function() {
             }
           ).catch(done)
         })
+      })
+    })
+  })
+
+  describe("#createEntityMapGetter", function() {
+    var model
+
+    beforeEach(function() {
+      model = {
+        entity: 'entity'
+      }
+    })
+
+    describe("when no entities are loaded", function() {
+      it("should return an empty map", function() {
+        var getter = RestApi.createEntityMapGetter(model)
+        var result = Flux.evaluateToJS(getter)
+        expect(result).to.deep.equal({})
+      })
+    })
+
+    describe("when entities are loaded after a fetch success", function() {
+      beforeEach(function() {
+        // simulate a fetch success to insert entities in the restApiCache store
+        Flux.dispatch(actionTypes.API_FETCH_SUCCESS, {
+          model: model,
+          result: [
+            instances[1],
+            instances[2],
+            instances[3],
+          ],
+        })
+      })
+
+      it("should return a map of id => entity", function() {
+        var getter = RestApi.createEntityMapGetter(model)
+        var result = Flux.evaluateToJS(getter)
+        expect(result).to.deep.equal(instances)
       })
     })
   })

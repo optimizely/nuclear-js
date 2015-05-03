@@ -1,3 +1,4 @@
+var toImmutable = require('nuclear-js').toImmutable
 var Flux = require('../../flux')
 
 // register stores with Flux system
@@ -6,3 +7,28 @@ Flux.registerStores({
 })
 
 exports.createApiActions = require('./create-api-actions')
+
+/**
+ * Creates a getter to the restApiCache store for a particular entity
+ * This decouples the implementation details of the RestApi module's caching
+ * to consumers of the cached data
+ */
+exports.createEntityMapGetter = function(model) {
+  return [
+    ['restApiCache', model.entity],
+    /**
+     * @return {Immutable.Map}
+     */
+    function(entityMap) {
+      // protect the entityMap here from being undefined, there are cases
+      // where an entity type isn't loaded yet, so we need to always to
+      // return an Immutable.Map for getters downstream
+      if (!entityMap) {
+        return toImmutable({})
+      } else {
+        return entityMap
+      }
+    }
+  ]
+
+}
