@@ -446,4 +446,34 @@ describe("modules/rest-api", function() {
       })
     })
   })
+
+  describe("#createByIdGetter", function() {
+    var model
+
+    beforeEach(function() {
+      model = {
+        entity: 'entity'
+      }
+    })
+
+    describe("when entities are loaded after a fetch success", function() {
+      beforeEach(function() {
+        // simulate a fetch success to insert entities in the restApiCache store
+        Flux.dispatch(actionTypes.API_FETCH_SUCCESS, {
+          model: model,
+          result: [
+            instances[1],
+            instances[2],
+            instances[3],
+          ],
+        })
+      })
+
+      it("should return the entity by id", function() {
+        var getter = RestApi.createByIdGetter(model)
+        var result = Flux.evaluateToJS(getter(1))
+        expect(result).to.deep.equal(instances[1])
+      })
+    })
+  })
 })

@@ -41,8 +41,10 @@ and **component B** to be updated.  The pattern ensures all components are in sy
 
 - [x] Complete testing the `createApiActions` method 100%
 - [ ] Implement travis.ci badge for coverage
-- [ ] add example entity module
-- [ ] Write readme and document the api actions pattern an
+- [x] add example entity module
+- [x] Update rest-api-example README with architecture overview
+- [ ] Update rest-api-example README example model
+- [ ] Update rest-api-example README with getter pattern for rest api modules
 - [ ] Link to README / example in main NuclearJS README
 - [x] Cleanup components / gulp / webpack configs
 
