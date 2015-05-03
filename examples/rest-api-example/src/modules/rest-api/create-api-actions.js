@@ -1,3 +1,4 @@
+var Promise = require('es6-promise').Promise
 var Flux = require('../../flux')
 var actionTypes = require('./action-types')
 
@@ -52,7 +53,7 @@ module.exports = function(model) {
     Flux.dispatch(actionTypes.API_DELETE_START, {
       params: params,
     })
-    return model.delete(params).then(
+    return model['delete'](params).then(
       onDeleteSuccess.bind(null, model, params),
       onDeleteFail.bind(null, model, params)
     )
@@ -92,7 +93,7 @@ function onFetchFail(model, params, reason) {
     params: params,
     reason: reason,
   })
-  return reason
+  return Promise.reject(reason)
 }
 
 /**
@@ -126,7 +127,7 @@ function onSaveFail(model, params, reason) {
     params: params,
     reason: reason,
   })
-  return reason
+  return Promise.reject(reason)
 }
 
 /**
@@ -158,6 +159,6 @@ function onDeleteFail(model, params, reason) {
     params: params,
     reason: reason,
   })
-  return reason
+  return Promise.reject(reason)
 }
 
