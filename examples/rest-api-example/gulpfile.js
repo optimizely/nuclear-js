@@ -1,7 +1,7 @@
 var path = require('path')
 var gulp = require('gulp')
 var shell = require('gulp-shell')
-var connect = require('connect')
+var connect = require('gulp-connect')
 var serveStatic = require('serve-static')
 var del = require('del')
 
@@ -26,15 +26,14 @@ gulp.task('clean', function(cb) {
 
 gulp.task('copy-app', function() {
   return gulp.src(appFiles)
-    .pipe(gulp.dest('./dist/app/'))
+    .pipe(gulp.dest('./dist/'))
 })
 
 gulp.task('serve', function() {
-  var appPath = path.join(__dirname, 'dist', 'app')
-
-  connect({
-    root: appPath
-  }).listen(4000)
+  connect.server({
+    root: path.join(__dirname, 'dist'),
+    port: 4000,
+  })
 })
 
 gulp.task('webpack', shell.task([

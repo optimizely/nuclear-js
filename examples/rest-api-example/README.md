@@ -44,8 +44,7 @@ and **component B** to be updated.  The pattern ensures all components are in sy
 - [ ] add example entity module
 - [ ] Write readme and document the api actions pattern an
 - [ ] Link to README / example in main NuclearJS README
-- [ ] Cleanup components / gulp / webpack configs.   v1 ma
-and node based
+- [x] Cleanup components / gulp / webpack configs
 
 ### v2
 
