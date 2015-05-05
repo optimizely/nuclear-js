@@ -8,7 +8,6 @@ var createReactMixin = require('./create-react-mixin')
 
 // helper fns
 var toJS = require('./immutable-helpers').toJS
-var toImmutable = require('./immutable-helpers').toImmutable
 var isImmutableValue = require('./immutable-helpers').isImmutableValue
 var each = require('./utils').each
 
