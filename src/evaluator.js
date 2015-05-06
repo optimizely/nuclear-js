@@ -1,15 +1,11 @@
 var Immutable = require('immutable')
-var helpers = require('./immutable-helpers')
-var isImmutable = helpers.isImmutable
-var toImmutable = helpers.toImmutable
+var toImmutable = require('./immutable-helpers').toImmutable
 var hashCode = require('./hash-code')
 var isEqual = require('./is-equal')
 var getComputeFn = require('./getter').getComputeFn
 var getDeps = require('./getter').getDeps
 var isKeyPath = require('./key-path').isKeyPath
 var isGetter = require('./getter').isGetter
-var isObject = require('./utils').isObject
-var isArray = require('./utils').isArray
 
 // Keep track of whether we are currently executing a Getter's computeFn
 var __applyingComputeFn = false;

@@ -10,7 +10,6 @@ module.exports = function(reactor) {
 
     componentDidMount: function() {
       var component = this
-      var dataBindings = this.getDataBindings()
       component.__unwatchFns = []
       each(this.getDataBindings(), function(getter, key) {
         var unwatchFn = reactor.observe(getter, function(val) {
