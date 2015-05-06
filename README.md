@@ -803,6 +803,14 @@ In `shopping-cart.html`
 </table>
 ```
 
+## Performance
+
+Getters are only calculated whenever their dependencies change. So if the dependency is a keypath then it will only recalculate when that path in the app state map has changed
+ (which can be done as a simple `state.getIn(keyPath) !== oldState.getIn(keyPath)` which is an `O(log32(n))` operation. The other case is when a getter is dependent on other getters.
+ Since every getter is a pure function then Nuclear will only recompute the getter if the values of its dependencies change.
+
+You can read more of the implementation here: [src/evaluator.js](./src/evaluator.js)
+
 ## API Documentation
 
 ### Reactor
