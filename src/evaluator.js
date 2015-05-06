@@ -60,11 +60,11 @@ class Evaluator {
 
     if (this.__hasStaleValue(state, keyPathOrGetter)) {
       // getter deps could still be unchanged since we only looked at the unwrapped (keypath, bottom level) deps
-      var prevValue = this.__cachedGetters.getIn([code, 'value'])
       var prevArgs = this.__cachedGetters.getIn([code, 'args'])
 
       // since Getter is a pure functions if the args are the same its a cache hit
       if (isEqual(prevArgs, args)) {
+        var prevValue = this.__cachedGetters.getIn([code, 'value'])
         this.__cacheValue(state, keyPathOrGetter, prevArgs, prevValue)
         return prevValue
       }
