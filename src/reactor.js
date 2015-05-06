@@ -113,10 +113,7 @@ class Reactor {
         var currState = state.get(id)
         var newState = store.handle(currState, actionType, payload)
 
-        if (debug && newState === undefined) {
-          throw new Error("Store handler must return a value, did you forget a return statement")
-        }
-
+        // newState will remain currState if store doesn't handle this actionType
         state.set(id, newState)
 
         if (this.debug) {
