@@ -101,7 +101,7 @@ except the `index.js` file.
 - Stores are registered lazily through the module's index.js.  This may seem weird at first, but in NuclearJS stores are more of an implementation detail
 and not ever directly referenceable.
 
-- Data access to the module's store values is done entire through the getters it exposes.  This provides a decoupling between the store implementation and how
+- Data access to the module's store values is done entirely through the getters it exposes.  This provides a decoupling between the store implementation and how
 the outside world references the state that a module manages.  A getter is a contract between the outside world and the module that a particular piece of information
 is accessible.  The evaluator of a getter does not care about the underyling store representation.
 
