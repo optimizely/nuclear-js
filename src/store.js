@@ -45,13 +45,18 @@ class Store {
    * does the reaction and returns the new state
    */
   handle(state, type, payload) {
+    var result = state
     var handler = this.__handlers.get(type)
 
     if (typeof handler === 'function') {
-      return handler.call(this, state, payload, type)
+      result = handler.call(this, state, payload, type)
+
+      if (result === undefined) {
+        throw new Error("Store handler must return a value, did you forget a return statement")
+      }
     }
 
-    return state
+    return result
   }
 
   /**
@@ -68,6 +73,10 @@ class Store {
    * Binds an action type => handler
    */
   on(actionType, handler) {
+    if (!actionType) {
+      throw new Error("Store.on called without a value for actionType.")
+    }
+
     this.__handlers = this.__handlers.set(actionType, handler)
   }
 }
