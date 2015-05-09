@@ -1,5 +1,4 @@
 // Karma configuration
-// Generated on Sun Nov 23 2014 13:04:15 GMT-0500 (EST)
 
 module.exports = function(config) {
   config.set({
@@ -10,7 +9,7 @@ module.exports = function(config) {
 
     // frameworks to use
     // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-    frameworks: ['jasmine'],
+    frameworks: ['jasmine', 'es5-shim'],
 
 
     // list of files / patterns to load in the browser
@@ -33,7 +32,7 @@ module.exports = function(config) {
     webpack: {
       module: {
         loaders: [
-          { test: /\.js$/, loader: 'jstransform-loader' }
+          { test: /\.js$/, loader: 'jstransform-loader' },
         ]
       },
     },
@@ -63,7 +62,7 @@ module.exports = function(config) {
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    browsers: ['Chrome'],
+    browsers: ['PhantomJS', 'Chrome'],
 
 
     // Continuous Integration mode
