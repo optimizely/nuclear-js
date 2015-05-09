@@ -556,7 +556,7 @@ var subtotalGetter = [
   ['items'],
   function(items) {
     // items is of type `Immutable.List`
-    return items.reduce(function(total, items) {
+    return items.reduce(function(total, item) {
       return total + (item.get('price') * item.get('quantity'))
     }, 0)
   }
