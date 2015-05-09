@@ -374,4 +374,40 @@ describe('Reactor', () => {
       expect(observeSpy.calls.count()).toBe(2)
     })
   })
+
+  describe("a reactor with a store that has `null` as its initial state", () => {
+    var reactor
+
+    beforeEach(() => {
+      var nullStateStore = new Store({
+        getInitialState() {
+          return null;
+        },
+        initialize() {
+          this.on('set', (_, val) => val);
+        }
+      })
+
+      reactor = new Reactor({
+        debug: true
+      })
+      reactor.registerStores({
+        test: nullStateStore,
+      })
+    })
+
+    afterEach(() => {
+      reactor.reset()
+    })
+
+    it("the store should respond to a registered action", () => {
+      reactor.dispatch('set', 'foo')
+      expect(reactor.evaluate(['test'])).toBe('foo')
+    })
+
+    it("the store should have the same initial state for an action it doesnt handle", () => {
+      reactor.dispatch('unknown', 'foo')
+      expect(reactor.evaluate(['test'])).toBe(null)
+    })
+  })
 })
