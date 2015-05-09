@@ -498,7 +498,7 @@ var itemStore = new Nuclear.Store({
   // Store state must be an ImmutableJS data structure or an immutable JavaScript primitive
   // like Number or String
   getInitialState: function() {
-    return Immutable.List()
+    return List()
   },
 
   initialize: function() {
