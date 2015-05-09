@@ -65,6 +65,34 @@ describe('Utils', () => {
       var result = Utils.isArray(new Array())
       expect(result).toBe(true)
     })
+
+    describe("when isArray is not defined", function() {
+      var originalIsArray
+
+      beforeEach(() => {
+        originalIsArray = Array.isArray
+        Array.isArray = undefined
+      })
+
+      afterEach(() => {
+        Array.isArray = originalIsArray
+      })
+
+      it('correctly identifies a non-array as not an array', () => {
+        var result = Utils.isArray(1)
+        expect(result).toBe(false)
+      })
+
+      it('correctly identifies an array literal as an array', () => {
+        var result = Utils.isArray([])
+        expect(result).toBe(true)
+      })
+
+      it('correctly identifies an array instance as an array', () => {
+        var result = Utils.isArray(new Array())
+        expect(result).toBe(true)
+      })
+    })
   })
 
   describe('#isFunction', () => {

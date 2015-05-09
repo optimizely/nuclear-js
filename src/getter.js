@@ -19,26 +19,6 @@ function isGetter(toTest) {
   return (isArray(toTest) && isFunction(toTest[toTest.length - 1]))
 }
 
-
-/**
- * Recursive function to flatten deps of a getter
- * @param {Getter} getter
- * @return {Array.<KeyPath>} unique flatten deps
- */
-function unwrapDeps(getter) {
-  var accum = Immutable.Set()
-  var deps = getter.slice(0, getter.length - 1)
-
-  return accum.withMutations(accum => {
-    deps.forEach((dep) => {
-      isGetter(dep)
-        ? accum.union(unwrapDeps(dep))
-        : accum.add(dep)
-    })
-    return accum
-  })
-}
-
 /**
  * Returns the compute function from a getter
  * @param {Getter} getter
@@ -71,7 +51,6 @@ function fromKeyPath(keyPath) {
 
 
 module.exports = {
-  unwrapDeps: unwrapDeps,
   isGetter: isGetter,
   getComputeFn: getComputeFn,
   getDeps: getDeps,

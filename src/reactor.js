@@ -135,41 +135,26 @@ class Reactor {
   }
 
   /**
-   * Attachs a store to a non-running or running nuclear reactor.  Will emit change
-   * @param {string} id
-   * @param {Store} store
-   * @param {boolean} silent should not notify observers of state change
-   */
-  registerStore(id, store, silent) {
-    if (this.__stores.get(id)) {
-      console.warn("Store already defined for id=" + id)
-    }
-
-    var initialState = store.getInitialState()
-
-    if (this.debug && !isImmutableValue(initialState)) {
-      throw new Error("Store getInitialState() must return an immutable value, did you forget to call toImmutable")
-    }
-
-    this.__stores = this.__stores.set(id, store)
-    this.__state = this.__state.set(id, initialState)
-
-    if (!silent) {
-      this.__changeObserver.notifyObservers(this.__state)
-    }
-  }
-
-  /**
    * @param {Array.<string, Store>} stores
-   * @param {boolean} silent should not notify observers of state change
    */
-  registerStores(stores, silent) {
+  registerStores(stores) {
     each(stores, (store, id) => {
-      this.registerStore(id, store, true)
+      if (this.__stores.get(id)) {
+        console.warn("Store already defined for id=" + id)
+      }
+
+      var initialState = store.getInitialState()
+
+      if (this.debug && !isImmutableValue(initialState)) {
+        throw new Error("Store getInitialState() must return an immutable value, did you forget to call toImmutable")
+      }
+
+      this.__stores = this.__stores.set(id, store)
+      this.__state = this.__state.set(id, initialState)
+
     })
-    if (!silent) {
-      this.__changeObserver.notifyObservers(this.__state)
-    }
+
+    this.__changeObserver.notifyObservers(this.__state)
   }
 
   /**

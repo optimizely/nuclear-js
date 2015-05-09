@@ -134,8 +134,6 @@ class Evaluator {
    * @param {Getter}
    */
   untrack(getter) {
-    var code = hashCode(getter)
-    this.__cachedGetters = this.__cachedGetters.remove(code)
     // TODO untrack all depedencies
   }
 

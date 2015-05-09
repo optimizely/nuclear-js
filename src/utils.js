@@ -1,16 +1,4 @@
 /**
- * Ensures that the inputted value is an array
- * @param {*} val
- * @return {array}
- */
-exports.coerceArray = function(val) {
-  if (!exports.isArray(val)) {
-    return [val]
-  }
-  return val
-}
-
-/**
  * Checks if the passed in value is a number
  * @param {*} val
  * @return {boolean}

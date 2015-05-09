@@ -14,7 +14,7 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
-      'tests/*-tests.js'
+      'tests/*-tests.js',
     ],
 
 
@@ -22,25 +22,38 @@ module.exports = function(config) {
     exclude: [
     ],
 
+    reporters: ['html'],
 
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
     preprocessors: {
-      'tests/*-tests.js': ['webpack']
+      'tests/*-tests.js': ['webpack'],
+    },
+
+    coverageReporter: {
+      type: "html",
+      dir: "coverage/"
     },
 
     webpack: {
       module: {
         loaders: [
           { test: /\.js$/, loader: 'jstransform-loader' },
+        ],
+        postLoaders: [
+          {
+            test: /\.js$/,
+            exclude: /(test|node_modules|bower_components)\//,
+            loader: 'istanbul-instrumenter'
+          }
         ]
       },
+
     },
 
     // test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-    reporters: ['html'],
 
 
     // web server port

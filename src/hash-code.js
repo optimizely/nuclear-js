@@ -16,10 +16,6 @@ module.exports = function(getter, dontCache) {
     return getter.__hashCode
   }
 
-  if (!isGetter(getter)) {
-    throw new Error("Invalid getter!  Must be of the form: [<KeyPath>, ...<KeyPath>, <function>]")
-  }
-
   var hashCode = Immutable.fromJS(getter).hashCode()
 
   if (!dontCache) {
