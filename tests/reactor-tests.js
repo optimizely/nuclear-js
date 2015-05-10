@@ -541,6 +541,31 @@ describe('Reactor', () => {
     })
   })
 
+  describe("#registerStore", () => {
+    var reactor, store1
+
+    beforeEach(() => {
+      store1 = new Store({
+        getInitialState() {
+          return 'foo'
+        }
+      })
+
+      reactor = new Reactor({
+        debug: true,
+      })
+    })
+
+    afterEach(() => {
+      reactor.reset()
+    })
+
+    it("it should register a store by id", () => {
+      reactor.registerStore('test', store1)
+      expect(reactor.evaluate(['test'])).toBe('foo')
+    })
+  })
+
   describe("#reset", () => {
     var reactor
 

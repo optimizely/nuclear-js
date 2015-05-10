@@ -39,6 +39,27 @@ NuclearJS can be downloaded from npm.
 npm install nuclear-js
 ```
 
+## Local Development
+
+To watch and build assets (prereq: `npm install -g webpack`)
+
+```sh
+webpack
+```
+
+To test using Chrome
+
+```sh
+grunt karma:chrome
+```
+
+Running unit tests in PhantomJS + Coverage
+
+```sh
+grunt karma:coverage
+```
+
+
 ## Let's see some examples
 
 Let's see what the original [Flux Chat Example](https://github.com/facebook/flux/tree/master/examples/flux-chat) looks like in NuclearJS.
@@ -836,11 +857,9 @@ reactor.observe([
 ])
 ```
 
-#### `Reactor#registerStores(stores, silent)`
+#### `Reactor#registerStores(stores)`
 
 `stores` - an object of storeId => store instance
-
-`silent` (optional) a boolean that if true, will not cause any observers to be evaluated if the newly added stores change a getter value.
 
 ```js
 reactor.registerStores({

@@ -137,7 +137,19 @@ class Reactor {
   }
 
   /**
-   * @param {Array.<string, Store>} stores
+   * @deprecated
+   * @param {String} id
+   * @param {Store} store
+   */
+  registerStore(id, store) {
+    console.warn('Deprecation warning: `registerStore` will no longer be supported in 1.1, use `registerStores` instead')
+    var stores = {}
+    stores[id] = store
+    this.registerStores(stores)
+  }
+
+  /**
+   * @param {Store[]} stores
    */
   registerStores(stores) {
     each(stores, (store, id) => {
