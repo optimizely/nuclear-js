@@ -11,41 +11,41 @@
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
-
+/******/
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
-
+/******/
 /******/ 		// Check if module is in cache
 /******/ 		if(installedModules[moduleId])
 /******/ 			return installedModules[moduleId].exports;
-
+/******/
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = installedModules[moduleId] = {
 /******/ 			exports: {},
 /******/ 			id: moduleId,
 /******/ 			loaded: false
 /******/ 		};
-
+/******/
 /******/ 		// Execute the module function
 /******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-
+/******/
 /******/ 		// Flag the module as loaded
 /******/ 		module.loaded = true;
-
+/******/
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
 /******/ 	}
-
-
+/******/
+/******/
 /******/ 	// expose the modules object (__webpack_modules__)
 /******/ 	__webpack_require__.m = modules;
-
+/******/
 /******/ 	// expose the module cache
 /******/ 	__webpack_require__.c = installedModules;
-
+/******/
 /******/ 	// __webpack_public_path__
 /******/ 	__webpack_require__.p = "";
-
+/******/
 /******/ 	// Load entry module and return exports
 /******/ 	return __webpack_require__(0);
 /******/ })
@@ -67,7 +67,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.Store = __webpack_require__(3)
 
 	// export the immutable library
-	exports.Immutable = __webpack_require__(7)
+	exports.Immutable = __webpack_require__(11)
 
 	/**
 	 * @return {boolean}
@@ -91,8 +91,8 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 1 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Immutable = __webpack_require__(7)
-	var isObject = __webpack_require__(8).isObject
+	var Immutable = __webpack_require__(11)
+	var isObject = __webpack_require__(7).isObject
 
 	/**
 	 * A collection of helpers for the ImmutableJS library
@@ -150,18 +150,19 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 2 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Immutable = __webpack_require__(7)
-	var logging = __webpack_require__(9)
-	var ChangeObserver = __webpack_require__(10)
+	var Immutable = __webpack_require__(11)
+	var logging = __webpack_require__(8)
+	var ChangeObserver = __webpack_require__(9)
 	var Getter = __webpack_require__(5)
 	var KeyPath = __webpack_require__(4)
-	var Evaluator = __webpack_require__(11)
+	var Evaluator = __webpack_require__(10)
 	var createReactMixin = __webpack_require__(6)
 
 	// helper fns
 	var toJS = __webpack_require__(1).toJS
+	var toImmutable = __webpack_require__(1).toImmutable
 	var isImmutableValue = __webpack_require__(1).isImmutableValue
-	var each = __webpack_require__(8).each
+	var each = __webpack_require__(7).each
 
 
 	/**
@@ -265,15 +266,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var newState = store.handle(currState, actionType, payload)
 
 	        if (debug && newState === undefined) {
-	          var error = "Store handler must return a value, did you forget a return statement"
-	          logging.dispatchError(error)
-	          throw new Error(error)
+	          throw new Error("Store handler must return a value, did you forget a return statement")
 	        }
 
 	        state.set(id, newState)
 
 	        if (this.debug) {
-	          logging.storeHandled(id, currState, newState)
+	          logging.coreReact(id, currState, newState)
 	        }
 	      }.bind(this))
 
@@ -289,25 +288,41 @@ return /******/ (function(modules) { // webpackBootstrap
 	  };
 
 	  /**
-	   * @param {Array.<string, Store>} stores
+	   * Attachs a store to a non-running or running nuclear reactor.  Will emit change
+	   * @param {string} id
+	   * @param {Store} store
+	   * @param {boolean} silent should not notify observers of state change
 	   */
-	  Reactor.prototype.registerStores=function(stores) {"use strict";
+	  Reactor.prototype.registerStore=function(id, store, silent) {"use strict";
+	    if (this.__stores.get(id)) {
+	      console.warn("Store already defined for id=" + id)
+	    }
+
+	    var initialState = store.getInitialState()
+
+	    if (this.debug && !isImmutableValue(initialState)) {
+	      throw new Error("Store getInitialState() must return an immutable value, did you forget to call toImmutable")
+	    }
+
+	    this.__stores = this.__stores.set(id, store)
+	    this.__state = this.__state.set(id, initialState)
+
+	    if (!silent) {
+	      this.__changeObserver.notifyObservers(this.__state)
+	    }
+	  };
+
+	  /**
+	   * @param {Array.<string, Store>} stores
+	   * @param {boolean} silent should not notify observers of state change
+	   */
+	  Reactor.prototype.registerStores=function(stores, silent) {"use strict";
 	    each(stores, function(store, id)  {
-	      if (this.__stores.get(id)) {
-	        console.warn("Store already defined for id=" + id)
-	      }
-
-	      var initialState = store.getInitialState()
-
-	      if (this.debug && !isImmutableValue(initialState)) {
-	        throw new Error("Store getInitialState() must return an immutable value, did you forget to call toImmutable")
-	      }
-
-	      this.__stores = this.__stores.set(id, store)
-	      this.__state = this.__state.set(id, initialState)
+	      this.registerStore(id, store, true)
 	    }.bind(this))
-
-	    this.__changeObserver.notifyObservers(this.__state)
+	    if (!silent) {
+	      this.__changeObserver.notifyObservers(this.__state)
+	    }
 	  };
 
 	  /**
@@ -343,8 +358,8 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Map = __webpack_require__(7).Map
-	var extend = __webpack_require__(8).extend
+	var Map = __webpack_require__(11).Map
+	var extend = __webpack_require__(7).extend
 
 	/**
 	 * Stores define how a certain domain of the application should respond to actions
@@ -430,8 +445,8 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var isArray = __webpack_require__(8).isArray
-	var isFunction = __webpack_require__(8).isFunction
+	var isArray = __webpack_require__(7).isArray
+	var isFunction = __webpack_require__(7).isFunction
 
 	/**
 	 * Checks if something is simply a keyPath and not a getter
@@ -450,9 +465,9 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Immutable = __webpack_require__(7)
-	var isFunction = __webpack_require__(8).isFunction
-	var isArray = __webpack_require__(8).isArray
+	var Immutable = __webpack_require__(11)
+	var isFunction = __webpack_require__(7).isFunction
+	var isArray = __webpack_require__(7).isArray
 	var isKeyPath = __webpack_require__(4).isKeyPath
 
 	/**
@@ -469,6 +484,26 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 	function isGetter(toTest) {
 	  return (isArray(toTest) && isFunction(toTest[toTest.length - 1]))
+	}
+
+
+	/**
+	 * Recursive function to flatten deps of a getter
+	 * @param {Getter} getter
+	 * @return {Array.<KeyPath>} unique flatten deps
+	 */
+	function unwrapDeps(getter) {
+	  var accum = Immutable.Set()
+	  var deps = getter.slice(0, getter.length - 1)
+
+	  return accum.withMutations(function(accum)  {
+	    deps.forEach(function(dep)  {
+	      isGetter(dep)
+	        ? accum.union(unwrapDeps(dep))
+	        : accum.add(dep)
+	    })
+	    return accum
+	  })
 	}
 
 	/**
@@ -503,6 +538,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 	module.exports = {
+	  unwrapDeps: unwrapDeps,
 	  isGetter: isGetter,
 	  getComputeFn: getComputeFn,
 	  getDeps: getDeps,
@@ -514,7 +550,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var each = __webpack_require__(8).each
+	var each = __webpack_require__(7).each
 	/**
 	 * @param {Reactor} reactor
 	 */
@@ -526,6 +562,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    componentDidMount: function() {
 	      var component = this
+	      var dataBindings = this.getDataBindings()
 	      component.__unwatchFns = []
 	      each(this.getDataBindings(), function(getter, key) {
 	        var unwatchFn = reactor.observe(getter, function(val) {
@@ -561,6 +598,466 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * Ensures that the inputted value is an array
+	 * @param {*} val
+	 * @return {array}
+	 */
+	exports.coerceArray = function(val) {
+	  if (!exports.isArray(val)) {
+	    return [val]
+	  }
+	  return val
+	}
+
+	/**
+	 * Checks if the passed in value is a number
+	 * @param {*} val
+	 * @return {boolean}
+	 */
+	exports.isNumber = function(val) {
+	  return typeof val == 'number' || objectToString(val) === '[object Number]'
+	}
+
+	/**
+	 * Checks if the passed in value is a string
+	 * @param {*} val
+	 * @return {boolean}
+	 */
+	exports.isString = function(val) {
+	  return typeof val == 'string' || objectToString(val) === '[object String]'
+	}
+
+	/**
+	 * Checks if the passed in value is an array
+	 * @param {*} val
+	 * @return {boolean}
+	 */
+	exports.isArray = Array.isArray || function(val) {
+	  return objectToString(val) === '[object Array]'
+	}
+
+	/**
+	 * Checks if the passed in value is a function
+	 * @param {*} val
+	 * @return {boolean}
+	 */
+	exports.isFunction = function(val) {
+	  return toString.call(val) === '[object Function]'
+	}
+
+	/**
+	 * Checks if the passed in value is af type Object
+	 * @param {*} val
+	 * @return {boolean}
+	 */
+	exports.isObject = function(obj) {
+	  var type = typeof obj
+	  return type === 'function' || type === 'object' && !!obj
+	}
+
+	/**
+	 * Extends an object with the properties of additional objects
+	 * @param {object} obj
+	 * @param {object} objects
+	 * @return {object}
+	 */
+	exports.extend = function(obj) {
+	  var length = arguments.length
+
+	  if (!obj || length < 2) return obj || {}
+
+	  for (var index = 1; index < length; index++) {
+	    var source = arguments[index]
+	    var keys = Object.keys(source)
+	    var l = keys.length
+
+	    for (var i = 0; i < l; i++) {
+	      var key = keys[i]
+	      obj[key] = source[key]
+	    }
+	  }
+
+	  return obj
+	}
+
+	/**
+	 * Creates a shallow clone of an object
+	 * @param {object} obj
+	 * @return {object}
+	 */
+	exports.clone = function(obj) {
+	  if (!exports.isObject(obj)) return obj
+	  return exports.isArray(obj) ? obj.slice() : exports.extend({}, obj)
+	}
+
+	/**
+	 * Iterates over a collection of elements yielding each iteration to an
+	 * iteratee. The iteratee may be bound to the context argument and is invoked
+	 * each time with three arguments (value, index|key, collection). Iteration may
+	 * be exited early by explicitly returning false.
+	 * @param {array|object|string} collection
+	 * @param {function} iteratee
+	 * @param {*} context
+	 * @return {array|object|string}
+	 */
+	exports.each = function(collection, iteratee, context) {
+	  var length = collection ? collection.length : 0
+	  var i = -1
+	  var keys, origIteratee
+
+	  if (context) {
+	    origIteratee = iteratee
+	    iteratee = function(value, index, collection) {
+	      return origIteratee.call(context, value, index, collection)
+	    }
+	  }
+
+	  if (isLength(length)) {
+	    while (++i < length) {
+	      if (iteratee(collection[i], i, collection) === false) break
+	    }
+	  } else {
+	    keys = Object.keys(collection)
+	    length = keys.length
+	    while (++i < length) {
+	      if (iteratee(collection[keys[i]], keys[i], collection) === false) break
+	    }
+	  }
+
+	  return collection
+	}
+
+	/**
+	 * Returns a new function the invokes `func` with `partialArgs` prepended to
+	 * any passed into the new function. Acts like `Array.prototype.bind`, except
+	 * it does not alter `this` context.
+	 * @param {function} func
+	 * @param {*} partialArgs
+	 * @return {function}
+	 */
+	exports.partial = function(func) {
+	  var slice = Array.prototype.slice
+	  var partialArgs = slice.call(arguments, 1)
+
+	  return function() {
+	    return func.apply(this, partialArgs.concat(slice.call(arguments)))
+	  }
+	}
+
+	/**
+	 * Returns the text value representation of an object
+	 * @private
+	 * @param {*} obj
+	 * @return {string}
+	 */
+	function objectToString(obj) {
+	  return obj && typeof obj == 'object' && toString.call(obj)
+	}
+
+	/**
+	 * Checks if the value is a valid array-like length.
+	 * @private
+	 * @param {*} val
+	 * @return {bool}
+	 */
+	function isLength(val) {
+	  return typeof val == 'number'
+	    && val > -1
+	    && val % 1 == 0
+	    && val <= Number.MAX_SAFE_INTEGER
+	}
+
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * Wraps a Reactor.react invocation in a console.group
+	*/
+	exports.dispatchStart = function(type, payload) {
+	  if (console.group) {
+	    console.groupCollapsed('Dispatch: %s', type)
+	    console.group('payload')
+	    console.log(payload)
+	    console.groupEnd()
+	  }
+	}
+
+	exports.coreReact = function(id, before, after) {
+	  if (console.group) {
+	    if (before !== after) {
+	      console.log('Core changed: ' + id)
+	    }
+	  }
+	}
+
+	exports.dispatchEnd = function(state) {
+	  if (console.group) {
+	    console.log('Dispatch done, new state: ', state.toJS())
+	    console.groupEnd()
+	  }
+	}
+
+
+/***/ },
+/* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Immutable = __webpack_require__(11)
+	var hashCode = __webpack_require__(12)
+	var isEqual = __webpack_require__(13)
+
+	/**
+	 * ChangeObserver is an object that contains a set of subscriptions
+	 * to changes for keyPaths on a reactor
+	 *
+	 * Packaging the handlers together allows for easier cleanup
+	 */
+
+	  /**
+	   * @param {Immutable.Map} initialState
+	   * @param {Evaluator} evaluator
+	   */
+	  function ChangeObserver(initialState, evaluator) {"use strict";
+	    this.__prevState = initialState
+	    this.__evaluator = evaluator
+	    this.__prevValues = Immutable.Map({})
+	    this.__observers = []
+	  }
+
+	  /**
+	   * @param {Immutable.Map} newState
+	   */
+	  ChangeObserver.prototype.notifyObservers=function(newState) {"use strict";
+	    var currentValues = Immutable.Map()
+
+	    this.__observers.forEach(function(entry)  {
+	      var getter = entry.getter
+	      var code = hashCode(getter)
+	      var prevState = this.__prevState
+	      var prevValue
+
+	      if (this.__prevValues.has(code)) {
+	        prevValue = this.__prevValues.get(code)
+	      } else {
+	        prevValue = this.__evaluator.evaluate(prevState, getter)
+	        this.__prevValues = this.__prevValues.set(code, prevValue)
+	      }
+
+	      var currValue = this.__evaluator.evaluate(newState, getter)
+
+	      if (!isEqual(prevValue, currValue)) {
+	        entry.handler.call(null, currValue)
+	        currentValues = currentValues.set(code, currValue)
+	      }
+	    }.bind(this))
+	    this.__prevState = newState
+	    this.__prevValues = currentValues
+	  };
+
+	  /**
+	   * Specify an getter and a change handler fn
+	   * Handler function is called whenever the value of the getter changes
+	   * @param {Getter} getter
+	   * @param {function} handler
+	   * @return {function} unwatch function
+	   */
+	  ChangeObserver.prototype.onChange=function(getter, handler) {"use strict";
+	    // TODO make observers a map of <Getter> => { handlers }
+	    var entry = {
+	      getter: getter,
+	      handler: handler,
+	    }
+	    this.__observers.push(entry)
+	    // return unwatch function
+	    return function()  {
+	      // TODO untrack from change emitter
+	      var ind  = this.__observers.indexOf(entry)
+	      if (ind > -1) {
+	        this.__observers.splice(ind, 1)
+	      }
+	    }.bind(this)
+	  };
+
+	  /**
+	   * Resets and clears all observers and reinitializes back to the supplied
+	   * previous state
+	   * @param {Immutable.Map} prevState
+	   *
+	   */
+	  ChangeObserver.prototype.reset=function(prevState) {"use strict";
+	    this.__prevState = prevState
+	    this.__prevValues = Immutable.Map({})
+	    this.__observers = []
+	  };
+
+
+	module.exports = ChangeObserver
+
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Immutable = __webpack_require__(11)
+	var helpers = __webpack_require__(1)
+	var isImmutable = helpers.isImmutable
+	var toImmutable = helpers.toImmutable
+	var hashCode = __webpack_require__(12)
+	var isEqual = __webpack_require__(13)
+	var getComputeFn = __webpack_require__(5).getComputeFn
+	var getDeps = __webpack_require__(5).getDeps
+	var isKeyPath = __webpack_require__(4).isKeyPath
+	var isGetter = __webpack_require__(5).isGetter
+	var isObject = __webpack_require__(7).isObject
+	var isArray = __webpack_require__(7).isArray
+
+	// Keep track of whether we are currently executing a Getter's computeFn
+	var __applyingComputeFn = false;
+
+
+	  function Evaluator() {"use strict";
+	    /**
+	     * {
+	     *   <hashCode>: {
+	     *     stateHashCode: number,
+	     *     args: Immutable.List,
+	     *     value: any,
+	     *   }
+	     * }
+	     */
+	    this.__cachedGetters = Immutable.Map({})
+	  }
+
+	  /**
+	   * Takes either a KeyPath or Getter and evaluates
+	   *
+	   * KeyPath form:
+	   * ['foo', 'bar'] => state.getIn(['foo', 'bar'])
+	   *
+	   * Getter form:
+	   * [<KeyPath>, <KeyPath>, ..., <function>]
+	   *
+	   * @param {Immutable.Map} state
+	   * @param {string|array} getter
+	   * @return {any}
+	   */
+	  Evaluator.prototype.evaluate=function(state, keyPathOrGetter) {"use strict";
+	    if (isKeyPath(keyPathOrGetter)) {
+	      // if its a keyPath simply return
+	      return state.getIn(keyPathOrGetter)
+	    } else if (!isGetter(keyPathOrGetter)) {
+	      throw new Error("evaluate must be passed a keyPath or Getter")
+	    }
+
+	    // Must be a Getter
+	    var code = hashCode(keyPathOrGetter)
+
+	    // if the value is cached for this dispatch cycle, return the cached value
+	    if (this.__isCached(state, keyPathOrGetter)) {
+	      // Cache hit
+	      return this.__cachedGetters.getIn([code, 'value'])
+
+	    } else if (this.__hasStaleValue(state, keyPathOrGetter)) {
+	      var prevValue = this.__cachedGetters.getIn([code, 'value'])
+	      var prevArgs = this.__cachedGetters.getIn([code, 'args'])
+	      // getter deps could still be unchanged since we only looked at the unwrapped (keypath, bottom level) deps
+	      var currArgs = toImmutable(getDeps(keyPathOrGetter).map(function(getter)  {
+	        return this.evaluate(state, getter)
+	      }.bind(this)))
+
+	      // since Getter is a pure functions if the args are the same its a cache hit
+	      if (isEqual(prevArgs, currArgs)) {
+	        this.__cacheValue(state, keyPathOrGetter, prevArgs, prevValue)
+	        return prevValue
+	      }
+	    }
+	    // no cache hit evaluate
+	    var args = getDeps(keyPathOrGetter).map(function(dep)  {return this.evaluate(state, dep);}.bind(this))
+
+	    // This indicates that we have called evaluate within the body of a computeFn.
+	    // Throw an error as this will lead to inconsistent caching
+	    if (__applyingComputeFn === true) {
+	      __applyingComputeFn = false
+	      throw new Error("Evaluate may not be called within a Getters computeFn")
+	    }
+
+	    __applyingComputeFn = true
+	    var evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
+	    __applyingComputeFn = false
+
+	    this.__cacheValue(state, keyPathOrGetter, args, evaluatedValue)
+
+	    return evaluatedValue
+	  };
+
+	  /**
+	   * @param {Immutable.Map} state
+	   * @param {Getter} getter
+	   */
+	  Evaluator.prototype.__hasStaleValue=function(state, getter) {"use strict";
+	    var code = hashCode(getter)
+	    var cache = this.__cachedGetters
+	    return (
+	      cache.has(code) &&
+	      cache.getIn([code, 'stateHashCode']) !== state.hashCode()
+	    )
+	  };
+
+	  /**
+	   * Caches the value of a getter given state, getter, args, value
+	   * @param {Immutable.Map} state
+	   * @param {Getter} getter
+	   * @param {Array} args
+	   * @param {any} value
+	   */
+	  Evaluator.prototype.__cacheValue=function(state, getter, args, value) {"use strict";
+	    var code = hashCode(getter)
+	    this.__cachedGetters = this.__cachedGetters.set(code, Immutable.Map({
+	      value: value,
+	      args: toImmutable(args),
+	      stateHashCode: state.hashCode(),
+	    }))
+	  };
+
+	  /**
+	   * Returns boolean whether the supplied getter is cached for a given state
+	   * @param {Immutable.Map} state
+	   * @param {Getter} getter
+	   * @return {boolean}
+	   */
+	  Evaluator.prototype.__isCached=function(state, getter) {"use strict";
+	    var code = hashCode(getter)
+	    return (
+	      this.__cachedGetters.hasIn([code, 'value']) &&
+	      this.__cachedGetters.getIn([code, 'stateHashCode']) === state.hashCode()
+	    )
+	  };
+
+	  /**
+	   * Removes all caching about a getter
+	   * @param {Getter}
+	   */
+	  Evaluator.prototype.untrack=function(getter) {"use strict";
+	    var code = hashCode(getter)
+	    this.__cachedGetters = this.__cachedGetters.remove(code)
+	    // TODO untrack all depedencies
+	  };
+
+	  Evaluator.prototype.reset=function() {"use strict";
+	    this.__cachedGetters = Immutable.Map({})
+	  };
+
+
+	module.exports = Evaluator
+
+
+/***/ },
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -4478,462 +4975,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 8 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * Checks if the passed in value is a number
-	 * @param {*} val
-	 * @return {boolean}
-	 */
-	exports.isNumber = function(val) {
-	  return typeof val == 'number' || objectToString(val) === '[object Number]'
-	}
-
-	/**
-	 * Checks if the passed in value is a string
-	 * @param {*} val
-	 * @return {boolean}
-	 */
-	exports.isString = function(val) {
-	  return typeof val == 'string' || objectToString(val) === '[object String]'
-	}
-
-	/**
-	 * Checks if the passed in value is an array
-	 * @param {*} val
-	 * @return {boolean}
-	 */
-	exports.isArray = Array.isArray /* istanbul ignore next */|| function(val) {
-	  return objectToString(val) === '[object Array]'
-	}
-
-	/**
-	 * Checks if the passed in value is a function
-	 * @param {*} val
-	 * @return {boolean}
-	 */
-	exports.isFunction = function(val) {
-	  return toString.call(val) === '[object Function]'
-	}
-
-	/**
-	 * Checks if the passed in value is af type Object
-	 * @param {*} val
-	 * @return {boolean}
-	 */
-	exports.isObject = function(obj) {
-	  var type = typeof obj
-	  return type === 'function' || type === 'object' && !!obj
-	}
-
-	/**
-	 * Extends an object with the properties of additional objects
-	 * @param {object} obj
-	 * @param {object} objects
-	 * @return {object}
-	 */
-	exports.extend = function(obj) {
-	  var length = arguments.length
-
-	  if (!obj || length < 2) return obj || {}
-
-	  for (var index = 1; index < length; index++) {
-	    var source = arguments[index]
-	    var keys = Object.keys(source)
-	    var l = keys.length
-
-	    for (var i = 0; i < l; i++) {
-	      var key = keys[i]
-	      obj[key] = source[key]
-	    }
-	  }
-
-	  return obj
-	}
-
-	/**
-	 * Creates a shallow clone of an object
-	 * @param {object} obj
-	 * @return {object}
-	 */
-	exports.clone = function(obj) {
-	  if (!exports.isObject(obj)) return obj
-	  return exports.isArray(obj) ? obj.slice() : exports.extend({}, obj)
-	}
-
-	/**
-	 * Iterates over a collection of elements yielding each iteration to an
-	 * iteratee. The iteratee may be bound to the context argument and is invoked
-	 * each time with three arguments (value, index|key, collection). Iteration may
-	 * be exited early by explicitly returning false.
-	 * @param {array|object|string} collection
-	 * @param {function} iteratee
-	 * @param {*} context
-	 * @return {array|object|string}
-	 */
-	exports.each = function(collection, iteratee, context) {
-	  var length = collection ? collection.length : 0
-	  var i = -1
-	  var keys, origIteratee
-
-	  if (context) {
-	    origIteratee = iteratee
-	    iteratee = function(value, index, collection) {
-	      return origIteratee.call(context, value, index, collection)
-	    }
-	  }
-
-	  if (isLength(length)) {
-	    while (++i < length) {
-	      if (iteratee(collection[i], i, collection) === false) break
-	    }
-	  } else {
-	    keys = Object.keys(collection)
-	    length = keys.length
-	    while (++i < length) {
-	      if (iteratee(collection[keys[i]], keys[i], collection) === false) break
-	    }
-	  }
-
-	  return collection
-	}
-
-	/**
-	 * Returns a new function the invokes `func` with `partialArgs` prepended to
-	 * any passed into the new function. Acts like `Array.prototype.bind`, except
-	 * it does not alter `this` context.
-	 * @param {function} func
-	 * @param {*} partialArgs
-	 * @return {function}
-	 */
-	exports.partial = function(func) {
-	  var slice = Array.prototype.slice
-	  var partialArgs = slice.call(arguments, 1)
-
-	  return function() {
-	    return func.apply(this, partialArgs.concat(slice.call(arguments)))
-	  }
-	}
-
-	/**
-	 * Returns the text value representation of an object
-	 * @private
-	 * @param {*} obj
-	 * @return {string}
-	 */
-	function objectToString(obj) {
-	  return obj && typeof obj == 'object' && toString.call(obj)
-	}
-
-	/**
-	 * Checks if the value is a valid array-like length.
-	 * @private
-	 * @param {*} val
-	 * @return {bool}
-	 */
-	function isLength(val) {
-	  return typeof val == 'number'
-	    && val > -1
-	    && val % 1 == 0
-	    && val <= Number.MAX_VALUE
-	}
-
-
-/***/ },
-/* 9 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * Wraps a Reactor.react invocation in a console.group
-	*/
-	exports.dispatchStart = function(type, payload) {
-	  if (console.group) {
-	    console.groupCollapsed('Dispatch: %s', type)
-	    console.group('payload')
-	    console.debug(payload)
-	    console.groupEnd()
-	  }
-	}
-
-	exports.dispatchError = function(error) {
-	  if (console.group) {
-	    console.debug('Dispatch error: ' + error)
-	    console.groupEnd()
-	  }
-	}
-
-	exports.storeHandled = function(id, before, after) {
-	  if (console.group) {
-	    if (before !== after) {
-	      console.debug('Core changed: ' + id)
-	    }
-	  }
-	}
-
-	exports.dispatchEnd = function(state) {
-	  if (console.group) {
-	    console.debug('Dispatch done, new state: ', state.toJS())
-	    console.groupEnd()
-	  }
-	}
-
-
-/***/ },
-/* 10 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var Immutable = __webpack_require__(7)
-	var hashCode = __webpack_require__(12)
-	var isEqual = __webpack_require__(13)
-
-	/**
-	 * ChangeObserver is an object that contains a set of subscriptions
-	 * to changes for keyPaths on a reactor
-	 *
-	 * Packaging the handlers together allows for easier cleanup
-	 */
-
-	  /**
-	   * @param {Immutable.Map} initialState
-	   * @param {Evaluator} evaluator
-	   */
-	  function ChangeObserver(initialState, evaluator) {"use strict";
-	    this.__prevState = initialState
-	    this.__evaluator = evaluator
-	    this.__prevValues = Immutable.Map()
-	    this.__observers = []
-	  }
-
-	  /**
-	   * @param {Immutable.Map} newState
-	   */
-	  ChangeObserver.prototype.notifyObservers=function(newState) {"use strict";
-	    if (this.__observers.length > 0) {
-	      var currentValues = Immutable.Map()
-
-	      this.__observers.forEach(function(entry)  {
-	        var getter = entry.getter
-	        var code = hashCode(getter)
-	        var prevState = this.__prevState
-	        var prevValue
-
-	        if (this.__prevValues.has(code)) {
-	          prevValue = this.__prevValues.get(code)
-	        } else {
-	          prevValue = this.__evaluator.evaluate(prevState, getter)
-	          this.__prevValues = this.__prevValues.set(code, prevValue)
-	        }
-
-	        var currValue = this.__evaluator.evaluate(newState, getter)
-
-	        if (!isEqual(prevValue, currValue)) {
-	          entry.handler.call(null, currValue)
-	          currentValues = currentValues.set(code, currValue)
-	        }
-	      }.bind(this))
-
-	      this.__prevValues = currentValues
-	    }
-	    this.__prevState = newState
-	  };
-
-	  /**
-	   * Specify an getter and a change handler fn
-	   * Handler function is called whenever the value of the getter changes
-	   * @param {Getter} getter
-	   * @param {function} handler
-	   * @return {function} unwatch function
-	   */
-	  ChangeObserver.prototype.onChange=function(getter, handler) {"use strict";
-	    // TODO make observers a map of <Getter> => { handlers }
-	    var entry = {
-	      getter: getter,
-	      handler: handler,
-	    }
-	    this.__observers.push(entry)
-	    // return unwatch function
-	    return function()  {
-	      // TODO untrack from change emitter
-	      var ind  = this.__observers.indexOf(entry)
-	      if (ind > -1) {
-	        this.__observers.splice(ind, 1)
-	      }
-	    }.bind(this)
-	  };
-
-	  /**
-	   * Resets and clears all observers and reinitializes back to the supplied
-	   * previous state
-	   * @param {Immutable.Map} prevState
-	   *
-	   */
-	  ChangeObserver.prototype.reset=function(prevState) {"use strict";
-	    this.__prevState = prevState
-	    this.__prevValues = Immutable.Map()
-	    this.__observers = []
-	  };
-
-
-	module.exports = ChangeObserver
-
-
-/***/ },
-/* 11 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var Immutable = __webpack_require__(7)
-	var toImmutable = __webpack_require__(1).toImmutable
-	var hashCode = __webpack_require__(12)
-	var isEqual = __webpack_require__(13)
-	var getComputeFn = __webpack_require__(5).getComputeFn
-	var getDeps = __webpack_require__(5).getDeps
-	var isKeyPath = __webpack_require__(4).isKeyPath
-	var isGetter = __webpack_require__(5).isGetter
-
-	// Keep track of whether we are currently executing a Getter's computeFn
-	var __applyingComputeFn = false;
-
-
-	  function Evaluator() {"use strict";
-	    /**
-	     * {
-	     *   <hashCode>: {
-	     *     stateHashCode: number,
-	     *     args: Immutable.List,
-	     *     value: any,
-	     *   }
-	     * }
-	     */
-	    this.__cachedGetters = Immutable.Map({})
-	  }
-
-	  /**
-	   * Takes either a KeyPath or Getter and evaluates
-	   *
-	   * KeyPath form:
-	   * ['foo', 'bar'] => state.getIn(['foo', 'bar'])
-	   *
-	   * Getter form:
-	   * [<KeyPath>, <KeyPath>, ..., <function>]
-	   *
-	   * @param {Immutable.Map} state
-	   * @param {string|array} getter
-	   * @return {any}
-	   */
-	  Evaluator.prototype.evaluate=function(state, keyPathOrGetter) {"use strict";
-	    if (isKeyPath(keyPathOrGetter)) {
-	      // if its a keyPath simply return
-	      return state.getIn(keyPathOrGetter)
-	    } else if (!isGetter(keyPathOrGetter)) {
-	      throw new Error("evaluate must be passed a keyPath or Getter")
-	    }
-
-	    // Must be a Getter
-	    var code = hashCode(keyPathOrGetter)
-
-	    // if the value is cached for this dispatch cycle, return the cached value
-	    if (this.__isCached(state, keyPathOrGetter)) {
-	      // Cache hit
-	      return this.__cachedGetters.getIn([code, 'value'])
-
-	    } else if (this.__hasStaleValue(state, keyPathOrGetter)) {
-	      var prevValue = this.__cachedGetters.getIn([code, 'value'])
-	      var prevArgs = this.__cachedGetters.getIn([code, 'args'])
-	      // getter deps could still be unchanged since we only looked at the unwrapped (keypath, bottom level) deps
-	      var currArgs = toImmutable(getDeps(keyPathOrGetter).map(function(getter)  {
-	        return this.evaluate(state, getter)
-	      }.bind(this)))
-
-	      // since Getter is a pure functions if the args are the same its a cache hit
-	      if (isEqual(prevArgs, currArgs)) {
-	        this.__cacheValue(state, keyPathOrGetter, prevArgs, prevValue)
-	        return prevValue
-	      }
-	    }
-	    // no cache hit evaluate
-	    var args = getDeps(keyPathOrGetter).map(function(dep)  {return this.evaluate(state, dep);}.bind(this))
-
-	    // This indicates that we have called evaluate within the body of a computeFn.
-	    // Throw an error as this will lead to inconsistent caching
-	    if (__applyingComputeFn === true) {
-	      __applyingComputeFn = false
-	      throw new Error("Evaluate may not be called within a Getters computeFn")
-	    }
-
-	    __applyingComputeFn = true
-	    var evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
-	    __applyingComputeFn = false
-
-	    this.__cacheValue(state, keyPathOrGetter, args, evaluatedValue)
-
-	    return evaluatedValue
-	  };
-
-	  /**
-	   * @param {Immutable.Map} state
-	   * @param {Getter} getter
-	   */
-	  Evaluator.prototype.__hasStaleValue=function(state, getter) {"use strict";
-	    var code = hashCode(getter)
-	    var cache = this.__cachedGetters
-	    return (
-	      cache.has(code) &&
-	      cache.getIn([code, 'stateHashCode']) !== state.hashCode()
-	    )
-	  };
-
-	  /**
-	   * Caches the value of a getter given state, getter, args, value
-	   * @param {Immutable.Map} state
-	   * @param {Getter} getter
-	   * @param {Array} args
-	   * @param {any} value
-	   */
-	  Evaluator.prototype.__cacheValue=function(state, getter, args, value) {"use strict";
-	    var code = hashCode(getter)
-	    this.__cachedGetters = this.__cachedGetters.set(code, Immutable.Map({
-	      value: value,
-	      args: toImmutable(args),
-	      stateHashCode: state.hashCode(),
-	    }))
-	  };
-
-	  /**
-	   * Returns boolean whether the supplied getter is cached for a given state
-	   * @param {Immutable.Map} state
-	   * @param {Getter} getter
-	   * @return {boolean}
-	   */
-	  Evaluator.prototype.__isCached=function(state, getter) {"use strict";
-	    var code = hashCode(getter)
-	    return (
-	      this.__cachedGetters.hasIn([code, 'value']) &&
-	      this.__cachedGetters.getIn([code, 'stateHashCode']) === state.hashCode()
-	    )
-	  };
-
-	  /**
-	   * Removes all caching about a getter
-	   * @param {Getter}
-	   */
-	  Evaluator.prototype.untrack=function(getter) {"use strict";
-	    // TODO untrack all depedencies
-	  };
-
-	  Evaluator.prototype.reset=function() {"use strict";
-	    this.__cachedGetters = Immutable.Map({})
-	  };
-
-
-	module.exports = Evaluator
-
-
-/***/ },
 /* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Immutable = __webpack_require__(7)
+	var Immutable = __webpack_require__(11)
+	var isGetter = __webpack_require__(5).isGetter
 
 	/**
 	 * Takes a getter and returns the hash code value
@@ -4948,6 +4994,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = function(getter, dontCache) {
 	  if (getter.hasOwnProperty('__hashCode')) {
 	    return getter.__hashCode
+	  }
+
+	  if (!isGetter(getter)) {
+	    throw new Error("Invalid getter!  Must be of the form: [<KeyPath>, ...<KeyPath>, <function>]")
 	  }
 
 	  var hashCode = Immutable.fromJS(getter).hashCode()
@@ -4971,7 +5021,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Immutable = __webpack_require__(7)
+	var Immutable = __webpack_require__(11)
 	/**
 	 * Is equal by value check
 	 */
@@ -4983,4 +5033,3 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ }
 /******/ ])
 });
-;
