@@ -9,6 +9,11 @@ var toImmutable = require('../src/immutable-helpers').toImmutable
 
 
 describe('Reactor', () => {
+  it("should construct without 'new'", () => {
+    var reactor = Reactor()
+    expect(reactor instanceof Reactor).toBe(true)
+  })
+
   describe('Reactor with no initial state', () => {
     var checkoutActions, reactor, taxPercentGetter, subtotalGetter, taxGetter, totalGetter
 
@@ -408,6 +413,294 @@ describe('Reactor', () => {
     it("the store should have the same initial state for an action it doesnt handle", () => {
       reactor.dispatch('unknown', 'foo')
       expect(reactor.evaluate(['test'])).toBe(null)
+    })
+  })
+
+  describe("when debug is true and a store has a handler for an action but returns undefined", () => {
+    var reactor
+
+    beforeEach(() => {
+      var undefinedStore = new Store({
+        getInitialState() {
+          return 1;
+        },
+        initialize() {
+          this.on('set', (_, val) => undefined);
+        }
+      })
+
+      reactor = new Reactor({
+        debug: true
+      })
+      reactor.registerStores({
+        test: undefinedStore,
+      })
+    })
+
+    afterEach(() => {
+      reactor.reset()
+    })
+
+    it("should throw an error", function() {
+      expect(function() {
+        reactor.dispatch('set', 'foo')
+      }).toThrow()
+    })
+  })
+
+  describe("#registerStores", () => {
+    var reactor
+
+    afterEach(() => {
+      reactor.reset()
+    })
+
+    describe("when another store is already registered for the same id", () => {
+      var store1, store2
+
+      beforeEach(() => {
+        spyOn(console, 'warn')
+
+        store1 = new Store()
+        store2 = new Store()
+
+        reactor = new Reactor({
+          debug: true,
+        })
+        reactor.registerStores({
+          store1: store1
+        })
+      })
+
+      it("should warn", function() {
+        reactor.registerStores({
+          store1: store2
+        })
+        expect(console.warn).toHaveBeenCalled()
+      })
+    })
+
+    describe("when the stores getInitialState method returns a non immutable object", () => {
+      var store1
+
+      beforeEach(() => {
+        store1 = new Store({
+          getInitialState() {
+            return {
+              foo: 'bar'
+            }
+          }
+        })
+
+        reactor = new Reactor({
+          debug: true,
+        })
+      })
+
+      it("should throw an error", function() {
+        expect(function() {
+          reactor.registerStores({
+            store1: store1
+          })
+        }).toThrow()
+      })
+    })
+
+    describe("when calling registerStores with an observer", () => {
+      var store1
+      var observeSpy
+
+      beforeEach(() => {
+        observeSpy = jasmine.createSpy()
+
+        store1 = new Store({
+          getInitialState() {
+            return 'foo'
+          },
+          initialize() {
+            this.on('set', (_, val) => val)
+          },
+        })
+
+        reactor = new Reactor({
+          debug: true,
+        })
+
+        reactor.observe(['test'], observeSpy)
+      })
+
+      it("should notify observers immediately", function() {
+        var notify = true
+        reactor.registerStores({
+          test: store1
+        }, notify)
+
+        expect(observeSpy.calls.count()).toEqual(1)
+        expect(observeSpy).toHaveBeenCalledWith('foo')
+      })
+    })
+  })
+
+  describe("#registerStore", () => {
+    var reactor, store1
+
+    beforeEach(() => {
+      store1 = new Store({
+        getInitialState() {
+          return 'foo'
+        }
+      })
+
+      reactor = new Reactor({
+        debug: true,
+      })
+    })
+
+    afterEach(() => {
+      reactor.reset()
+    })
+
+    it("it should register a store by id", () => {
+      reactor.registerStore('test', store1)
+      expect(reactor.evaluate(['test'])).toBe('foo')
+    })
+  })
+
+  describe("#reset", () => {
+    var reactor
+
+    describe("when a store doesnt define a handleReset method", () => {
+      var store1
+
+      beforeEach(() => {
+        store1 = new Store({
+          getInitialState() {
+            return 'foo'
+          },
+          initialize() {
+            this.on('set', (_, val) => val)
+          },
+        })
+
+        reactor = new Reactor({
+          debug: true,
+        })
+
+        reactor.registerStores({
+          test: store1
+        })
+      })
+
+      it("should fallback to the getInitialState", () => {
+        reactor.dispatch('set', 'bar')
+
+        expect(reactor.evaluate(['test'])).toBe('bar')
+
+        reactor.reset()
+
+        expect(reactor.evaluate(['test'])).toBe('foo')
+      })
+    })
+
+    describe("when a store defines a handleReset method", () => {
+      var store1
+
+      beforeEach(() => {
+        store1 = new Store({
+          getInitialState() {
+            return 'foo'
+          },
+          initialize() {
+            this.on('set', (_, val) => val)
+          },
+          handleReset() {
+            return 'reset'
+          },
+        })
+
+        reactor = new Reactor({
+          debug: true,
+        })
+
+        reactor.registerStores({
+          test: store1
+        })
+      })
+
+      it("should fallback to the getInitialState", () => {
+        reactor.dispatch('set', 'bar')
+
+        expect(reactor.evaluate(['test'])).toBe('bar')
+
+        reactor.reset()
+
+        expect(reactor.evaluate(['test'])).toBe('reset')
+      })
+    })
+
+    describe("when the handleReset method returns undefined", () => {
+      var store1
+
+      beforeEach(() => {
+        store1 = new Store({
+          getInitialState() {
+            return 'foo'
+          },
+          initialize() {
+            this.on('set', (_, val) => val)
+          },
+          handleReset() {
+          },
+        })
+
+        reactor = new Reactor({
+          debug: true,
+        })
+
+        reactor.registerStores({
+          test: store1
+        })
+      })
+
+      it("should throw an error", () => {
+        expect(function() {
+          reactor.reset()
+        }).toThrow()
+      })
+    })
+
+    describe("when the handleReset method returns a non immutable object", () => {
+      var store1
+
+      beforeEach(() => {
+        store1 = new Store({
+          getInitialState() {
+            return 'foo'
+          },
+          initialize() {
+            this.on('set', (_, val) => val)
+          },
+          handleReset() {
+            return {
+              foo: 'bar'
+            }
+          },
+        })
+
+        reactor = new Reactor({
+          debug: true,
+        })
+
+        reactor.registerStores({
+          test: store1
+        })
+      })
+
+      it("should throw an error", () => {
+        expect(function() {
+          reactor.reset()
+        }).toThrow()
+      })
     })
   })
 })

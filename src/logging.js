@@ -5,22 +5,29 @@ exports.dispatchStart = function(type, payload) {
   if (console.group) {
     console.groupCollapsed('Dispatch: %s', type)
     console.group('payload')
-    console.log(payload)
+    console.debug(payload)
     console.groupEnd()
   }
 }
 
-exports.coreReact = function(id, before, after) {
+exports.dispatchError = function(error) {
+  if (console.group) {
+    console.debug('Dispatch error: ' + error)
+    console.groupEnd()
+  }
+}
+
+exports.storeHandled = function(id, before, after) {
   if (console.group) {
     if (before !== after) {
-      console.log('Core changed: ' + id)
+      console.debug('Core changed: ' + id)
     }
   }
 }
 
 exports.dispatchEnd = function(state) {
   if (console.group) {
-    console.log('Dispatch done, new state: ', state.toJS())
+    console.debug('Dispatch done, new state: ', state.toJS())
     console.groupEnd()
   }
 }
