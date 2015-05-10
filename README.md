@@ -31,6 +31,14 @@ Traditional Flux architecture built with ImmutableJS data structures.
 
 - **Decoupled** - A NuclearJS system should be able to function without any sort of UI or frontend.  It should be backend/frontend agnostic and be able to run on a NodeJS server.
 
+## Installation
+
+NuclearJS can be downloaded from npm.
+
+```
+npm install nuclear-js
+```
+
 ## Let's see some examples
 
 Let's see what the original [Flux Chat Example](https://github.com/facebook/flux/tree/master/examples/flux-chat) looks like in NuclearJS.
