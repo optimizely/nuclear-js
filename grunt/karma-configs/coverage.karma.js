@@ -18,15 +18,18 @@ module.exports = function(config) {
     // list of files to exclude
     exclude: [],
 
-    reporters: ['coverage'],
+    reporters: ['progress', 'coverage'],
 
     preprocessors: {
       'tests/*-tests.js': ['webpack'],
     },
 
     coverageReporter: {
-      type: "html",
-      dir: "coverage/"
+      reporters: [
+        { type: "html", dir: "coverage/" },
+        { type: "lcov", dir: "coverage/" },
+        { type: "text-summary" },
+      ]
     },
 
     webpack: {
@@ -37,7 +40,7 @@ module.exports = function(config) {
         postLoaders: [
           {
             test: /\.js$/,
-            exclude: /(test|node_modules|bower_components)\//,
+            exclude: /(node_modules\/|-tests\.js$)/,
             loader: 'istanbul-instrumenter'
           }
         ]
@@ -59,7 +62,7 @@ module.exports = function(config) {
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    browsers: ['PhantomJS', 'Chrome'],
+    browsers: ['PhantomJS'],
 
     // Continuous Integration mode
     // if true, Karma captures browsers, runs the tests and exits

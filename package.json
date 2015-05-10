@@ -4,9 +4,7 @@
   "description": "Immutable, reactive Flux architecture. UI Agnostic.",
   "main": "dist/nuclear.js",
   "scripts": {
-    "test": "./node_modules/karma/bin/karma start --single-run --browsers=PhantomJS --reporters=progress --log-level=error",
-    "coverage": "./node_modules/karma/bin/karma start --single-run --browsers=PhantomJS --reporters=coverage --log-level=error",
-    "test-html": "./node_modules/karma/bin/karma start --browsers=Chrome --reporters=html --log-level=error"
+    "test": "grunt ci"
   },
   "author": "Jordan Garcia",
   "license": "MIT",
@@ -52,6 +50,7 @@
     "istanbul": "^0.3.13",
     "istanbul-instrumenter-loader": "^0.1.2",
     "grunt-karma": "^0.10.1",
-    "load-grunt-config": "^0.17.1"
+    "load-grunt-config": "^0.17.1",
+    "grunt-contrib-clean": "^0.6.0"
   }
 }

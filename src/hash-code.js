@@ -1,5 +1,4 @@
 var Immutable = require('immutable')
-var isGetter = require('./getter').isGetter
 
 /**
  * Takes a getter and returns the hash code value
