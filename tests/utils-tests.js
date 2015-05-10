@@ -284,6 +284,22 @@ describe('Utils', () => {
         Utils.each(arr, (val, i) => spy())
         expect(spy.calls.count()).toBe(arr.length)
       })
+
+      it('breaks out of iteration when `false` is returned', () => {
+        var spy = jasmine.createSpy('eachSpy')
+
+        Utils.each(arr, (val, i) => {
+          spy(val)
+          if (val === 2) {
+            return false
+          }
+        })
+
+        expect(spy.calls.count()).toBe(2)
+        expect(spy).toHaveBeenCalledWith(1);
+        expect(spy).toHaveBeenCalledWith(2);
+        expect(spy).not.toHaveBeenCalledWith(3);
+      })
     })
 
     describe('when iterating over an object', () => {

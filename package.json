@@ -50,6 +50,8 @@
     "karma-coverage": "^0.3.1",
     "grunt-karma-coveralls": "^2.5.3",
     "istanbul": "^0.3.13",
-    "istanbul-instrumenter-loader": "^0.1.2"
+    "istanbul-instrumenter-loader": "^0.1.2",
+    "grunt-karma": "^0.10.1",
+    "load-grunt-config": "^0.17.1"
   }
 }

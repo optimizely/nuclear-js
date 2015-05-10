@@ -78,16 +78,6 @@ class ChangeObserver {
   }
 
   /**
-   * Updates the change appliers prevState when silent store registration happens
-   * this allows the proper hasChanged check for notify observers if a store registration
-   * happens in between
-   * @param {Immutable.Map} prevState
-   */
-  updatePreviousState(prevState) {
-    this.__prevState = prevState
-  }
-
-  /**
    * Resets and clears all observers and reinitializes back to the supplied
    * previous state
    * @param {Immutable.Map} prevState

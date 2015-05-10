@@ -113,13 +113,15 @@ class Reactor {
         var newState = store.handle(currState, actionType, payload)
 
         if (debug && newState === undefined) {
-          throw new Error("Store handler must return a value, did you forget a return statement")
+          var error = "Store handler must return a value, did you forget a return statement"
+          logging.dispatchError(error)
+          throw new Error(error)
         }
 
         state.set(id, newState)
 
         if (this.debug) {
-          logging.coreReact(id, currState, newState)
+          logging.storeHandled(id, currState, newState)
         }
       })
 
@@ -151,7 +153,6 @@ class Reactor {
 
       this.__stores = this.__stores.set(id, store)
       this.__state = this.__state.set(id, initialState)
-
     })
 
     this.__changeObserver.notifyObservers(this.__state)
