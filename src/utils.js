@@ -25,13 +25,26 @@ exports.isArray = Array.isArray /* istanbul ignore next */|| function(val) {
   return objectToString(val) === '[object Array]'
 }
 
-/**
- * Checks if the passed in value is a function
- * @param {*} val
- * @return {boolean}
- */
-exports.isFunction = function(val) {
-  return toString.call(val) === '[object Function]'
+// taken from underscore source to account for browser descrepency
+/* istanbul ignore if  */
+if (typeof /./ != 'function' && typeof Int8Array != 'object') {
+  /**
+   * Checks if the passed in value is a function
+   * @param {*} val
+   * @return {boolean}
+   */
+  exports.isFunction = function(obj) {
+    return typeof obj == 'function' || false
+  }
+} else {
+  /**
+   * Checks if the passed in value is a function
+   * @param {*} val
+   * @return {boolean}
+   */
+  exports.isFunction = function(val) {
+    return toString.call(val) === '[object Function]'
+  }
 }
 
 /**
