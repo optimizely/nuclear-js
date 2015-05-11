@@ -1,32 +1,24 @@
 # NuclearJS
 
+[![Build Status](https://travis-ci.org/optimizely/nuclear-js.svg?branch=master)](https://travis-ci.org/optimizely/nuclear-js)
+[![Coverage Status](https://coveralls.io/repos/optimizely/nuclear-js/badge.svg?branch=master)](https://coveralls.io/r/optimizely/nuclear-js?branch=master)
 [![Join the chat at https://gitter.im/optimizely/nuclear-js](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/optimizely/nuclear-js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Traditional Flux architecture built with ImmutableJS data structures.
 
 ## How NuclearJS differs from other Flux implementations
 
-1.  All app state is in a singular immutable map, think Om.  In development you can see your entire application state at every point in time thanks to awesome
-debugging tools built into NuclearJS.
+1.  All app state is in a singular immutable map, think Om.  In development you can see your entire application state at every point in time thanks to awesome debugging tools built into NuclearJS.
 
-2.  State is not spread out through stores, instead stores are a declarative way of describing some top-level domain of your app state.
-  For each key in the app state map a store declares the initial state of that key and how that piece of the app state reacts over time
-  to actions dispatched on the flux system.
+2.  State is not spread out through stores, instead stores are a declarative way of describing some top-level domain of your app state. For each key in the app state map a store declares the initial state of that key and how that piece of the app state reacts over time to actions dispatched on the flux system.
 
-3.  Stores are not reference-able nor have any `getX` methods on them.  Instead Nuclear uses a functional lens concept called **getters**.
-  In fact, the use of getters obviates the need for any store to know about another store, eliminating the confusing `store.waitsFor` method found
-  in other flux implementations.
+3.  Stores are not reference-able nor have any `getX` methods on them.  Instead Nuclear uses a functional lens concept called **getters**. In fact, the use of getters obviates the need for any store to know about another store, eliminating the confusing `store.waitsFor` method found in other flux implementations.
 
-4.  NuclearJS is insanely efficient - change detection granularity is infinitessimal, you can even observe computed state where several pieces of the state
-map are combined togther and run through a transform function.  Nuclear is smart enough to know when the value of any computed changes and only call its observer
-if and only if its value changed in a way that is orders of magntitude more efficient than traditional dirty checking.  It does this by leveraging ImmutableJS data
-structure and using a `state1 !== state2` reference comparison which runs in constant time.
+4.  NuclearJS is insanely efficient - change detection granularity is infinitesimal, you can even observe computed state where several pieces of the state map are combined together and run through a transform function.  Nuclear is smart enough to know when the value of any computed changes and only call its observer if and only if its value changed in a way that is orders of magnitude more efficient than traditional dirty checking.  It does this by leveraging ImmutableJS data structure and using a `state1 !== state2` reference comparison which runs in constant time.
 
-5.  Automatic data observation / rendering -- automatic re-rendering is built in for React in the form a very lightweight mixin.  It is also easily possible to build the
-same functionality for any UI framework such as VueJS, AngularJS and even Backbone.
+5.  Automatic data observation / rendering -- automatic re-rendering is built in for React in the form a very lightweight mixin.  It is also easily possible to build the same functionality for any UI framework such as VueJS, AngularJS and even Backbone.
 
-6.  NuclearJS is not a side-project, its used as the defacto Flux implementation that powers all of Optimizely.  It is well tested and will continue to be maintained for the foreseeable future.
-  Our current codebase has over dozens of stores, actions and getters, we even share our prescribed method of large scale code organization and testing strategies.
+6.  NuclearJS is not a side-project, it's used as the default Flux implementation that powers all of Optimizely.  It is well tested and will continue to be maintained for the foreseeable future. Our current codebase has over dozens of stores, actions and getters, we even share our prescribed method of large scale code organization and testing strategies.
 
 ## Design Philosophy
 
@@ -40,9 +32,38 @@ same functionality for any UI framework such as VueJS, AngularJS and even Backbo
 
 - **Decoupled** - A NuclearJS system should be able to function without any sort of UI or frontend.  It should be backend/frontend agnostic and be able to run on a NodeJS server.
 
-## Lets see some examples
+## Installation
 
-Lets see what the original [Flux Chat Example](https://github.com/facebook/flux/tree/master/examples/flux-chat) looks like in NuclearJS.
+NuclearJS can be downloaded from npm.
+
+```
+npm install nuclear-js
+```
+
+## Local Development
+
+To watch and build assets (prereq: `npm install -g webpack`)
+
+```sh
+webpack
+```
+
+To test using Chrome
+
+```sh
+grunt karma:chrome
+```
+
+Running unit tests in PhantomJS + Coverage
+
+```sh
+grunt karma:coverage
+```
+
+
+## Let's see some examples
+
+Let's see what the original [Flux Chat Example](https://github.com/facebook/flux/tree/master/examples/flux-chat) looks like in NuclearJS.
 
 All of the above code lives in [examples/flux-chat](./examples/flux-chat)
 
@@ -63,8 +84,7 @@ The prescribed way of code organization in NuclearJS is to group all stores, act
 
 ##### Example Module File Structure
 
-For the flux-chat example we will create a chat module that holds all of the domain logic for the chat aspect.  For smaller projects
-there may only need to be one module, but for larger projects using many modules makes your codebase very decoupled and much easier to manage.
+For the flux-chat example we will create a chat module that holds all of the domain logic for the chat aspect.  For smaller projects there may only need to be one module, but for larger projects using many modules can decouple your codebase and make it much easier to manage.
 
 ```js
 modules/chat
@@ -95,15 +115,11 @@ module.exports = {
 }
 ```
 
-- Modules expose single public API, the `index.js` file.  It is improper for an outside piece of code to a require any file within the module
-except the `index.js` file.
+- Modules expose a single public API, the `index.js` file.  It is improper for an outside piece of code to require any file within the module except the `index.js` file.
 
-- Stores are registered lazily through the module's index.js.  This may seem weird at first, but in NuclearJS stores are more of an implementation detail
-and not ever directly referenceable.
+- Stores are registered lazily through the module's index.js.  This may seem weird at first, but in NuclearJS stores are more of an implementation detail and not ever directly referenceable.
 
-- Data access to the module's store values is done entire through the getters it exposes.  This provides a decoupling between the store implementation and how
-the outside world references the state that a module manages.  A getter is a contract between the outside world and the module that a particular piece of information
-is accessible.  The evaluator of a getter does not care about the underyling store representation.
+- Data access to the module's store values is done entirely through the getters it exposes.  This provides a decoupling between the store implementation and how the outside world references the state that a module manages.  A getter is a contract between the outside world and the module that a particular piece of information is accessible.  The evaluator of a getter does not care about the underlying store representation.
 
 ### Stores
 
@@ -207,8 +223,7 @@ function setCurrentThreadID(state, { threadID }) {
 }
 ```
 
-At this point defined how our application manages state over time by creating and registering the thread store and currentThreadID store.
-When defining stores there is no need to worry about computable state like the most recent message in each thread, this is all handled through getters.
+At this point defined how our application manages state over time by creating and registering the thread store and currentThreadID store. When defining stores there is no need to worry about computable state like the most recent message in each thread, this is all handled through getters.
 
 ### Getters
 
@@ -221,7 +236,7 @@ Getters can take 2 forms:
 
 ```js
 // it is idiomatic to facade all data access through getters, that way a component only has to subscribe to a getter making it agnostic
-// to the underyling stores / data transformation that is taking place
+// to the underlying stores / data transformation that is taking place
 exports.threadsMap = ['threads']
 
 exports.threads = [
@@ -265,8 +280,7 @@ exports.unreadCount = [
 ]
 ```
 
-Since stores are registered on the Nuclear Reactor by the module's index file, then a module is the only part of the system that knows the
-store ids, if this information need to be made public, the module will export a getter of the form `[<storeId>]`
+Since stores are registered on the Nuclear Reactor by the module's index file, then a module is the only part of the system that knows the store ids, if this information need to be made public, the module will export a getter of the form `[<storeId>]`
 
 
 ### Actions
@@ -364,9 +378,7 @@ var ThreadSection = React.createClass({
 module.exports = ThreadSection;
 ```
 
-`flux.ReactMixin` handles all of the pub/sub between the flux system and component and will only render the component via a `setState`
-call whenever any of the subscribed getters' value changes.  The mixin will also automatically unsubscribe from observation when the
-component is unmounted.
+`flux.ReactMixin` handles all of the pub/sub between the flux system and component and will only render the component via a `setState` call whenever any of the subscribed getters' value changes.  The mixin will also automatically unsubscribe from observation when the component is unmounted.
 
 ##### `ThreadListItem.react.js`
 
@@ -421,8 +433,7 @@ module.exports = ThreadListItem;
 
 ## Core Concepts
 
-The easiest way to think about how NuclearJS is modelling the state of your system is to imagine it all as a single map (or Javascript object).  If you are familiar with Om
-then the concept of a singular App State is very familiar already.
+The easiest way to think about how NuclearJS is modelling the state of your system is to imagine it all as a single map (or JavaScript object).  If you are familiar with Om then the concept of a singular App State is very familiar already.
 
 Each entry in this top level map contains a portion of the entire app state for a specific domain and are managed by **stores**.
 
@@ -440,35 +451,29 @@ Imagine modelling a shopping cart.  Our app state would look like:
 }
 ```
 
-In this example we would have a `itemStore` and a `taxPercentStore` to model this state.  Notice a few important things
+In this example we would have an `itemStore` and a `taxPercentStore` to model this state.  Notice a few important things
 are left out in this model of our application state, such as the subtotal, the amount of tax and the total.  This doesn't
-live in our app state becuase those are all examples of **computable state**, and we have a very elegant solution for calculating them
-that we will touch on momentarily.
+live in our app state because those are all examples of **computable state**, and we have a very elegant solution for calculating them that we will touch on momentarily.
 
-### But first lets go over some NuclearJS Vocubulary
+### But first let's go over some NuclearJS Vocabulary
 
 #### Reactor
 
-In Nuclear a Reactor is the container that holds your app state, it's where you register stores, dispatch actions and read the current
-state of your system.  Reactor's are the only stateful part of Nuclear and have only 3 API methods you REALLY need to know: `dispatch`, `get`, and `observe`.
-Don't worry extensive API docs will be provided for all of these methods
+In Nuclear a Reactor is the container that holds your app state, it's where you register stores, dispatch actions and read the current state of your system.  Reactor's are the only stateful part of Nuclear and have only 3 API methods you REALLY need to know: `dispatch`, `get`, and `observe`. Don't worry extensive API docs will be provided for all of these methods.
 
 #### Stores
 
-Stores define how a portion of the application state will behave over time, they also provide the initial state. Once a store has been attached to a Reactor you will
-never reference it directly, calling `reactor.dispatch(actionType, payload)` will ensure that all stores receive the action and get a chance to update themselves.  Stores
-are self managing state, providing a single canonical place to define the behavior a domain of your application over time.
+Stores define how a portion of the application state will behave over time, they also provide the initial state. Once a store has been attached to a Reactor you will never reference it directly.  Calling `reactor.dispatch(actionType, payload)` will ensure that all stores receive the action and get a chance to update themselves.  Stores are a self-managing state, providing a single canonical place to define the behavior a domain of your application over time.
 
 #### KeyPaths
 
 KeyPaths are a pointer to some piece of your application state.  They can be represented as a `Array<String>`
 
-`['foo', 'bar']` is an example of a valid keypath, analagous to `state['foo']['bar']` in javascript
+`['foo', 'bar']` is an example of a valid keypath, analogous to `state['foo']['bar']` in JavaScript.
 
 #### Getters
 
-As described above, the state of a reactor is hidden away internally behind the [Stores](#stores) abstraction.
-In order to get a hold of part of that state, you need to ask the [Reactor](#reactor) for it using a simple protocol referred to, informally, as a Getter.
+As described above, the state of a reactor is hidden away internally behind the [Stores](#stores) abstraction. In order to get a hold of part of that state, you need to ask the [Reactor](#reactor) for it using a simple protocol referred to, informally, as a Getter.
 
 Getters can take 2 forms:
 
@@ -477,11 +482,10 @@ Getters can take 2 forms:
   Note - Often you'll pass the Getter to `reactor.evaluate` to get its value, but we'll touch on the reactor API later.
 
 If you've used [AngularJS](https://angularjs.org/), the 2nd form will seem familiar.  It's essentially a way of specifying
-which app values get injected into the transform function at the end.  Here's an example of the form itself,
-but keep in mind that it may make more sense in the context of the examples below,
+which app values get injected into the transform function at the end.  Here's an example of the form itself, but keep in mind that it may make more sense in the context of the examples below,
 
 ```js
-// Our first getter, takes in the `items` portion of the app state and
+// Our first getter takes in the `items` portion of the app state and
 // returns (presumably) the sum of `item.price * item.quantity` for all the items
 var subtotalGetter = [
   // a KeyPath
@@ -490,7 +494,7 @@ var subtotalGetter = [
   function(items) { ... }
 ]
 
-// This Getter requests 2 values be passed into it's transform function - the result
+// This getter requests 2 values be passed into its transform function - the result
 // of the subtotalGetter and the `taxPercent` value from the app state.
 var totalGetter = [
   // A Getter
@@ -504,16 +508,12 @@ var totalGetter = [
 ]
 ```
 
-Notice that you can use getters as dependencies to other getters.  This is an extremely powerful abstraction, and one
-that you'll undoubtedly want to become familiar with in your nuclear journey.
+Notice that you can use getters as dependencies to other getters.  This is an extremely powerful abstraction, and one that you'll undoubtedly want to become familiar with in your nuclear journey.
 
-But you need to know one thing about getter transform functions - they MUST be pure functions (that is, a given set input values results in a [deterministic](http://en.wikipedia.org/wiki/Deterministic_algorithm) output).
-By making the transform functions pure, you can test Getters easier, compose them easier, and nuclear can [memoize](http://en.wikipedia.org/wiki/Memoization)
-calls to them, making Getter dependency resolution very performant.
+But you need to know one thing about getter transform functions - they MUST be pure functions (that is, a given set input values results in a [deterministic](http://en.wikipedia.org/wiki/Deterministic_algorithm) output). By making the transform functions pure, you can test Getters easier, compose them easier, and nuclear can [memoize](http://en.wikipedia.org/wiki/Memoization) calls to them, making Getter dependency resolution very performant.
 
 __For the astute reader__ - You probably already noticed if you have experience in functional languages, but because Getters
-are simply arrays full of strings and pure functions, they are serializable. Since JS can stringify pure functions,
-your getters are nothing more than data that could be stored, sent over the wire, etc.
+are simply arrays full of strings and pure functions, they are serializable. Since JS can stringify pure functions, your getters are nothing more than data that could be stored, sent over the wire, etc.
 
 ## Back To Our Example
 
@@ -526,10 +526,10 @@ var Nuclear = require('nuclear-js')
 
 var itemStore = new Nuclear.Store({
   // the parameter is optional, if not supplied will default to an `Immutable.Map({})`
-  // Store state must be an ImmutableJS data structure or an immutable javascript primitive
+  // Store state must be an ImmutableJS data structure or an immutable JavaScript primitive
   // like Number or String
   getInitialState: function() {
-    return Immutable.List()
+    return List()
   },
 
   initialize: function() {
@@ -587,7 +587,7 @@ var subtotalGetter = [
   ['items'],
   function(items) {
     // items is of type `Immutable.List`
-    return items.reduce(function(total, items) {
+    return items.reduce(function(total, item) {
       return total + (item.get('price') * item.get('quantity'))
     }, 0)
   }
@@ -743,9 +743,7 @@ var ShoppingCart = React.createClass({
 })
 ```
 
-Whenever any of the reactor values being observed from `getDataBindings()` changes then `setState()` will be called with the updated value and the component will be rerendered.
-Thus your React components always stays in sync with your app state!
-
+Whenever any of the reactor values being observed from `getDataBindings()` changes then `setState()` will be called with the updated value and the component will be re-rendered. Thus your React components always stay in sync with your app state!
 
 ### Hooking up a UI: VueJS
 
@@ -805,9 +803,7 @@ In `shopping-cart.html`
 
 ## Performance
 
-Getters are only calculated whenever their dependencies change. So if the dependency is a keypath then it will only recalculate when that path in the app state map has changed
- (which can be done as a simple `state.getIn(keyPath) !== oldState.getIn(keyPath)` which is an `O(log32(n))` operation. The other case is when a getter is dependent on other getters.
- Since every getter is a pure function then Nuclear will only recompute the getter if the values of its dependencies change.
+Getters are only calculated whenever their dependencies change. So if the dependency is a keypath then it will only recalculate when that path in the app state map has changed (which can be done as a simple `state.getIn(keyPath) !== oldState.getIn(keyPath)` which is an `O(log32(n))` operation. The other case is when a getter is dependent on other getters. Since every getter is a pure function, Nuclear will only recompute the getter if the values of its dependencies change.
 
 You can read more of the implementation here: [src/evaluator.js](./src/evaluator.js)
 
@@ -817,7 +813,7 @@ You can read more of the implementation here: [src/evaluator.js](./src/evaluator
 
 #### `Reactor#dispatch(messageType, messagePayload)`
 
-Dispatches a message to all registered Stores. This process is done synchronously, all registered `Store`s are passed this message and all computeds are re-evaluated (efficiently).  After a dispatch, a Reactor will emit the new state on the `reactor.changeEmitter`
+Dispatches a message to all registered Stores. This process is done synchronously, all registered `Store`s are passed this message and all components are re-evaluated (efficiently).  After a dispatch, a Reactor will emit the new state on the `reactor.changeEmitter`
 
 ex: `reactor.dispatch('addUser', { name: 'jordan' })`
 
@@ -851,8 +847,7 @@ Same as `evaluate` but coerces the value to a plain JS before returning
 
 Takes a getter or keyPath and calls the handlerFn with the evaluated value whenever the getter or keyPath changes.
 
-**Note**:  You cannot call `flux.dispatch` within the handle function of a `flux.observe`.  This violates one of the fundamental
-design patterns in Flux architecture, which forbids cascading dispatches on the system which cause highly unpredictive systems.
+**Note**:  You cannot call `flux.dispatch` within the handle function of a `flux.observe`.  This violates one of the fundamental design patterns in Flux architecture, which forbids cascading dispatches on the system which cause highly unpredictive systems.
 
 ```js
 reactor.observe([
@@ -863,11 +858,9 @@ reactor.observe([
 ])
 ```
 
-#### `Reactor#registerStores(stores, silent)`
+#### `Reactor#registerStores(stores)`
 
 `stores` - an object of storeId => store instance
-
-`silent` (optional) a boolean that if true, will not cause any observers to be evaluated if the newly added stores change a getter value.
 
 ```js
 reactor.registerStores({
@@ -968,7 +961,7 @@ Coerces a value to its immutable counterpart, can be called on any type safely. 
 
 #### `Nuclear.toJS(value)`
 
-Will coerce an Immutable value to its mutable counterpart.  Can be called on non immutable values safely.
+Will coerce an Immutable value to its mutable counterpart.  Can be called on non-immutable values safely.
 
 #### `Nuclear.isImmutable(value)` : Boolean
 

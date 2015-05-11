@@ -1,16 +1,4 @@
 /**
- * Ensures that the inputted value is an array
- * @param {*} val
- * @return {array}
- */
-exports.coerceArray = function(val) {
-  if (!exports.isArray(val)) {
-    return [val]
-  }
-  return val
-}
-
-/**
  * Checks if the passed in value is a number
  * @param {*} val
  * @return {boolean}
@@ -33,7 +21,7 @@ exports.isString = function(val) {
  * @param {*} val
  * @return {boolean}
  */
-exports.isArray = Array.isArray || function(val) {
+exports.isArray = Array.isArray /* istanbul ignore next */|| function(val) {
   return objectToString(val) === '[object Array]'
 }
 
@@ -165,5 +153,5 @@ function isLength(val) {
   return typeof val == 'number'
     && val > -1
     && val % 1 == 0
-    && val <= Number.MAX_SAFE_INTEGER
+    && val <= Number.MAX_VALUE
 }

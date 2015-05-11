@@ -16,7 +16,7 @@ class ChangeObserver {
   constructor(initialState, evaluator) {
     this.__prevState = initialState
     this.__evaluator = evaluator
-    this.__prevValues = Immutable.Map({})
+    this.__prevValues = Immutable.Map()
     this.__observers = []
   }
 
@@ -24,30 +24,33 @@ class ChangeObserver {
    * @param {Immutable.Map} newState
    */
   notifyObservers(newState) {
-    var currentValues = Immutable.Map()
+    if (this.__observers.length > 0) {
+      var currentValues = Immutable.Map()
 
-    this.__observers.forEach(entry => {
-      var getter = entry.getter
-      var code = hashCode(getter)
-      var prevState = this.__prevState
-      var prevValue
+      this.__observers.forEach(entry => {
+        var getter = entry.getter
+        var code = hashCode(getter)
+        var prevState = this.__prevState
+        var prevValue
 
-      if (this.__prevValues.has(code)) {
-        prevValue = this.__prevValues.get(code)
-      } else {
-        prevValue = this.__evaluator.evaluate(prevState, getter)
-        this.__prevValues = this.__prevValues.set(code, prevValue)
-      }
+        if (this.__prevValues.has(code)) {
+          prevValue = this.__prevValues.get(code)
+        } else {
+          prevValue = this.__evaluator.evaluate(prevState, getter)
+          this.__prevValues = this.__prevValues.set(code, prevValue)
+        }
 
-      var currValue = this.__evaluator.evaluate(newState, getter)
+        var currValue = this.__evaluator.evaluate(newState, getter)
 
-      if (!isEqual(prevValue, currValue)) {
-        entry.handler.call(null, currValue)
-        currentValues = currentValues.set(code, currValue)
-      }
-    })
+        if (!isEqual(prevValue, currValue)) {
+          entry.handler.call(null, currValue)
+          currentValues = currentValues.set(code, currValue)
+        }
+      })
+
+      this.__prevValues = currentValues
+    }
     this.__prevState = newState
-    this.__prevValues = currentValues
   }
 
   /**
@@ -82,7 +85,7 @@ class ChangeObserver {
    */
   reset(prevState) {
     this.__prevState = prevState
-    this.__prevValues = Immutable.Map({})
+    this.__prevValues = Immutable.Map()
     this.__observers = []
   }
 }

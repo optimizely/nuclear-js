@@ -8,11 +8,11 @@
 - [x] Document module pattern and prescribed way of testing NuclearJS modules
 - [x] Document util methods such as `toImmutable`
 - [x] Ensure that flux.observe is called correctly when using mutable POJO data
-- [ ] Create release documentation with API breaking changes and migration guide
+- [x] Create release documentation with API breaking changes and migration guide
 
 ## Planned for 0.6.1
 - [ ] Implement code coverage and add badge
-- [ ] Implement travis CI and add test passing badge
+- [x] Implement travis CI and add test passing badge
 - [ ] Add npm badge
 - [ ] Explain `getters` with diagram as functional lenses
-- [ ] Polyfill all lodash methods in `utils` taken from 0.5.0 (only need `deepClone` and `isObject`)
+- [x] Polyfill all lodash methods in `utils` taken from 0.5.0 (only need `deepClone` and `isObject`)

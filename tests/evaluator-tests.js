@@ -138,6 +138,16 @@ describe('Evaluator', () => {
     })
   })
 
+  describe("when evaluating an invalid keypath / getter", () => {
+    it("should throw an error", () => {
+      var invalidGetter = { foo: 'bar' };
+
+      expect(function() {
+        evaluator.evaluate(invalidGetter)
+      }).toThrow()
+    })
+  })
+
   describe("when evaluating a getter that returns a mutable value", () => {
     it("should return a reference to that value", () => {
       var proj1 = { id: 1, description: 'proj 1' }

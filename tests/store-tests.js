@@ -99,4 +99,16 @@ describe('Store', () => {
       }).not.toThrow();
     })
   })
+
+  describe("#isStore", () => {
+    it("should return true if the store is an `instanceof` Store", () => {
+      var store = new Store()
+      expect(Store.isStore(store)).toBe(true)
+    })
+
+    it("should return false if the store is NOT an `instanceof` Store", () => {
+      var notStore = {};
+      expect(Store.isStore(notStore)).toBe(false)
+    })
+  })
 })
