@@ -63,7 +63,7 @@ class Evaluator {
       var prevArgs = this.__cachedGetters.getIn([code, 'args'])
 
       // since Getter is a pure functions if the args are the same its a cache hit
-      if (isEqual(prevArgs, args)) {
+      if (isEqual(prevArgs, toImmutable(args))) {
         var prevValue = this.__cachedGetters.getIn([code, 'value'])
         this.__cacheValue(state, keyPathOrGetter, prevArgs, prevValue)
         return prevValue
