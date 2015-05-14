@@ -53,22 +53,22 @@ class Evaluator {
       // Cache hit
       return this.__cachedGetters.getIn([code, 'value'])
 
-    } else if (this.__hasStaleValue(state, keyPathOrGetter)) {
-      var prevValue = this.__cachedGetters.getIn([code, 'value'])
-      var prevArgs = this.__cachedGetters.getIn([code, 'args'])
+    }
+
+    // evaluate dependencies
+    var args = getDeps(keyPathOrGetter).map(dep => this.evaluate(state, dep))
+
+    if (this.__hasStaleValue(state, keyPathOrGetter)) {
       // getter deps could still be unchanged since we only looked at the unwrapped (keypath, bottom level) deps
-      var currArgs = toImmutable(getDeps(keyPathOrGetter).map(getter => {
-        return this.evaluate(state, getter)
-      }))
+      var prevArgs = this.__cachedGetters.getIn([code, 'args'])
 
       // since Getter is a pure functions if the args are the same its a cache hit
-      if (isEqual(prevArgs, currArgs)) {
+      if (isEqual(prevArgs, toImmutable(args))) {
+        var prevValue = this.__cachedGetters.getIn([code, 'value'])
         this.__cacheValue(state, keyPathOrGetter, prevArgs, prevValue)
         return prevValue
       }
     }
-    // no cache hit evaluate
-    var args = getDeps(keyPathOrGetter).map(dep => this.evaluate(state, dep))
 
     // This indicates that we have called evaluate within the body of a computeFn.
     // Throw an error as this will lead to inconsistent caching
