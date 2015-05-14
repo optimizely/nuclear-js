@@ -3,6 +3,7 @@
 - **deprecated** `reactor.registerStore` will be deprecated in 1.1.x - use `reactor.registerStores` instead.  Add deprecation warning.
 - **fixed** properly observe getters when passing `silent=true` for `registerStores` - this option no longer makes sense as it makes future observations unreliable.
 - **fixed** support `Utils.isFunction` in all browsers (#57)
+- **improvement** in Evaluator dont evaluate getter args twice when there is a stale value
 
 ## 1.0.1
 
