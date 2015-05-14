@@ -51,6 +51,7 @@
     "istanbul-instrumenter-loader": "^0.1.2",
     "grunt-karma": "^0.10.1",
     "load-grunt-config": "^0.17.1",
-    "grunt-contrib-clean": "^0.6.0"
+    "grunt-contrib-clean": "^0.6.0",
+    "karma-sauce-launcher": "^0.2.11"
   }
 }
