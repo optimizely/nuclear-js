@@ -10,3 +10,8 @@ env:
   global:
   - secure: E7YHPSZtpjm4I20DB3j3uhkLIeyUGH5Hmos6dynTqoasHo5Z7LIixZaAMRGQitN03rWszrtaV6BRoYmFfjXK39H2LfJxHcCo+3eROZLad8I2tG6ClpsrOy//4xIEg82MGd3wJv81GasIr6kTwm1l4bFZMdj0O5Vb0Y7DGy63f1g=
   - secure: i+uPD/Jvg83JWDh+ohdG7oWV7f0JftH3hpVdbg4cqHdKdqjSwH0900F4CuYg6+L8wygZ3nn8hW43kyuX980AF2v1Mij2TL/LcBk434l8qGJUylPChPd0XTIKiXfmTsNphil+weAzLnSYUCGIHlJKP1rAVg6NvoKcRHciufZO+aQ=
+addons:
+  sauce_connect:
+    username: "nuclearjs"
+    access_key:
+      secure: UhzbPcK2Zh41qAZYAKEqCQP2ryRLrG6S7FZ49Q21EnQQiDpSWcPtT/dIiXqPQGUaV1gSwtbw86HpzF9mksIGWckLq4UKPvFamWSORiUQMpgZwb6ha92mGmdEy/q6IGosNexe9O8bv/H2fK/S2L43wOlyKOIudzjIHEvndYV29Ao=
