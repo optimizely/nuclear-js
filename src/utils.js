@@ -1,13 +1,4 @@
 /**
- * Checks if the passed in value is a number
- * @param {*} val
- * @return {boolean}
- */
-exports.isNumber = function(val) {
-  return typeof val == 'number' || objectToString(val) === '[object Number]'
-}
-
-/**
  * Checks if the passed in value is a string
  * @param {*} val
  * @return {boolean}
