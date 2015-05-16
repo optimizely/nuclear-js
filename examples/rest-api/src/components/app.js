@@ -1,38 +1,19 @@
 /**
  * @jsx React.DOM
  */
-// libs
 var React = require('react')
-var flux = require('flux')
-// components
-var WorkspaceComponent = require('components/workspace')
-var TopMenuComponent = require('components/top-menu')
-// modules
-var CurrentWorkspace = require('modules/current-workspace')
+var Flux = require('../flux')
+
+var UserManagementComponent = require('./user-management')
 
 module.exports = React.createClass({
-  mixins: [flux.mixin],
-
-  getDataBindings() {
-    return {
-      isWorkspaceOpen: CurrentWorkspace.getters.isWorkspaceOpen,
-    }
-  },
-
   render() {
-    if (this.state.isWorkspaceOpen) {
-      return (
-        <div>
-          <TopMenuComponent />
-          <WorkspaceComponent />
-        </div>
-      )
-    } else {
-      return (
-        <div>
-          <TopMenuComponent />
-        </div>
-      )
+    var containerStyle = {
+      marginTop: 20
     }
+
+    return <div className="container" style={containerStyle}>
+      <UserManagementComponent />
+    </div>
   },
 })

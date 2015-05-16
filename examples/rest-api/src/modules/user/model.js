@@ -1,5 +1,6 @@
 var _ = require('lodash')
 var MockServer = require('../../mock-server')
+var { toJS } = require('nuclear-js')
 
 var ENTITY = 'user'
 
@@ -10,6 +11,7 @@ exports.entity = ENTITY
  * @return {Promise}
  */
 exports.save = function(instance) {
+  instance = toJS(instance)
   if (instance.id) {
     return MockServer.update(ENTITY, instance)
   } else {
@@ -38,5 +40,6 @@ exports.fetchAll = function(params) {
  * @return {Promise}
  */
 exports.delete = function(instance) {
+  instance = toJS(instance)
   return MockServer.delete(ENTITY, instance)
 }
