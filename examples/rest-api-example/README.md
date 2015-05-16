@@ -20,15 +20,38 @@ the new state automatically by subscribing to a getter.
 **Unidirectional data flow**
 
 ```
-     +--------->[restApiCache store]
-     |               |        |
-  [server]           |        |
-     |               |        | *getter*
-     |               |        |
-     |              /          \
-     |             /            \
-     | **save**   /              \
-     +------[component A]  [component B]
+                                                     ┌────────────────────┐
+                                                     │  Nuclear AppState  │
+                                         ┌───────────┴────────────────────┴───────────┐
+                                         │  {                                         │
+                                         │    restApiCache: {                         │
+                                         │      experiments: {                        │
+                                         │        1: { id: 1, project_id: 45, ... },  │
+                  ┌─────────────────────▶│        2: { id: 2, project_id: 123, ... }, │
+        ┌─────────┴─────────┐            │      }                                     │
+        │ Response updates  │            │    },                                      │
+        │ global app state  │            │  }                                         │
+        └─────────┬─────────┘            └────────────────────────────────────────────┘
+                  │                                             │
+           ┌─────────────┐                                      │
+           │             │                                      │
+           │  Rest API   │                                      │
+           │  (server)   │                                      ▼
+           │             │                          ┌───────────────────────┐
+           └─────────────┘                          │   Updated App State   │
+                  ▲                                 │   Recomputes Getter   │
+                  │                                 └───────────────────────┘
+      ┌───────────┴────────────┐                                │
+      │ Module action triggers │                                │
+      │      API request       │                   ┌────────────┴────────────┐
+      └───────────┬────────────┘                   │                         │
+                  │                                │                         │
+                  │                                ▼                         ▼
+  ┌───────────────────────────────┐      ┌───────────────────┐     ┌──────────────────┐
+  │ Experiment.actions.fetchAll({ │      │                   │     │                  │
+  │   project_id: 123             │      │    Component A    │     │   Component B    │
+  │ });                           │      │                   │     │                  │
+  └───────────────────────────────┘      └───────────────────┘     └──────────────────┘
 ```
 
 **component A** is saving some entity to the server, the response then dispatches an action that updates the `restApiCache` store causing both **component A**
