@@ -59,7 +59,7 @@ See the [Example User Model](./src/modules/user/model.js) in the code or the fol
 `./modules/project/model.js`
 
 ```js
-var $ = require('jquery')
+var request = require('superagent-promise')
 var sprintf = require('util').format
 var BASE_URL = 'https://www.optimizelyapis.com/experiment/v1'
 var ENTITY = 'projects'
@@ -71,22 +71,20 @@ exports.entity = ENTITY
  * @return {Promise}
  */
 exports.fetch = function(id) {
-  return $.ajax({
-    url: sprintf('%s/%s/%s', BASE_URL, ENTITY, id),
-    method: 'GET',
-    contentType: 'application/json',
-  })
+  return request
+    .get(sprintf('%s/%s/%s', BASE_URL, ENTITY, id))
+    .accept('json')
+    .end()
 }
 
 /**
  * @return {Promise}
  */
 exports.fetchAll = function() {
-  return $.ajax({
-    url: sprintf('%s/%s', BASE_URL, ENTITY),
-    method: 'GET',
-    contentType: 'application/json',
-  })
+  return request
+    .get(sprintf('%s/%s', BASE_URL, ENTITY))
+    .accept('json')
+    .end()
 }
 
 /**
@@ -95,21 +93,17 @@ exports.fetchAll = function() {
  */
 exports.save = function(instance) {
   if (instance.id) {
-    return $.ajax({
-      url: sprintf('%s/%s/%s', BASE_URL, ENTITY, instance.id),
-      method: 'PUT',
-      contentType: 'application/json',
-      data: JSON.stringify(instance),
-      dataType: 'json'
-    })
+    return request
+      .put(sprintf('%s/%s/%s', BASE_URL, ENTITY, instance.id))
+      .type('json')
+      .send(instance)
+      .end()
   } else {
-    return $.ajax({
-      url: sprintf('%s/%s', BASE_URL, ENTITY),
-      method: 'POST',
-      contentType: 'application/json',
-      data: JSON.stringify(instance),
-      dataType: 'json'
-    })
+    return request
+      .post(sprintf('%s/%s', BASE_URL, ENTITY))
+      .type('json')
+      .send(instance)
+      .end()
   }
 }
 
@@ -118,10 +112,10 @@ exports.save = function(instance) {
  * @return {Promise}
  */
 exports.delete = function(instance) {
-  return $.ajax({
-    url: sprintf('%s/%s/%s', BASE_URL, ENTITY, instance.id),
-    method: 'DELETE',
-    contentType: 'application/json',
+  return request
+    .del(sprintf('%s/%s/%s', BASE_URL, ENTITY, instance.id))
+    .type('json')
+    .end()
   })
 }
 ```
