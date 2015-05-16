@@ -183,24 +183,45 @@ The following interface is required for a model to properly work with `createApi
 
 **`Model.entity : String`**
 
-**`Model.fetch(params : any) : Promise`**
+**`Model.fetch( params : any ) : Promise`**
 
-**`Model.fetchAll(params : any) : Promise`**
+**`Model.fetchAll( params : any ) : Promise`**
 
-**`Model.save(instance : Object) : Promise`**
+**`Model.save( instance : Object ) : Promise`**
 
-**`Model.delete(instance : Object) : Promise`**
+**`Model.delete( instance : Object ) : Promise`**
+
+
+## Entity Getters
+
+**`RestApi.createEntityMapGetter( model ) : Getter`**
+
+Creates a getter for a specific model that references the `restApiCache` map of entity id => entity.
+
+**`RestApi.createByIdGetter( model ) : function`**
+
+Creates a function that returns a getter that references a specific entity by id in the `restApiCache` map.
+
+**Usage**
+
+```js
+Project.actions.fetchAll()
+
+flux.observe(Project.getters.entityMap, projectMap => {
+  console.log('project rest api cache changed', projectMap.toJS())
+})
+```
+
 
 ## TODO
 
 ### v1
 
 - [x] Complete testing the `createApiActions` method 100%
-- [ ] Implement travis.ci badge for coverage
 - [x] add example entity module
 - [x] Update rest-api-example README with architecture overview
 - [x] Update rest-api-example README example model
-- [ ] Update rest-api-example README with getter pattern for rest api modules
+- [x] Update rest-api-example README with getter pattern for rest api modules
 - [ ] Link to README / example in main NuclearJS README
 - [x] Cleanup components / gulp / webpack configs
 
