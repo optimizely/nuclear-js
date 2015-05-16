@@ -243,7 +243,7 @@ flux.observe(Project.getters.byId(123), project123 => {
 - [x] Update rest-api-example README with architecture overview
 - [x] Update rest-api-example README example model
 - [x] Update rest-api-example README with getter pattern for rest api modules
-- [ ] Link to README / example in main NuclearJS README
+- [x] Link to README / example in main NuclearJS README
 - [x] Cleanup components / gulp / webpack configs
 
 ### v2
