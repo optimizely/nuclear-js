@@ -23,4 +23,13 @@ describe('Getter', () => {
       expect(isGetter([getter1, ['foo'], (a, b) => a + b])).toBe(true)
     })
   })
+
+  describe("fromKeyPath", () => {
+    it('should throw an Error for a nonvalid KeyPath', () => {
+      var invalidKeypath = 'foo.bar'
+      expect(function() {
+        Getter.fromKeyPath(invalidKeypath)
+      }).toThrow()
+    })
+  })
 })

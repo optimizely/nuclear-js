@@ -1,5 +1,4 @@
 var Immutable = require('immutable')
-var isGetter = require('./getter').isGetter
 
 /**
  * Takes a getter and returns the hash code value
@@ -14,10 +13,6 @@ var isGetter = require('./getter').isGetter
 module.exports = function(getter, dontCache) {
   if (getter.hasOwnProperty('__hashCode')) {
     return getter.__hashCode
-  }
-
-  if (!isGetter(getter)) {
-    throw new Error("Invalid getter!  Must be of the form: [<KeyPath>, ...<KeyPath>, <function>]")
   }
 
   var hashCode = Immutable.fromJS(getter).hashCode()

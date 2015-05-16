@@ -1,0 +1,16 @@
+language: node_js
+node_js:
+- '0.10'
+branches:
+  only:
+  - master
+before_install:
+- npm install -g grunt-cli
+env:
+  global:
+  - secure: E7YHPSZtpjm4I20DB3j3uhkLIeyUGH5Hmos6dynTqoasHo5Z7LIixZaAMRGQitN03rWszrtaV6BRoYmFfjXK39H2LfJxHcCo+3eROZLad8I2tG6ClpsrOy//4xIEg82MGd3wJv81GasIr6kTwm1l4bFZMdj0O5Vb0Y7DGy63f1g=
+  - secure: i+uPD/Jvg83JWDh+ohdG7oWV7f0JftH3hpVdbg4cqHdKdqjSwH0900F4CuYg6+L8wygZ3nn8hW43kyuX980AF2v1Mij2TL/LcBk434l8qGJUylPChPd0XTIKiXfmTsNphil+weAzLnSYUCGIHlJKP1rAVg6NvoKcRHciufZO+aQ=
+  - secure: dCTV/Hki4Pm5aQoAwg9HSMkan8rBeJWLaLsZ3q+gUvk3chVEtVglxjWpHf/4lI9M28qFlOhiKk4rF3zQ1tWvfHjHJTUNFYjAzS9RIyDVm26T4DckW13DrNdayz0EYIuhgl6Yx7AUQSnjVm+QaNazhFTXrGzpGA352gftAwhAYsY=
+  - secure: iuX9onV4MB88li/e+RBf7jYLhpBj2Uru4gM8E/5CSeZZFLP6xugkDrL3Wmi70VtCYf4eVBtMqsLaACh9zQ9Z0TL7zuo5wxIjzHMzKSSqrWYt9amH7hXnANvp+ej3zVnsFvdj6VSF1Dad3G2RJSg1ZYZ5//4mW4jFAS4IPYmI4n0=
+addons:
+  sauce_connect: true

@@ -8,7 +8,6 @@ var createReactMixin = require('./create-react-mixin')
 
 // helper fns
 var toJS = require('./immutable-helpers').toJS
-var toImmutable = require('./immutable-helpers').toImmutable
 var isImmutableValue = require('./immutable-helpers').isImmutableValue
 var each = require('./utils').each
 
@@ -114,13 +113,15 @@ class Reactor {
         var newState = store.handle(currState, actionType, payload)
 
         if (debug && newState === undefined) {
-          throw new Error("Store handler must return a value, did you forget a return statement")
+          var error = "Store handler must return a value, did you forget a return statement"
+          logging.dispatchError(error)
+          throw new Error(error)
         }
 
         state.set(id, newState)
 
         if (this.debug) {
-          logging.coreReact(id, currState, newState)
+          logging.storeHandled(id, currState, newState)
         }
       })
 
@@ -136,41 +137,37 @@ class Reactor {
   }
 
   /**
-   * Attachs a store to a non-running or running nuclear reactor.  Will emit change
-   * @param {string} id
+   * @deprecated
+   * @param {String} id
    * @param {Store} store
-   * @param {boolean} silent should not notify observers of state change
    */
-  registerStore(id, store, silent) {
-    if (this.__stores.get(id)) {
-      console.warn("Store already defined for id=" + id)
-    }
-
-    var initialState = store.getInitialState()
-
-    if (this.debug && !isImmutableValue(initialState)) {
-      throw new Error("Store getInitialState() must return an immutable value, did you forget to call toImmutable")
-    }
-
-    this.__stores = this.__stores.set(id, store)
-    this.__state = this.__state.set(id, initialState)
-
-    if (!silent) {
-      this.__changeObserver.notifyObservers(this.__state)
-    }
+  registerStore(id, store) {
+    console.warn('Deprecation warning: `registerStore` will no longer be supported in 1.1, use `registerStores` instead')
+    var stores = {}
+    stores[id] = store
+    this.registerStores(stores)
   }
 
   /**
-   * @param {Array.<string, Store>} stores
-   * @param {boolean} silent should not notify observers of state change
+   * @param {Store[]} stores
    */
-  registerStores(stores, silent) {
+  registerStores(stores) {
     each(stores, (store, id) => {
-      this.registerStore(id, store, true)
+      if (this.__stores.get(id)) {
+        console.warn("Store already defined for id=" + id)
+      }
+
+      var initialState = store.getInitialState()
+
+      if (this.debug && !isImmutableValue(initialState)) {
+        throw new Error("Store getInitialState() must return an immutable value, did you forget to call toImmutable")
+      }
+
+      this.__stores = this.__stores.set(id, store)
+      this.__state = this.__state.set(id, initialState)
     })
-    if (!silent) {
-      this.__changeObserver.notifyObservers(this.__state)
-    }
+
+    this.__changeObserver.notifyObservers(this.__state)
   }
 
   /**

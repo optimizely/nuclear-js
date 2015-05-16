@@ -6,7 +6,7 @@ var genFilename = function(isMin) {
     (isMin ? '.min' : ''),
     '.js'
   ].join('');
-}
+};
 
 var uglifyJsPlugin = new webpack.optimize.UglifyJsPlugin();
 
