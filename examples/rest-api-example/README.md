@@ -210,6 +210,10 @@ Project.actions.fetchAll()
 flux.observe(Project.getters.entityMap, projectMap => {
   console.log('project rest api cache changed', projectMap.toJS())
 })
+
+flux.observe(Project.getters.byId(123), project123 => {
+  console.log('project with id=123 changed', project123)
+})
 ```
 
 
