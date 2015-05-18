@@ -13,6 +13,6 @@ module.exports = {
     'clean:coverage',
     'karma:coverage',
     'coveralls',
-    'sauce',
+    //'sauce', TODO: investigate why sauce connect isnt working
   ],
 };
