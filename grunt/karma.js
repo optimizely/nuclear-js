@@ -40,7 +40,6 @@ module.exports = {
   },
 
   phantom: {
-    configFile: 'grunt/karma-configs/phantom.karma.js',
     frameworks: ['jasmine', 'es5-shim'],
     browsers: ['PhantomJS'],
   },
