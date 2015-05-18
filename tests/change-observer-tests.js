@@ -26,7 +26,7 @@ describe('ChangeObserver', () => {
   })
 
   describe('registering change handlers', () => {
-    it("should allow registration of ['foo', identity]", () => {
+    it('should allow registration of [\'foo\', identity]', () => {
       var mockFn = jasmine.createSpy()
       observer.onChange([['foo'], identity], mockFn)
 
@@ -64,8 +64,8 @@ describe('ChangeObserver', () => {
       expect(mockFn.calls.count()).toBe(0)
     })
 
-    describe("when two of the same getter are registered", () => {
-      it("should call the handler functions of both", () => {
+    describe('when two of the same getter are registered', () => {
+      it('should call the handler functions of both', () => {
         var getter = [['foo'], identity];
         var mockFn1 = jasmine.createSpy()
         var mockFn2 = jasmine.createSpy()

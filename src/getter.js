@@ -43,7 +43,7 @@ function getDeps(getter) {
  */
 function fromKeyPath(keyPath) {
   if (!isKeyPath(keyPath)) {
-    throw new Error("Cannot create Getter from KeyPath: " + keyPath)
+    throw new Error('Cannot create Getter from KeyPath: ' + keyPath)
   }
 
   return [keyPath, identity]

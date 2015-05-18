@@ -48,7 +48,7 @@ describe('reactor.ReactMixin', () => {
   })
 
 
-  describe("when rendering a component with the flux.ReactMixin", () => {
+  describe('when rendering a component with the flux.ReactMixin', () => {
     var component
     beforeEach(() => {
       mountNode = document.createElement('div')
@@ -79,14 +79,14 @@ describe('reactor.ReactMixin', () => {
       document.body.removeChild(mountNode)
     })
 
-    it("should set the component initialState from `getDataBindings()`", () => {
+    it('should set the component initialState from `getDataBindings()`', () => {
       expect(component.state.count).toBe(0)
       expect(component.state.multiplied).toBe(0)
       expect(component.state.key1).toBe('value1')
       expect(component.state.key2).toBe(undefined)
     })
 
-    it("should update the state automatically when the underyling getters change", () => {
+    it('should update the state automatically when the underyling getters change', () => {
       reactor.dispatch('increment')
 
       expect(component.state.count).toBe(1)
@@ -106,7 +106,7 @@ describe('reactor.ReactMixin', () => {
     })
   })
 
-  describe("when rendering a component with a getInitialState() method", () => {
+  describe('when rendering a component with a getInitialState() method', () => {
     var component
     beforeEach(() => {
       mountNode = document.createElement('div')
@@ -143,7 +143,7 @@ describe('reactor.ReactMixin', () => {
       document.body.removeChild(mountNode)
     })
 
-    it("should set the component initialState from `getDataBindings()` and getInitialState", () => {
+    it('should set the component initialState from `getDataBindings()` and getInitialState', () => {
       expect(component.state.foo).toBe('bar')
       expect(component.state.count).toBe(0)
       expect(component.state.multiplied).toBe(0)
@@ -152,7 +152,7 @@ describe('reactor.ReactMixin', () => {
     })
   })
 
-  describe("after unmounting the component", () => {
+  describe('after unmounting the component', () => {
     var component
     beforeEach(() => {
       mountNode = document.createElement('div')
@@ -188,7 +188,7 @@ describe('reactor.ReactMixin', () => {
       document.body.removeChild(mountNode)
     })
 
-    it("should unobserve all getters", () => {
+    it('should unobserve all getters', () => {
       React.unmountComponentAtNode(mountNode)
       expect(reactor.__changeObserver.__observers.length).toBe(0)
     })

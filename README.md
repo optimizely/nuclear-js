@@ -210,7 +210,7 @@ At this point defined how our application manages state over time by creating an
 
 Getters can take 2 forms:
 
-  1. A KeyPath such as `['messages']` which equates to a `state.getIn(['messages'])` on the app state `Immutable.Map`.  
+  1. A KeyPath such as `['messages']` which equates to a `state.getIn(['messages'])` on the app state `Immutable.Map`.
   2. An array with the form `[  [keypath | getter], [keypath | getter], ..., tranformFunction]`
 
 ##### `modules/chat/getters.js`
@@ -242,7 +242,6 @@ exports.latestThread = [
   }
 ]
 
-
 exports.currentThreadID = [
   exports.currentThread,
   thread => thread ? thread.get('threadID') : null
@@ -262,7 +261,6 @@ exports.unreadCount = [
 ```
 
 Since stores are registered on the Nuclear Reactor by the module's index file, then a module is the only part of the system that knows the store ids, if this information need to be made public, the module will export a getter of the form `[<storeId>]`
-
 
 ### Actions
 
@@ -410,7 +408,6 @@ var ThreadListItem = React.createClass({
 
 module.exports = ThreadListItem;
 ```
-
 
 ## Core Concepts
 
@@ -651,7 +648,7 @@ reactor.observe(isOverBudget, function(isOver) {
   // this will be automatically re-evaluated only when the total or budget changes
   if (isOver) {
     var budget = reactor.evaluate(['budget'])
-    alert("Is over budget of " + budget)
+    alert('Is over budget of ' + budget)
   }
 })
 ```
