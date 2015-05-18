@@ -673,8 +673,8 @@ var ShoppingCart = React.createClass({
   getDataBindings() {
     return {
       // can reference a reactor KeyPath
-      items: 'items',
-      taxPercent: 'taxPercent',
+      items: ['items'],
+      taxPercent: ['taxPercent'],
       // or reference a Getter
       subtotal: getSubtotal,
       tax: getTax,
@@ -740,8 +740,8 @@ var ShoppingCart = new Vue({
   getDataBindings: function() {
     return {
       // can reference a reactor KeyPath
-      items: 'items',
-      taxPercent: 'taxPercent',
+      items: ['items'],
+      taxPercent: ['taxPercent'],
       // or reference a Getter
       subtotal: getSubtotal,
       tax: getTax,
