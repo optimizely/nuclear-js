@@ -9,7 +9,7 @@ var toImmutable = require('../src/immutable-helpers').toImmutable
 
 
 describe('Reactor', () => {
-  it("should construct without 'new'", () => {
+  it('should construct without \'new\'', () => {
     var reactor = Reactor()
     expect(reactor instanceof Reactor).toBe(true)
   })
@@ -146,7 +146,7 @@ describe('Reactor', () => {
         expect(reactor.evaluate(totalGetter)).toEqual(10)
       })
 
-      it("should emit the state of the reactor to a handler registered with observe()", () => {
+      it('should emit the state of the reactor to a handler registered with observe()', () => {
         var mockFn = jasmine.createSpy()
         reactor.observe(mockFn)
 
@@ -167,7 +167,7 @@ describe('Reactor', () => {
         expect(Immutable.is(firstCallArg, expected))
       })
 
-      it("should not emit to the outputStream if state does not change after a dispatch", () => {
+      it('should not emit to the outputStream if state does not change after a dispatch', () => {
         var mockFn = jasmine.createSpy()
         reactor.observe(mockFn)
 
@@ -231,7 +231,7 @@ describe('Reactor', () => {
     })
   }) // Reactor with no initial state
 
-  describe("reactor#reset", () => {
+  describe('reactor#reset', () => {
     var reactor
 
     beforeEach(() => {
@@ -276,7 +276,7 @@ describe('Reactor', () => {
       reactor.reset()
     })
 
-    it("should go back to initial state for normal stores", () => {
+    it('should go back to initial state for normal stores', () => {
       var item = { foo: 'bar' }
       reactor.dispatch('addItem', item)
 
@@ -287,7 +287,7 @@ describe('Reactor', () => {
       expect(reactor.evaluateToJS(['standard'])).toEqual([])
     })
 
-    it("should respect the handleReset method for stores that override it", () => {
+    it('should respect the handleReset method for stores that override it', () => {
       var item = { foo: 'bar' }
       reactor.dispatch('addItem', item)
 
@@ -299,7 +299,7 @@ describe('Reactor', () => {
     })
   })
 
-  describe("when a reactor is observing mutable values", () => {
+  describe('when a reactor is observing mutable values', () => {
     var reactor
     var observeSpy
 
@@ -343,7 +343,7 @@ describe('Reactor', () => {
       reactor.reset()
     })
 
-    it("should go back to initial state for normal stores", () => {
+    it('should go back to initial state for normal stores', () => {
       function Foo(val) {
         this.val = val
       }
@@ -380,7 +380,7 @@ describe('Reactor', () => {
     })
   })
 
-  describe("a reactor with a store that has `null` as its initial state", () => {
+  describe('a reactor with a store that has `null` as its initial state', () => {
     var reactor
 
     beforeEach(() => {
@@ -405,18 +405,18 @@ describe('Reactor', () => {
       reactor.reset()
     })
 
-    it("the store should respond to a registered action", () => {
+    it('the store should respond to a registered action', () => {
       reactor.dispatch('set', 'foo')
       expect(reactor.evaluate(['test'])).toBe('foo')
     })
 
-    it("the store should have the same initial state for an action it doesnt handle", () => {
+    it('the store should have the same initial state for an action it doesnt handle', () => {
       reactor.dispatch('unknown', 'foo')
       expect(reactor.evaluate(['test'])).toBe(null)
     })
   })
 
-  describe("when debug is true and a store has a handler for an action but returns undefined", () => {
+  describe('when debug is true and a store has a handler for an action but returns undefined', () => {
     var reactor
 
     beforeEach(() => {
@@ -441,21 +441,21 @@ describe('Reactor', () => {
       reactor.reset()
     })
 
-    it("should throw an error", function() {
+    it('should throw an error', function() {
       expect(function() {
         reactor.dispatch('set', 'foo')
       }).toThrow()
     })
   })
 
-  describe("#registerStores", () => {
+  describe('#registerStores', () => {
     var reactor
 
     afterEach(() => {
       reactor.reset()
     })
 
-    describe("when another store is already registered for the same id", () => {
+    describe('when another store is already registered for the same id', () => {
       var store1, store2
 
       beforeEach(() => {
@@ -472,7 +472,7 @@ describe('Reactor', () => {
         })
       })
 
-      it("should warn", function() {
+      it('should warn', function() {
         reactor.registerStores({
           store1: store2
         })
@@ -480,7 +480,7 @@ describe('Reactor', () => {
       })
     })
 
-    describe("when the stores getInitialState method returns a non immutable object", () => {
+    describe('when the stores getInitialState method returns a non immutable object', () => {
       var store1
 
       beforeEach(() => {
@@ -497,7 +497,7 @@ describe('Reactor', () => {
         })
       })
 
-      it("should throw an error", function() {
+      it('should throw an error', function() {
         expect(function() {
           reactor.registerStores({
             store1: store1
@@ -506,7 +506,7 @@ describe('Reactor', () => {
       })
     })
 
-    describe("when calling registerStores with an observer", () => {
+    describe('when calling registerStores with an observer', () => {
       var store1
       var observeSpy
 
@@ -529,7 +529,7 @@ describe('Reactor', () => {
         reactor.observe(['test'], observeSpy)
       })
 
-      it("should notify observers immediately", function() {
+      it('should notify observers immediately', function() {
         var notify = true
         reactor.registerStores({
           test: store1
@@ -541,7 +541,7 @@ describe('Reactor', () => {
     })
   })
 
-  describe("#registerStore", () => {
+  describe('#registerStore', () => {
     var reactor, store1
 
     beforeEach(() => {
@@ -560,16 +560,16 @@ describe('Reactor', () => {
       reactor.reset()
     })
 
-    it("it should register a store by id", () => {
+    it('it should register a store by id', () => {
       reactor.registerStore('test', store1)
       expect(reactor.evaluate(['test'])).toBe('foo')
     })
   })
 
-  describe("#reset", () => {
+  describe('#reset', () => {
     var reactor
 
-    describe("when a store doesnt define a handleReset method", () => {
+    describe('when a store doesnt define a handleReset method', () => {
       var store1
 
       beforeEach(() => {
@@ -591,7 +591,7 @@ describe('Reactor', () => {
         })
       })
 
-      it("should fallback to the getInitialState", () => {
+      it('should fallback to the getInitialState', () => {
         reactor.dispatch('set', 'bar')
 
         expect(reactor.evaluate(['test'])).toBe('bar')
@@ -602,7 +602,7 @@ describe('Reactor', () => {
       })
     })
 
-    describe("when a store defines a handleReset method", () => {
+    describe('when a store defines a handleReset method', () => {
       var store1
 
       beforeEach(() => {
@@ -627,7 +627,7 @@ describe('Reactor', () => {
         })
       })
 
-      it("should fallback to the getInitialState", () => {
+      it('should fallback to the getInitialState', () => {
         reactor.dispatch('set', 'bar')
 
         expect(reactor.evaluate(['test'])).toBe('bar')
@@ -638,7 +638,7 @@ describe('Reactor', () => {
       })
     })
 
-    describe("when the handleReset method returns undefined", () => {
+    describe('when the handleReset method returns undefined', () => {
       var store1
 
       beforeEach(() => {
@@ -662,14 +662,14 @@ describe('Reactor', () => {
         })
       })
 
-      it("should throw an error", () => {
+      it('should throw an error', () => {
         expect(function() {
           reactor.reset()
         }).toThrow()
       })
     })
 
-    describe("when the handleReset method returns a non immutable object", () => {
+    describe('when the handleReset method returns a non immutable object', () => {
       var store1
 
       beforeEach(() => {
@@ -696,7 +696,7 @@ describe('Reactor', () => {
         })
       })
 
-      it("should throw an error", () => {
+      it('should throw an error', () => {
         expect(function() {
           reactor.reset()
         }).toThrow()

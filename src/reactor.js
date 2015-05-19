@@ -14,7 +14,7 @@ var each = require('./utils').each
 
 /**
  * In Nuclear Reactors are where state is stored.  Reactors
- * contain a "state" object which is an Immutable.Map
+ * contain a 'state' object which is an Immutable.Map
  *
  * The only way Reactors can change state is by reacting to
  * messages.  To update staet, Reactor's dispatch messages to
@@ -113,7 +113,7 @@ class Reactor {
         var newState = store.handle(currState, actionType, payload)
 
         if (debug && newState === undefined) {
-          var error = "Store handler must return a value, did you forget a return statement"
+          var error = 'Store handler must return a value, did you forget a return statement'
           logging.dispatchError(error)
           throw new Error(error)
         }
@@ -154,13 +154,13 @@ class Reactor {
   registerStores(stores) {
     each(stores, (store, id) => {
       if (this.__stores.get(id)) {
-        console.warn("Store already defined for id=" + id)
+        console.warn('Store already defined for id = ' + id)
       }
 
       var initialState = store.getInitialState()
 
       if (this.debug && !isImmutableValue(initialState)) {
-        throw new Error("Store getInitialState() must return an immutable value, did you forget to call toImmutable")
+        throw new Error('Store getInitialState() must return an immutable value, did you forget to call toImmutable')
       }
 
       this.__stores = this.__stores.set(id, store)
@@ -182,10 +182,10 @@ class Reactor {
         var storeState = prevState.get(id)
         var resetStoreState = store.handleReset(storeState)
         if (debug && resetStoreState === undefined) {
-          throw new Error("Store handleReset() must return a value, did you forget a return statement")
+          throw new Error('Store handleReset() must return a value, did you forget a return statement')
         }
         if (debug && !isImmutableValue(resetStoreState)) {
-          throw new Error("Store reset state must be an immutable value, did you forget to call toImmutable")
+          throw new Error('Store reset state must be an immutable value, did you forget to call toImmutable')
         }
         state.set(id, resetStoreState)
       })

@@ -4,7 +4,7 @@ var Map = require('immutable').Map
 var Store = require('../src/store')
 
 describe('Store', () => {
-  describe("Immutable Store", () => {
+  describe('Immutable Store', () => {
     var exp1 = { id: 1, proj_id: 10 }
     var exp2 = { id: 2, proj_id: 10 }
     var exp3 = { id: 3, proj_id: 11 }
@@ -65,7 +65,7 @@ describe('Store', () => {
     })
   })
 
-  describe("primitive Store", () => {
+  describe('primitive Store', () => {
     var store = Store({
       getInitialState() {
         return 1
@@ -92,21 +92,21 @@ describe('Store', () => {
     })
   })
 
-  describe("store with no config", () => {
-    it("should allow creation of a store without a config", () => {
+  describe('store with no config', () => {
+    it('should allow creation of a store without a config', () => {
       expect(function() {
         var store = new Store()
       }).not.toThrow();
     })
   })
 
-  describe("#isStore", () => {
-    it("should return true if the store is an `instanceof` Store", () => {
+  describe('#isStore', () => {
+    it('should return true if the store is an `instanceof` Store', () => {
       var store = new Store()
       expect(Store.isStore(store)).toBe(true)
     })
 
-    it("should return false if the store is NOT an `instanceof` Store", () => {
+    it('should return false if the store is NOT an `instanceof` Store', () => {
       var notStore = {};
       expect(Store.isStore(notStore)).toBe(false)
     })

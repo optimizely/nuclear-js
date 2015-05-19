@@ -29,7 +29,7 @@ describe('Utils', () => {
       expect(result).toBe(true)
     })
 
-    describe("when isArray is not defined", function() {
+    describe('when isArray is not defined', function() {
       var originalIsArray
 
       beforeEach(() => {

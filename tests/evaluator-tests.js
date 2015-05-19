@@ -12,7 +12,7 @@ describe('Evaluator', () => {
     }
   })
 
-  describe("evaluating a keyPath", () => {
+  describe('evaluating a keyPath', () => {
     var state = toImmutable({
       top: 123,
       foo: {
@@ -21,44 +21,44 @@ describe('Evaluator', () => {
       arr: ['zero', 'one']
     })
 
-    it("return entire map when passed `[]`", () => {
+    it('return entire map when passed `[]`', () => {
       var result = evaluator.evaluate(state, [])
       expect(Immutable.is(state, result)).toBe(true)
     })
 
-    it("['top']", () => {
+    it('[\'top\']', () => {
       var result = evaluator.evaluate(state, ['top'])
       expect(result).toBe(123)
     })
 
-    it("['foo', 'bar']", () => {
+    it('[\'foo\', \'bar\']', () => {
       var result = evaluator.evaluate(state, ['foo', 'bar'])
       expect(result).toBe('baz')
     })
 
-    it("['foo']", () => {
+    it('[\'foo\']', () => {
       var result = evaluator.evaluate(state, ['foo'])
       var expected = toImmutable({ bar: 'baz' })
       expect(Immutable.is(result, expected)).toBe(true)
     })
 
-    it("['arr', 0]", () => {
+    it('[\'arr\', 0]', () => {
       var result = evaluator.evaluate(state, ['arr', 0])
       expect(result).toBe('zero')
     })
 
-    it("['baz'] => undefined", () => {
+    it('[\'baz\'] => undefined', () => {
       var result = evaluator.evaluate(state, ['baz'])
       expect(result).toBe(undefined)
     })
 
-    it("['crazy', 'keypath'] => undefined", () => {
+    it('[\'crazy\', \'keypath\'] => undefined', () => {
       var result = evaluator.evaluate(state, ['baz'])
       expect(result).toBe(undefined)
     })
   })
 
-  describe("evaluating a Getter", () => {
+  describe('evaluating a Getter', () => {
     var proj1 = toImmutable({ id: 1, description: 'proj 1' })
     var proj2 = toImmutable({ id: 2, description: 'proj 2' })
     var proj3 = toImmutable({ id: 3, description: 'proj 3' })
@@ -102,18 +102,18 @@ describe('Evaluator', () => {
       ]
     })
 
-    it("should evaluate", () => {
+    it('should evaluate', () => {
       var result = evaluator.evaluate(state, currentProjectGetter)
       expect(Immutable.is(result, proj1)).toBe(true)
     })
 
-    it("should cache the value", () => {
+    it('should cache the value', () => {
       var result1 = evaluator.evaluate(state, currentProjectGetter, true)
       var result2 = evaluator.evaluate(state, currentProjectGetter, true)
       expect(currentProjectSpy.calls.count()).toBe(1)
     })
 
-    it("should only evaluate the getter if its underlying args change", () => {
+    it('should only evaluate the getter if its underlying args change', () => {
       var result1 = evaluator.evaluate(state, currentProjectDescriptionGetter, true)
 
       var newState = state.updateIn(['projects', 2], project => {
@@ -124,7 +124,7 @@ describe('Evaluator', () => {
       expect(currentProjectDescriptionSpy.calls.count()).toBe(1)
     })
 
-    it("should prevent nested evaluate calls", () => {
+    it('should prevent nested evaluate calls', () => {
       var nestedEvaluateGetter = [
         currentProjectGetter,
         (projects) => {
@@ -133,13 +133,13 @@ describe('Evaluator', () => {
       ]
 
       expect(function () { evaluator.evaluate(state, nestedEvaluateGetter) }).toThrow(
-        new Error("Evaluate may not be called within a Getters computeFn")
+        new Error('Evaluate may not be called within a Getters computeFn')
       )
     })
   })
 
-  describe("when evaluating an invalid keypath / getter", () => {
-    it("should throw an error", () => {
+  describe('when evaluating an invalid keypath / getter', () => {
+    it('should throw an error', () => {
       var invalidGetter = { foo: 'bar' };
 
       expect(function() {
@@ -148,8 +148,8 @@ describe('Evaluator', () => {
     })
   })
 
-  describe("when evaluating a getter that returns a mutable value", () => {
-    it("should return a reference to that value", () => {
+  describe('when evaluating a getter that returns a mutable value', () => {
+    it('should return a reference to that value', () => {
       var proj1 = { id: 1, description: 'proj 1' }
       var proj2 = { id: 2, description: 'proj 2' }
       var proj3 = { id: 3, description: 'proj 3' }

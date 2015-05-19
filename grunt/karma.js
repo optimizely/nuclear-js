@@ -57,9 +57,9 @@ module.exports = {
     browsers: ['PhantomJS'],
     coverageReporter: {
       reporters: [
-        { type: "html", dir: "coverage/" },
-        { type: "lcov", dir: "coverage/" },
-        { type: "text-summary" },
+        { type: 'html', dir: 'coverage/' },
+        { type: 'lcov', dir: 'coverage/' },
+        { type: 'text-summary' },
       ]
     },
 
