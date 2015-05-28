@@ -4,6 +4,17 @@
     "browser": true,
     "amd": true
   },
+  "ecmaFeatures": {
+    "arrowFunctions": true,
+    "classes": true,
+    "defaultParams": true,
+    "destructuring": true,
+    "forOf": true,
+    "objectLiteralShorthandMethods": true,
+    "objectLiteralShorthandProperties": true,
+    "spread": true,
+    "superInFunctions": true
+  },
   "globals": {
     "console": true,
     "beforeEach": true,
@@ -13,6 +24,8 @@
     "module": true,
     "expect": true,
     "exports": true,
+    "jasmine": true,
+    "spyOn": true,
     "mocha": true,
     "mochaPhantomJS": true
   },
@@ -72,7 +85,7 @@
     "no-loop-func": 1,
     "no-multi-spaces": 1,
     "no-multi-str": 0,
-    "no-native-reassign": 1,
+    "no-native-reassign": 0,
     "no-new": 1,
     "no-new-func": 1,
     "no-new-wrappers": 1,
@@ -110,7 +123,7 @@
     "brace-style": [1, "1tbs", {"allowSingleLine": true}],
     "camelcase": 0,
     "comma-spacing": 1,
-    "consistent-this": [1, "self"],
+    "consistent-this": 0,
     "eol-last": 1,
     "func-names": 0,
     "func-style": 0,
@@ -142,7 +155,7 @@
     "padded-blocks": 0,
     "quote-props": 0,
     "quotes": [1, "single"],
-    "semi": [1, "always"],
+    "semi": [1, "never"],
     "semi-spacing": [1, {"before": false, "after": true}],
     "sort-vars": 0,
     "space-after-keywords": [1, "always"],

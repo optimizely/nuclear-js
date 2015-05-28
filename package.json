@@ -30,8 +30,6 @@
     "immutable": "^3.4.x"
   },
   "devDependencies": {
-    "eslint": "^0.21.0",
-    "eslint-loader": "^0.11.2",
     "lodash": "^2.4.1",
     "jstransform": "^6.2.0",
     "jstransform-loader": "^0.1.1",
