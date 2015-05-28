@@ -1,6 +1,6 @@
 module.exports = {
   'test': [
-    'karma:phantom'
+    'karma:phantom',
   ],
 
   'sauce': [

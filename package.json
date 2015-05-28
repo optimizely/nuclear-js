@@ -52,6 +52,7 @@
     "grunt-karma": "^0.10.1",
     "load-grunt-config": "^0.17.1",
     "grunt-contrib-clean": "^0.6.0",
-    "karma-sauce-launcher": "^0.2.11"
+    "karma-sauce-launcher": "^0.2.11",
+    "grunt-eslint": "^13.0.0"
   }
 }
