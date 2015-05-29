@@ -13,8 +13,8 @@ module.exports = function(reactor) {
       component.__unwatchFns = []
       each(this.getDataBindings(), function(getter, key) {
         var unwatchFn = reactor.observe(getter, function(val) {
-          var newState = {};
-          newState[key] = val;
+          var newState = {}
+          newState[key] = val
           component.setState(newState)
         })
 
@@ -26,7 +26,7 @@ module.exports = function(reactor) {
       while (this.__unwatchFns.length) {
         this.__unwatchFns.shift()()
       }
-    }
+    },
   }
 }
 
@@ -36,8 +36,8 @@ module.exports = function(reactor) {
  */
 function getState(reactor, data) {
   var state = {}
-  for (var key in data) {
-    state[key] = reactor.evaluate(data[key])
-  }
+  each(data, function(value, key) {
+    state[key] = reactor.evaluate(value)
+  })
   return state
 }

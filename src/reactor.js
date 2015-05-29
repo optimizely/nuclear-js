@@ -142,7 +142,9 @@ class Reactor {
    * @param {Store} store
    */
   registerStore(id, store) {
+    /*eslint-disable no-console */
     console.warn('Deprecation warning: `registerStore` will no longer be supported in 1.1, use `registerStores` instead')
+    /*eslint-enable no-console */
     var stores = {}
     stores[id] = store
     this.registerStores(stores)
@@ -154,7 +156,9 @@ class Reactor {
   registerStores(stores) {
     each(stores, (store, id) => {
       if (this.__stores.get(id)) {
+        /*eslint-disable no-console */
         console.warn('Store already defined for id = ' + id)
+        /*eslint-enable no-console */
       }
 
       var initialState = store.getInitialState()

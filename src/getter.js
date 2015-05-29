@@ -1,4 +1,3 @@
-var Immutable = require('immutable')
 var isFunction = require('./utils').isFunction
 var isArray = require('./utils').isArray
 var isKeyPath = require('./key-path').isKeyPath
