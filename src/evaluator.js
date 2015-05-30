@@ -8,7 +8,7 @@ var isKeyPath = require('./key-path').isKeyPath
 var isGetter = require('./getter').isGetter
 
 // Keep track of whether we are currently executing a Getter's computeFn
-var __applyingComputeFn = false;
+var __applyingComputeFn = false
 
 class Evaluator {
   constructor() {

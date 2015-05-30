@@ -70,7 +70,7 @@ class ChangeObserver {
     // return unwatch function
     return () => {
       // TODO untrack from change emitter
-      var ind  = this.__observers.indexOf(entry)
+      var ind = this.__observers.indexOf(entry)
       if (ind > -1) {
         this.__observers.splice(ind, 1)
       }

@@ -1,3 +1,4 @@
+/*eslint-disable no-console */
 /**
  * Wraps a Reactor.react invocation in a console.group
 */
@@ -31,3 +32,4 @@ exports.dispatchEnd = function(state) {
     console.groupEnd()
   }
 }
+/*eslint-enable no-console */

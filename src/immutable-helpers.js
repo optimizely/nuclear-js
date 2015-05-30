@@ -34,7 +34,7 @@ function toJS(arg) {
   // arg instanceof Immutable.Sequence is unreleable
   return (isImmutable(arg))
     ? arg.toJS()
-    : arg;
+    : arg
 }
 
 /**
