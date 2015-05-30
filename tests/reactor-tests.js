@@ -1,10 +1,8 @@
 var Immutable = require('immutable')
 var Map = require('immutable').Map
 var List = require('immutable').List
-var Nuclear = require('../src/main')
 var Reactor = require('../src/main').Reactor
 var Store = require('../src/main').Store
-var Getter = require('../src/main').Getter
 var toImmutable = require('../src/immutable-helpers').toImmutable
 
 
@@ -15,7 +13,11 @@ describe('Reactor', () => {
   })
 
   describe('Reactor with no initial state', () => {
-    var checkoutActions, reactor, taxPercentGetter, subtotalGetter, taxGetter, totalGetter
+    var checkoutActions
+    var reactor
+    var subtotalGetter
+    var taxGetter
+    var totalGetter
 
     beforeEach(() => {
       var itemStore = Store({
@@ -46,11 +48,11 @@ describe('Reactor', () => {
           this.on('setTax', (state, payload) => {
             return payload
           })
-        }
+        },
       })
 
       reactor = new Reactor({
-        debug: true
+        debug: true,
       })
       reactor.registerStores({
         'items': itemStore,
@@ -63,7 +65,7 @@ describe('Reactor', () => {
           return items.reduce((total, item) => {
             return total + item.get('price')
           }, 0)
-        }
+        },
       ]
 
       taxGetter = [
@@ -71,7 +73,7 @@ describe('Reactor', () => {
         ['taxPercent'],
         (subtotal, taxPercent) => {
           return (subtotal * (taxPercent / 100))
-        }
+        },
       ]
 
       totalGetter = [
@@ -79,20 +81,20 @@ describe('Reactor', () => {
         taxGetter,
         (subtotal, tax) => {
           return Math.round(subtotal + tax, 2)
-        }
+        },
       ]
 
       checkoutActions = {
         addItem(name, price) {
           reactor.dispatch('addItem', {
             name: name,
-            price: price
+            price: price,
           })
         },
 
         setTaxPercent(percent) {
           reactor.dispatch('setTax', percent)
-        }
+        },
       }
     })
     afterEach(() => {
@@ -155,7 +157,7 @@ describe('Reactor', () => {
         var expected = Immutable.fromJS({
           items: {
             all: [
-              item
+              item,
             ],
           },
           taxPercent: 0,
@@ -260,11 +262,11 @@ describe('Reactor', () => {
 
         handleReset(state) {
           return state
-        }
+        },
       })
 
       reactor = new Reactor({
-        debug: true
+        debug: true,
       })
       reactor.registerStores({
         standard: standardStore,
@@ -331,7 +333,7 @@ describe('Reactor', () => {
       })
 
       reactor = new Reactor({
-        debug: true
+        debug: true,
       })
       reactor.registerStores({
         mapStore: mapStore,
@@ -356,10 +358,10 @@ describe('Reactor', () => {
         ['keyStore'],
         (map, key) => {
           return map.get(key)
-        }
+        },
       ]
 
-      var value = reactor.evaluate(getter)
+      reactor.evaluate(getter)
 
       reactor.observe(getter, (fooValue) => {
         observeSpy(fooValue)
@@ -386,15 +388,15 @@ describe('Reactor', () => {
     beforeEach(() => {
       var nullStateStore = new Store({
         getInitialState() {
-          return null;
+          return null
         },
         initialize() {
-          this.on('set', (_, val) => val);
-        }
+          this.on('set', (_, val) => val)
+        },
       })
 
       reactor = new Reactor({
-        debug: true
+        debug: true,
       })
       reactor.registerStores({
         test: nullStateStore,
@@ -422,15 +424,15 @@ describe('Reactor', () => {
     beforeEach(() => {
       var undefinedStore = new Store({
         getInitialState() {
-          return 1;
+          return 1
         },
         initialize() {
-          this.on('set', (_, val) => undefined);
-        }
+          this.on('set', (_, val) => undefined)
+        },
       })
 
       reactor = new Reactor({
-        debug: true
+        debug: true,
       })
       reactor.registerStores({
         test: undefinedStore,
@@ -456,7 +458,8 @@ describe('Reactor', () => {
     })
 
     describe('when another store is already registered for the same id', () => {
-      var store1, store2
+      var store1
+      var store2
 
       beforeEach(() => {
         spyOn(console, 'warn')
@@ -468,15 +471,17 @@ describe('Reactor', () => {
           debug: true,
         })
         reactor.registerStores({
-          store1: store1
+          store1: store1,
         })
       })
 
       it('should warn', function() {
         reactor.registerStores({
-          store1: store2
+          store1: store2,
         })
+        /* eslint-disable no-console */
         expect(console.warn).toHaveBeenCalled()
+        /* eslint-enable no-console */
       })
     })
 
@@ -487,9 +492,9 @@ describe('Reactor', () => {
         store1 = new Store({
           getInitialState() {
             return {
-              foo: 'bar'
+              foo: 'bar',
             }
-          }
+          },
         })
 
         reactor = new Reactor({
@@ -500,7 +505,7 @@ describe('Reactor', () => {
       it('should throw an error', function() {
         expect(function() {
           reactor.registerStores({
-            store1: store1
+            store1: store1,
           })
         }).toThrow()
       })
@@ -532,7 +537,7 @@ describe('Reactor', () => {
       it('should notify observers immediately', function() {
         var notify = true
         reactor.registerStores({
-          test: store1
+          test: store1,
         }, notify)
 
         expect(observeSpy.calls.count()).toEqual(1)
@@ -542,13 +547,14 @@ describe('Reactor', () => {
   })
 
   describe('#registerStore', () => {
-    var reactor, store1
+    var reactor
+    var store1
 
     beforeEach(() => {
       store1 = new Store({
         getInitialState() {
           return 'foo'
-        }
+        },
       })
 
       reactor = new Reactor({
@@ -587,7 +593,7 @@ describe('Reactor', () => {
         })
 
         reactor.registerStores({
-          test: store1
+          test: store1,
         })
       })
 
@@ -623,7 +629,7 @@ describe('Reactor', () => {
         })
 
         reactor.registerStores({
-          test: store1
+          test: store1,
         })
       })
 
@@ -658,7 +664,7 @@ describe('Reactor', () => {
         })
 
         reactor.registerStores({
-          test: store1
+          test: store1,
         })
       })
 
@@ -682,7 +688,7 @@ describe('Reactor', () => {
           },
           handleReset() {
             return {
-              foo: 'bar'
+              foo: 'bar',
             }
           },
         })
@@ -692,7 +698,7 @@ describe('Reactor', () => {
         })
 
         reactor.registerStores({
-          test: store1
+          test: store1,
         })
       })
 

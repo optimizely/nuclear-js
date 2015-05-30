@@ -21,7 +21,7 @@ describe('KeyPath', () => {
 
     it('should return true for array of immutable values', () => {
       var immMap = Immutable.Map({
-        foo: 'bar'
+        foo: 'bar',
       })
 
       expect(isKeyPath([immMap])).toBe(true)

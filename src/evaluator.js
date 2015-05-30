@@ -134,7 +134,7 @@ class Evaluator {
    * @param {Getter}
    */
   untrack(getter) {
-    // TODO untrack all depedencies
+    // TODO: untrack all depedencies
   }
 
   reset() {

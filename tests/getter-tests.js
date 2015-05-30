@@ -1,4 +1,3 @@
-var Immutable = require('immutable')
 var Getter = require('../src/getter')
 var isGetter = Getter.isGetter
 
