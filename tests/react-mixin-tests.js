@@ -10,7 +10,7 @@ var testStore = new Nuclear.Store({
       map: {
         key1: 'value1',
         multi: 2,
-      }
+      },
     })
   },
 
@@ -23,7 +23,7 @@ var testStore = new Nuclear.Store({
     this.on('set', (state, payload) => {
       return state.setIn(['map', payload.key], toImmutable(payload.value))
     })
-  }
+  },
 })
 
 describe('reactor.ReactMixin', () => {
@@ -35,7 +35,7 @@ describe('reactor.ReactMixin', () => {
   var multipliedGetter = [
     countGetter,
     ['test', 'map', 'multi'],
-    (count, multi) => count * multi
+    (count, multi) => count * multi,
   ]
 
   beforeEach(() => {
@@ -43,7 +43,7 @@ describe('reactor.ReactMixin', () => {
       debug: true,
     })
     reactor.registerStores({
-      test: testStore
+      test: testStore,
     })
   })
 
@@ -53,7 +53,7 @@ describe('reactor.ReactMixin', () => {
     beforeEach(() => {
       mountNode = document.createElement('div')
       document.body.appendChild(mountNode)
-      //var componentWillMountSpy = jasmine.createSpy()
+      // var componentWillMountSpy = jasmine.createSpy()
       var Component = React.createClass({
         mixins: [reactor.ReactMixin],
 
@@ -111,7 +111,7 @@ describe('reactor.ReactMixin', () => {
     beforeEach(() => {
       mountNode = document.createElement('div')
       document.body.appendChild(mountNode)
-      //var componentWillMountSpy = jasmine.createSpy()
+      // var componentWillMountSpy = jasmine.createSpy()
       var Component = React.createClass({
         mixins: [reactor.ReactMixin],
 
@@ -153,11 +153,10 @@ describe('reactor.ReactMixin', () => {
   })
 
   describe('after unmounting the component', () => {
-    var component
     beforeEach(() => {
       mountNode = document.createElement('div')
       document.body.appendChild(mountNode)
-      //var componentWillMountSpy = jasmine.createSpy()
+      // var componentWillMountSpy = jasmine.createSpy()
       var Component = React.createClass({
         mixins: [reactor.ReactMixin],
 
@@ -181,7 +180,7 @@ describe('reactor.ReactMixin', () => {
         },
       })
 
-      component = React.render(React.createElement(Component, null), mountNode)
+      React.render(React.createElement(Component, null), mountNode)
     })
 
     afterEach(() => {

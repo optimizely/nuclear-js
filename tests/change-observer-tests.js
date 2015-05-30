@@ -15,8 +15,8 @@ describe('ChangeObserver', () => {
 
     initialState = Immutable.fromJS({
       'foo': {
-        'bar': 1
-      }
+        'bar': 1,
+      },
     })
     observer = new ChangeObserver(initialState, evaluator)
   })
@@ -44,7 +44,7 @@ describe('ChangeObserver', () => {
 
       observer.notifyObservers(initialState.updateIn(['foo', 'bar'], x => {
         return {
-          'baz': 2
+          'baz': 2,
         }
       }))
 
@@ -66,7 +66,7 @@ describe('ChangeObserver', () => {
 
     describe('when two of the same getter are registered', () => {
       it('should call the handler functions of both', () => {
-        var getter = [['foo'], identity];
+        var getter = [['foo'], identity]
         var mockFn1 = jasmine.createSpy()
         var mockFn2 = jasmine.createSpy()
         observer.onChange(getter, mockFn1)
@@ -79,5 +79,5 @@ describe('ChangeObserver', () => {
       })
     })
   })
-  // TODO test the prevValues and registering an observable
+  // TODO: test the prevValues and registering an observable
 })

@@ -1,5 +1,3 @@
-var Immutable = require('immutable')
-var List = require('immutable').List
 var Map = require('immutable').Map
 var Store = require('../src/store')
 
@@ -9,13 +7,14 @@ describe('Store', () => {
     var exp2 = { id: 2, proj_id: 10 }
     var exp3 = { id: 3, proj_id: 11 }
 
-    var store, initial
+    var store
+    var initial
     beforeEach(() => {
       store = new Store({
 
         getInitialState() {
           return Map({
-            experiments: Map()
+            experiments: Map(),
           })
         },
 
@@ -34,7 +33,7 @@ describe('Store', () => {
               return exps.remove(payload.id)
             })
           })
-        }
+        },
       })
 
       initial = store.getInitialState()
@@ -44,7 +43,7 @@ describe('Store', () => {
     it('should handle to addExperiments', function() {
       var experiments = [exp1, exp2, exp3]
       var newState = store.handle(initial, 'addExperiments', {
-        data: experiments
+        data: experiments,
       })
       var results = newState.get('experiments').toList().toJS()
       expect(results).toEqual(experiments)
@@ -53,10 +52,10 @@ describe('Store', () => {
     it('should handle to removeExperiments', function() {
       var experiments = [exp1, exp2, exp3]
       var newState = store.handle(initial, 'addExperiments', {
-        data: experiments
+        data: experiments,
       })
       var finalState = store.handle(newState, 'removeExperiment', {
-        id: 2
+        id: 2,
       })
       var expected = [exp1, exp3]
 
@@ -75,28 +74,28 @@ describe('Store', () => {
         this.on('increment', (state) => {
           return state + 1
         })
-      }
+      },
     })
 
     var initialState = store.getInitialState()
     store.initialize()
 
     it('should be able to manage primitive state', () => {
-      var newState = store.handle(initialState, 'increment');
-      expect(newState).toBe(2);
+      var newState = store.handle(initialState, 'increment')
+      expect(newState).toBe(2)
     })
 
     it('should no-op when a message is passed that isn\'t registered', () => {
-      var newState = store.handle(initialState, 'noop');
-      expect(newState).toBe(1);
+      var newState = store.handle(initialState, 'noop')
+      expect(newState).toBe(1)
     })
   })
 
   describe('store with no config', () => {
     it('should allow creation of a store without a config', () => {
       expect(function() {
-        var store = new Store()
-      }).not.toThrow();
+        Store()
+      }).not.toThrow()
     })
   })
 
@@ -107,7 +106,7 @@ describe('Store', () => {
     })
 
     it('should return false if the store is NOT an `instanceof` Store', () => {
-      var notStore = {};
+      var notStore = {}
       expect(Store.isStore(notStore)).toBe(false)
     })
   })

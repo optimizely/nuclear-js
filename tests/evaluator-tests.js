@@ -1,7 +1,6 @@
 var Immutable = require('immutable')
 var Evaluator = require('../src/evaluator')
 var toImmutable = require('../src/immutable-helpers').toImmutable
-var Map = require('immutable').Map
 
 describe('Evaluator', () => {
   var evaluator
@@ -16,9 +15,9 @@ describe('Evaluator', () => {
     var state = toImmutable({
       top: 123,
       foo: {
-        bar: 'baz'
+        bar: 'baz',
       },
-      arr: ['zero', 'one']
+      arr: ['zero', 'one'],
     })
 
     it('return entire map when passed `[]`', () => {
@@ -72,7 +71,7 @@ describe('Evaluator', () => {
     var state = toImmutable({
       projects: projects,
       session: {
-        currentProjectId: 1
+        currentProjectId: 1,
       },
     })
     var currentProjectGetter
@@ -91,14 +90,14 @@ describe('Evaluator', () => {
         (projects, currentProjectId) => {
           currentProjectSpy()
           return projects.get(currentProjectId)
-        }
+        },
       ]
       currentProjectDescriptionGetter = [
         currentProjectGetter,
         (project) => {
           currentProjectDescriptionSpy()
           return project.get('description')
-        }
+        },
       ]
     })
 
@@ -108,18 +107,18 @@ describe('Evaluator', () => {
     })
 
     it('should cache the value', () => {
-      var result1 = evaluator.evaluate(state, currentProjectGetter, true)
-      var result2 = evaluator.evaluate(state, currentProjectGetter, true)
+      evaluator.evaluate(state, currentProjectGetter, true)
+      evaluator.evaluate(state, currentProjectGetter, true)
       expect(currentProjectSpy.calls.count()).toBe(1)
     })
 
     it('should only evaluate the getter if its underlying args change', () => {
-      var result1 = evaluator.evaluate(state, currentProjectDescriptionGetter, true)
+      evaluator.evaluate(state, currentProjectDescriptionGetter, true)
 
       var newState = state.updateIn(['projects', 2], project => {
         return project.set('description', 'new desc')
       })
-      var result2 = evaluator.evaluate(newState, currentProjectDescriptionGetter, true)
+      evaluator.evaluate(newState, currentProjectDescriptionGetter, true)
       expect(currentProjectSpy.calls.count()).toBe(2)
       expect(currentProjectDescriptionSpy.calls.count()).toBe(1)
     })
@@ -129,10 +128,10 @@ describe('Evaluator', () => {
         currentProjectGetter,
         (projects) => {
           return evaluator.evaluate(state, currentProjectDescriptionGetter)
-        }
+        },
       ]
 
-      expect(function () { evaluator.evaluate(state, nestedEvaluateGetter) }).toThrow(
+      expect(function() { evaluator.evaluate(state, nestedEvaluateGetter) }).toThrow(
         new Error('Evaluate may not be called within a Getters computeFn')
       )
     })
@@ -140,7 +139,7 @@ describe('Evaluator', () => {
 
   describe('when evaluating an invalid keypath / getter', () => {
     it('should throw an error', () => {
-      var invalidGetter = { foo: 'bar' };
+      var invalidGetter = { foo: 'bar' }
 
       expect(function() {
         evaluator.evaluate(invalidGetter)
@@ -162,7 +161,7 @@ describe('Evaluator', () => {
       var state = toImmutable({
         projects: projects,
         session: {
-          currentProjectId: 1
+          currentProjectId: 1,
         },
       })
 
@@ -171,19 +170,19 @@ describe('Evaluator', () => {
         ['session', 'currentProjectId'],
         (projects, currentProjectId) => {
           return projects.get(currentProjectId)
-        }
+        },
       ]
 
       var result = evaluator.evaluate(state, currentProjectGetter)
-      expect(result).toBe(proj1);
+      expect(result).toBe(proj1)
       // evaluate again to make sure the cached value is still by reference
       var result2 = evaluator.evaluate(state, currentProjectGetter)
-      expect(result2).toBe(proj1);
+      expect(result2).toBe(proj1)
       // update state test the `hasStaleValue` codepath
       var state1 = state.update('projects', projects => projects.set(3, proj3))
 
       var result3 = evaluator.evaluate(state1, currentProjectGetter)
-      expect(result3).toBe(proj1);
+      expect(result3).toBe(proj1)
     })
   })
 })
