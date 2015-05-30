@@ -15,4 +15,4 @@ module.exports = {
     'coveralls',
     //'sauce', TODO: investigate why sauce connect isnt working
   ],
-};
+}
