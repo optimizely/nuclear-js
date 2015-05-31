@@ -1,5 +1,5 @@
 var sauce = require('./sauce')
-var path = require('path');
+var path = require('path')
 
 module.exports = {
   options: {
@@ -60,7 +60,7 @@ module.exports = {
         { type: 'html', dir: 'coverage/' },
         { type: 'lcov', dir: 'coverage/' },
         { type: 'text-summary' },
-      ]
+      ],
     },
 
     webpack: {
@@ -72,9 +72,9 @@ module.exports = {
           {
             test: /\.js$/,
             exclude: /(node_modules\/|-tests\.js$)/,
-            loader: 'istanbul-instrumenter'
-          }
-        ]
+            loader: 'istanbul-instrumenter',
+          },
+        ],
       },
     },
   },
@@ -90,4 +90,4 @@ module.exports = {
   sauce_mobile: {
     options: sauce.mobile,
   },
-};
+}
