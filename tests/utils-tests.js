@@ -116,9 +116,11 @@ describe('Utils', () => {
     })
 
     it('identifies instances as Object types', () => {
+      /* eslint-disable no-new-wrappers */
       expect(Utils.isObject(new Number(0))).toBe(true)
       expect(Utils.isObject(new String(''))).toBe(true)
       expect(Utils.isObject(new Boolean(''))).toBe(true)
+      /* eslint-enable no-new-wrappers */
     })
   })
 

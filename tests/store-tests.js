@@ -20,11 +20,11 @@ describe('Store', () => {
 
         initialize: function() {
           this.on('addExperiments', (state, payload) => {
-            return state.withMutations(state => {
+            return state.withMutations(innerState => {
               payload.data.forEach(item => {
-                state.setIn(['experiments', item.id], Map(item))
+                innerState.setIn(['experiments', item.id], Map(item))
               })
-              return state
+              return innerState
             })
           })
 
