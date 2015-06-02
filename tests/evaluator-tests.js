@@ -87,9 +87,9 @@ describe('Evaluator', () => {
       currentProjectGetter = [
         ['projects'],
         ['session', 'currentProjectId'],
-        (projects, currentProjectId) => {
+        (all_projects, currentProjectId) => {
           currentProjectSpy()
-          return projects.get(currentProjectId)
+          return all_projects.get(currentProjectId)
         },
       ]
       currentProjectDescriptionGetter = [
@@ -126,7 +126,7 @@ describe('Evaluator', () => {
     it('should prevent nested evaluate calls', () => {
       var nestedEvaluateGetter = [
         currentProjectGetter,
-        (projects) => {
+        () => {
           return evaluator.evaluate(state, currentProjectDescriptionGetter)
         },
       ]
@@ -168,8 +168,8 @@ describe('Evaluator', () => {
       var currentProjectGetter = [
         ['projects'],
         ['session', 'currentProjectId'],
-        (projects, currentProjectId) => {
-          return projects.get(currentProjectId)
+        (all_projects, currentProjectId) => {
+          return all_projects.get(currentProjectId)
         },
       ]
 
@@ -179,7 +179,7 @@ describe('Evaluator', () => {
       var result2 = evaluator.evaluate(state, currentProjectGetter)
       expect(result2).toBe(proj1)
       // update state test the `hasStaleValue` codepath
-      var state1 = state.update('projects', projects => projects.set(3, proj3))
+      var state1 = state.update('projects', all_projects => all_projects.set(3, proj3))
 
       var result3 = evaluator.evaluate(state1, currentProjectGetter)
       expect(result3).toBe(proj1)

@@ -1,3 +1,4 @@
+var each = require('../src/utils').each
 var sauceConfig = {
   username: 'nuclearjs',
   accessKey: process.env.SAUCE_ACCESS_KEY,
@@ -70,14 +71,14 @@ var batches = {
   },
 }
 
-for (var key in batches) {
+each(batches, function(value, key) {
   exports[key] = {
     sauceLabs: sauceConfig,
     // mobile emulators are really slow
     captureTimeout: 300000,
     browserNoActivityTimeout: 300000,
-    customLaunchers: batches[key],
-    browsers: Object.keys(batches[key]),
+    customLaunchers: value,
+    browsers: Object.keys(value),
     reporters: ['progress', 'saucelabs'],
   }
-}
+})
