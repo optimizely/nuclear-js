@@ -105,8 +105,8 @@ exports.each = function(collection, iteratee, context) {
 
   if (context) {
     origIteratee = iteratee
-    iteratee = function(value, index, inner_collection) {
-      return origIteratee.call(context, value, index, inner_collection)
+    iteratee = function(value, index, innerCollection) {
+      return origIteratee.call(context, value, index, innerCollection)
     }
   }
 
