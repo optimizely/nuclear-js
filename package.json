@@ -1,11 +1,11 @@
 {
   "name": "nuclear-js",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Immutable, reactive Flux architecture. UI Agnostic.",
   "main": "dist/nuclear.js",
   "scripts": {
     "test": "grunt ci",
-    "postinstall": "grunt githooks"
+    "postinstall": "./node_modules/grunt-cli/bin/grunt githooks"
   },
   "author": "Jordan Garcia",
   "license": "MIT",
@@ -55,6 +55,7 @@
     "load-grunt-config": "^0.17.1",
     "lodash": "^2.4.1",
     "react": "^0.13.2",
-    "webpack": "^1.8.11"
+    "webpack": "^1.8.11",
+    "grunt-cli": "^0.1.13"
   }
 }
