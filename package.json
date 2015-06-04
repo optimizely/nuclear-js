@@ -1,6 +1,6 @@
 {
   "name": "nuclear-js",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Immutable, reactive Flux architecture. UI Agnostic.",
   "main": "dist/nuclear.js",
   "scripts": {
