@@ -127,7 +127,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  // arg instanceof Immutable.Sequence is unreleable
 	  return (isImmutable(arg))
 	    ? arg.toJS()
-	    : arg;
+	    : arg
 	}
 
 	/**
@@ -166,7 +166,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	/**
 	 * In Nuclear Reactors are where state is stored.  Reactors
-	 * contain a "state" object which is an Immutable.Map
+	 * contain a 'state' object which is an Immutable.Map
 	 *
 	 * The only way Reactors can change state is by reacting to
 	 * messages.  To update staet, Reactor's dispatch messages to
@@ -265,7 +265,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var newState = store.handle(currState, actionType, payload)
 
 	        if (debug && newState === undefined) {
-	          var error = "Store handler must return a value, did you forget a return statement"
+	          var error = 'Store handler must return a value, did you forget a return statement'
 	          logging.dispatchError(error)
 	          throw new Error(error)
 	        }
@@ -294,7 +294,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @param {Store} store
 	   */
 	  Reactor.prototype.registerStore=function(id, store) {"use strict";
+	    /* eslint-disable no-console */
 	    console.warn('Deprecation warning: `registerStore` will no longer be supported in 1.1, use `registerStores` instead')
+	    /* eslint-enable no-console */
 	    var stores = {}
 	    stores[id] = store
 	    this.registerStores(stores)
@@ -306,13 +308,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	  Reactor.prototype.registerStores=function(stores) {"use strict";
 	    each(stores, function(store, id)  {
 	      if (this.__stores.get(id)) {
-	        console.warn("Store already defined for id=" + id)
+	        /* eslint-disable no-console */
+	        console.warn('Store already defined for id = ' + id)
+	        /* eslint-enable no-console */
 	      }
 
 	      var initialState = store.getInitialState()
 
 	      if (this.debug && !isImmutableValue(initialState)) {
-	        throw new Error("Store getInitialState() must return an immutable value, did you forget to call toImmutable")
+	        throw new Error('Store getInitialState() must return an immutable value, did you forget to call toImmutable')
 	      }
 
 	      this.__stores = this.__stores.set(id, store)
@@ -334,10 +338,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var storeState = prevState.get(id)
 	        var resetStoreState = store.handleReset(storeState)
 	        if (debug && resetStoreState === undefined) {
-	          throw new Error("Store handleReset() must return a value, did you forget a return statement")
+	          throw new Error('Store handleReset() must return a value, did you forget a return statement')
 	        }
 	        if (debug && !isImmutableValue(resetStoreState)) {
-	          throw new Error("Store reset state must be an immutable value, did you forget to call toImmutable")
+	          throw new Error('Store reset state must be an immutable value, did you forget to call toImmutable')
 	        }
 	        state.set(id, resetStoreState)
 	      })
@@ -462,7 +466,6 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Immutable = __webpack_require__(7)
 	var isFunction = __webpack_require__(8).isFunction
 	var isArray = __webpack_require__(8).isArray
 	var isKeyPath = __webpack_require__(4).isKeyPath
@@ -507,7 +510,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 	function fromKeyPath(keyPath) {
 	  if (!isKeyPath(keyPath)) {
-	    throw new Error("Cannot create Getter from KeyPath: " + keyPath)
+	    throw new Error('Cannot create Getter from KeyPath: ' + keyPath)
 	  }
 
 	  return [keyPath, identity]
@@ -541,8 +544,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      component.__unwatchFns = []
 	      each(this.getDataBindings(), function(getter, key) {
 	        var unwatchFn = reactor.observe(getter, function(val) {
-	          var newState = {};
-	          newState[key] = val;
+	          var newState = {}
+	          newState[key] = val
 	          component.setState(newState)
 	        })
 
@@ -554,7 +557,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      while (this.__unwatchFns.length) {
 	        this.__unwatchFns.shift()()
 	      }
-	    }
+	    },
 	  }
 	}
 
@@ -564,9 +567,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 	function getState(reactor, data) {
 	  var state = {}
-	  for (var key in data) {
-	    state[key] = reactor.evaluate(data[key])
-	  }
+	  each(data, function(value, key) {
+	    state[key] = reactor.evaluate(value)
+	  })
 	  return state
 	}
 
@@ -4494,21 +4497,12 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
-	 * Checks if the passed in value is a number
-	 * @param {*} val
-	 * @return {boolean}
-	 */
-	exports.isNumber = function(val) {
-	  return typeof val == 'number' || objectToString(val) === '[object Number]'
-	}
-
-	/**
 	 * Checks if the passed in value is a string
 	 * @param {*} val
 	 * @return {boolean}
 	 */
 	exports.isString = function(val) {
-	  return typeof val == 'string' || objectToString(val) === '[object String]'
+	  return typeof val === 'string' || objectToString(val) === '[object String]'
 	}
 
 	/**
@@ -4522,14 +4516,14 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	// taken from underscore source to account for browser descrepency
 	/* istanbul ignore if  */
-	if (typeof /./ != 'function' && typeof Int8Array != 'object') {
+	if (typeof /./ !== 'function' && typeof Int8Array !== 'object') {
 	  /**
 	   * Checks if the passed in value is a function
 	   * @param {*} val
 	   * @return {boolean}
 	   */
 	  exports.isFunction = function(obj) {
-	    return typeof obj == 'function' || false
+	    return typeof obj === 'function' || false
 	  }
 	} else {
 	  /**
@@ -4561,7 +4555,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.extend = function(obj) {
 	  var length = arguments.length
 
-	  if (!obj || length < 2) return obj || {}
+	  if (!obj || length < 2) {
+	    return obj || {}
+	  }
 
 	  for (var index = 1; index < length; index++) {
 	    var source = arguments[index]
@@ -4583,7 +4579,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @return {object}
 	 */
 	exports.clone = function(obj) {
-	  if (!exports.isObject(obj)) return obj
+	  if (!exports.isObject(obj)) {
+	    return obj
+	  }
 	  return exports.isArray(obj) ? obj.slice() : exports.extend({}, obj)
 	}
 
@@ -4600,24 +4598,29 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.each = function(collection, iteratee, context) {
 	  var length = collection ? collection.length : 0
 	  var i = -1
-	  var keys, origIteratee
+	  var keys
+	  var origIteratee
 
 	  if (context) {
 	    origIteratee = iteratee
-	    iteratee = function(value, index, collection) {
-	      return origIteratee.call(context, value, index, collection)
+	    iteratee = function(value, index, innerCollection) {
+	      return origIteratee.call(context, value, index, innerCollection)
 	    }
 	  }
 
 	  if (isLength(length)) {
 	    while (++i < length) {
-	      if (iteratee(collection[i], i, collection) === false) break
+	      if (iteratee(collection[i], i, collection) === false) {
+	        break
+	      }
 	    }
 	  } else {
 	    keys = Object.keys(collection)
 	    length = keys.length
 	    while (++i < length) {
-	      if (iteratee(collection[keys[i]], keys[i], collection) === false) break
+	      if (iteratee(collection[keys[i]], keys[i], collection) === false) {
+	        break
+	      }
 	    }
 	  }
 
@@ -4648,7 +4651,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @return {string}
 	 */
 	function objectToString(obj) {
-	  return obj && typeof obj == 'object' && toString.call(obj)
+	  return obj && typeof obj === 'object' && toString.call(obj)
 	}
 
 	/**
@@ -4658,9 +4661,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @return {bool}
 	 */
 	function isLength(val) {
-	  return typeof val == 'number'
+	  return typeof val === 'number'
 	    && val > -1
-	    && val % 1 == 0
+	    && val % 1 === 0
 	    && val <= Number.MAX_VALUE
 	}
 
@@ -4669,6 +4672,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
+	/* eslint-disable no-console */
 	/**
 	 * Wraps a Reactor.react invocation in a console.group
 	*/
@@ -4702,6 +4706,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    console.groupEnd()
 	  }
 	}
+	/* eslint-enable no-console */
 
 
 /***/ },
@@ -4771,7 +4776,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @return {function} unwatch function
 	   */
 	  ChangeObserver.prototype.onChange=function(getter, handler) {"use strict";
-	    // TODO make observers a map of <Getter> => { handlers }
+	    // TODO: make observers a map of <Getter> => { handlers }
 	    var entry = {
 	      getter: getter,
 	      handler: handler,
@@ -4779,8 +4784,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.__observers.push(entry)
 	    // return unwatch function
 	    return function()  {
-	      // TODO untrack from change emitter
-	      var ind  = this.__observers.indexOf(entry)
+	      // TODO: untrack from change emitter
+	      var ind = this.__observers.indexOf(entry)
 	      if (ind > -1) {
 	        this.__observers.splice(ind, 1)
 	      }
@@ -4817,7 +4822,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var isGetter = __webpack_require__(5).isGetter
 
 	// Keep track of whether we are currently executing a Getter's computeFn
-	var __applyingComputeFn = false;
+	var __applyingComputeFn = false
 
 
 	  function Evaluator() {"use strict";
@@ -4851,7 +4856,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      // if its a keyPath simply return
 	      return state.getIn(keyPathOrGetter)
 	    } else if (!isGetter(keyPathOrGetter)) {
-	      throw new Error("evaluate must be passed a keyPath or Getter")
+	      throw new Error('evaluate must be passed a keyPath or Getter')
 	    }
 
 	    // Must be a Getter
@@ -4883,7 +4888,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    // Throw an error as this will lead to inconsistent caching
 	    if (__applyingComputeFn === true) {
 	      __applyingComputeFn = false
-	      throw new Error("Evaluate may not be called within a Getters computeFn")
+	      throw new Error('Evaluate may not be called within a Getters computeFn')
 	    }
 
 	    __applyingComputeFn = true
@@ -4943,7 +4948,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @param {Getter}
 	   */
 	  Evaluator.prototype.untrack=function(getter) {"use strict";
-	    // TODO untrack all depedencies
+	    // TODO: untrack all depedencies
 	  };
 
 	  Evaluator.prototype.reset=function() {"use strict";
