@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"/>
+  <title>NuclearJS</title>
+
+  <!-- CSS  -->
+  <link href="output.css" type="text/css" rel="stylesheet" media="screen,projection"/>
+</head>
+<body>
+  <div class="section pad-bot red darken-2" id="index-banner">
+    <div class="container">
+      <br><br>
+      <h1 class="header center white-text">NuclearJS</h1>
+      <div class="row center">
+        <h5 class="header col s12 light white-text">
+          Reactive Flux built with ImmutableJS data structures.
+      </div>
+      <div class="row center">
+        <iframe src="https://ghbtns.com/github-btn.html?user=optimizely&repo=nuclear-js&type=star&count=true&size=large" frameborder="0" scrolling="0" width="140px" height="30px"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="section tour-section">
+      <!--   Icon Section   -->
+      <div class="row valign-wrapper" style="margin-bottom: 0;">
+        <div class="col s12 m6 valign tour-section--info">
+          <h4 class="red-text tour-section--title">
+            Simple & Elegant Flux
+          </h4>
+
+          <h5 class="tour-section--bullet-title">
+          Singular application state
+          </h5>
+          <p class="tour-section--bullet-item">
+            All application state is stored in one Immutable Map - think <a href="https://github.com/swanodette/om">Om</a>.
+            <strong>Stores are used declaratively</strong>, each store manages a top level key in the application state map.
+          </p>
+
+          <h5 class="tour-section--bullet-title">
+            Stateless stores
+          </h5>
+          <p class="tour-section--bullet-item">
+            Stores are simple, only declaring the initial state and how subsequent actions transform it.  All store actions handlers
+            are pure functions.
+          </p>
+
+          <h5 class="tour-section--bullet-title">
+            First class support for derived data
+          </h5>
+          <p class="tour-section--bullet-item">
+            Compose and transform your data together statelessly and efficiently using a functional lens concept called <strong>Getters</strong>.
+            This pattern eliminates the confusing store.waitsFor method found in other Flux implementations.
+          </p>
+        </div>
+
+        <div class="col s12 offset-m1 m5">
+          <div id="ex1" class="browser-example" style="height: 500px; width: 457px;"></div>
+
+          <!--<img src="https://duckduckgo.com/assets/tour/1c_news.jpg" alt="" width="100%" height="100%">-->
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="tour-section--bg">
+    <div class="container">
+      <div class="section tour-section">
+        <!--   Icon Section   -->
+        <div class="row valign-wrapper" style="margin-bottom: 0;">
+          <div class="col s12 m5">
+            <img src="https://duckduckgo.com/assets/tour/1c_news.jpg" alt="" width="100%" height="100%">
+          </div>
+
+          <div class="col s12 m6 offset-m1 valign tour-section--info">
+            <h4 class="red-text tour-section--title">
+              Tested & Production Ready
+            </h4>
+
+            <h5 class="tour-section--bullet-title">
+              Maintained by Optimizely
+            </h5>
+            <p class="tour-section--bullet-item">
+              Optimizely has been using NuclearJS in production since 2014 and will offer long term support and a stable API.
+            </p>
+
+            <h5 class="tour-section--bullet-title">
+              Easy Debugging
+            </h5>
+            <p class="tour-section--bullet-item">
+              Developing with NuclearJS is a true pleasure! By being able to see your application state at any time you finding bugs
+              becomes easier and you spend more time writing productive code!
+            </p>
+
+            <h5 class="tour-section--bullet-title">
+              Opinionated about testing
+            </h5>
+            <p class="tour-section--bullet-item">
+              When building with NuclearJS there is never a question of "How do I test this?". There are prescribed testing strategies
+              for every type of thing you will build with NuclearJS.
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <script src="app.js"></script>
+  </body>
+</html>
