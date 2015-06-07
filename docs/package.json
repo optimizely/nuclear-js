@@ -1,0 +1,23 @@
+{
+  "name": "nuclear-js-docs",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jordan Garcia",
+  "license": "MIT",
+  "devDependencies": {
+    "node-libs-browser": "^0.5.2",
+    "webpack": "^1.9.10",
+    "node-sass": "^3.1.2",
+    "sass-loader": "^1.0.2"
+  },
+  "dependencies": {
+    "react": "^0.13.3",
+    "babel-core": "^5.5.4",
+    "babel-loader": "^5.1.4",
+    "webpack": "^1.9.10"
+  }
+}
