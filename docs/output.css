@@ -7244,6 +7244,8 @@ button.picker__today:focus, button.picker__clear:focus, button.picker__close:foc
   .browser-component--top {
     width: 100%;
     height: 34px;
+    display: -webkit-flex;
+    -webkit-flex-direction: "row";
     display: flex;
     flex-direction: "row"; }
   .browser-component--top-left {
@@ -7252,6 +7254,7 @@ button.picker__today:focus, button.picker__clear:focus, button.picker__close:foc
     background-image: url("img/browser_top_left.png"); }
   .browser-component--top-middle {
     height: 34px;
+    -webkit-flex: 1;
     flex: 1;
     background-image: url("img/browser_top_middle.png"); }
   .browser-component--top-right {
