@@ -28,7 +28,7 @@
 @import "components/modal";
 @import "components/collapsible";
 @import "components/materialbox";
-@import "components/form";
+/*@import "components/form";*/
 @import "components/table_of_contents";
 @import "components/sideNav";
 @import "components/preloader";
@@ -41,6 +41,11 @@
 
 .tour-section {
   padding: 0;
+  position: relative;
+
+  &--example {
+    padding: 5em 0 0 !important;
+  }
 
   &--bg {
     @extend .grey.lighten-3
@@ -71,6 +76,10 @@
   width: 457px;
   box-sizing: border-box;
   padding: 40px 10px 10px;
+
+  &__bottom {
+    bottom: 0;
+  }
 }
 
 .state-viewer {
