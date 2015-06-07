@@ -7279,8 +7279,7 @@ button.picker__today:focus, button.picker__clear:focus, button.picker__close:foc
 .state-viewer {
   overflow: auto;
   text-align: left;
-  padding: 0 10px;
-  display: inline-block; }
+  padding: 0 10px; }
   .state-viewer.active {
     background-color: #f8f8f8;
     border: 1px solid #ddd;
@@ -7291,5 +7290,6 @@ button.picker__today:focus, button.picker__clear:focus, button.picker__close:foc
     .state-viewer--contents strong {
       font-weight: 800; }
   .state-viewer--title {
+    font-size: 1.5em;
     padding: 3px 5px;
     font-weight: 300; }

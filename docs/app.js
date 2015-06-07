@@ -141,14 +141,18 @@
 	      null,
 	      _react2['default'].createElement(
 	        'div',
-	        { className: 'row valign-wrapper example-step' },
+	        { className: 'row example-step' },
 	        _react2['default'].createElement(
 	          'div',
 	          { className: 'col l4 s12 ' },
 	          _react2['default'].createElement(
-	            'h6',
-	            { className: 'example-step--title valign' },
-	            'User action updates application state'
+	            'div',
+	            { 'class': 'valign-wrapper' },
+	            _react2['default'].createElement(
+	              'h6',
+	              { className: 'example-step--title valign' },
+	              'User action updates application state'
+	            )
 	          )
 	        ),
 	        _react2['default'].createElement(
@@ -159,14 +163,18 @@
 	      ),
 	      _react2['default'].createElement(
 	        'div',
-	        { className: 'row valign-wrapper example-step' },
+	        { className: 'row example-step' },
 	        _react2['default'].createElement(
 	          'div',
 	          { className: 'col l4 s12 ' },
 	          _react2['default'].createElement(
-	            'h6',
-	            { className: 'example-step--title' },
-	            'Getter transforms and composes data then notifies component to update'
+	            'div',
+	            { 'class': 'valign-wrapper' },
+	            _react2['default'].createElement(
+	              'h6',
+	              { className: 'example-step--title' },
+	              'Getter transforms and composes data then notifies component to update'
+	            )
 	          )
 	        ),
 	        _react2['default'].createElement(

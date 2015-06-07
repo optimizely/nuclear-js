@@ -61,9 +61,12 @@ const ItemFilterExample = React.createClass({
   render() {
     return (
       <div>
-        <div className="row valign-wrapper example-step">
+        <div className="row example-step">
           <div className="col l4 s12 ">
-            <h6 className="example-step--title valign">User action updates application state</h6>
+            <div class="valign-wrapper">
+              <h6 className="example-step--title valign">User action updates application state</h6>
+
+            </div>
           </div>
 
           <div className="col l8 s12">
@@ -72,9 +75,11 @@ const ItemFilterExample = React.createClass({
 
         </div>
 
-        <div className="row valign-wrapper example-step">
+        <div className="row example-step">
           <div className="col l4 s12 ">
+            <div class="valign-wrapper">
             <h6 className="example-step--title">Getter transforms and composes data then notifies component to update</h6>
+          </div>
           </div>
 
           <div className="col l8 s12">

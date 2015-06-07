@@ -168,7 +168,6 @@
 
   text-align: left;
   padding: 0 10px;
-  display: inline-block;
 
   &--contents {
     font-size: 11px;
@@ -179,6 +178,7 @@
   }
 
   &--title {
+    font-size: 1.5em;
     padding: 3px 5px;
     font-weight: 300;
   }
