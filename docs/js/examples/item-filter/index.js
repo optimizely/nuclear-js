@@ -1,6 +1,9 @@
 import React from 'react'
 import { Reactor, Store, toImmutable } from 'nuclear-js'
-import StateViewComponent from '../../components/state-viewer'
+import StateViewer from '../../components/state-viewer'
+import ExampleStep from '../../components/example-step'
+import Browser from '../../components/browser'
+import BrowserDevPanel from '../../components/browser-dev-panel'
 
 
 const reactor = new Reactor({ debug: true });
@@ -32,11 +35,9 @@ const filteredItemsGetter = [
   ['typeFilter'],
   ['items'],
   (filter, items) => {
-    if (!filter) {
-      return items
-    }
-
-    return items.filter(i => i.get('type') === filter)
+    return (filter)
+      ? items.filter(i => i.get('type') === filter)
+      : items
   }
 ]
 
@@ -58,31 +59,59 @@ const ItemFilterExample = React.createClass({
   },
 
   render() {
-    const stateViewerStyle ={
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-    }
     return (
       <div>
-        <div>
-          Filter by type:
-          <select className="browser-default" onChange={this._onChange}>
-            <option value="all">All</option>
-            <option value="food">Food</option>
-            <option value="clothes">Clothes</option>
-          </select>
-        </div>
-        <ul>
-          {this.state.items.map(item => {
-            return <li>${item.get('price')} - {item.get('name')}</li>
-          })}
-        </ul>
+        <div className="row valign-wrapper example-step">
+          <div className="col l4 s12 ">
+            <h6 className="example-step--title valign">User action updates application state</h6>
+          </div>
 
-        <div className="state-viewer--container" style={stateViewerStyle}>
-          <StateViewComponent title="AppState" reactor={reactor} />
-          <StateViewComponent title="filteredItems" reactor={reactor} getter={filteredItemsGetter} />
+          <div className="col l8 s12">
+            <StateViewer title="AppState" reactor={reactor} />
+          </div>
+
         </div>
+
+        <div className="row valign-wrapper example-step">
+          <div className="col l4 s12 ">
+            <h6 className="example-step--title">Getter transforms and composes data then notifies component to update</h6>
+          </div>
+
+          <div className="col l8 s12">
+            <StateViewer title="filteredItems Getter" reactor={reactor} getter={filteredItemsGetter} />
+          </div>
+        </div>
+        <Browser>
+          <div style={{ minHeight: 200 }}>
+            <div className="example-select-wrapper">
+              Filter by type: <select className="browser-default" onChange={this._onChange}>
+                <option value="all">All</option>
+                <option value="food">Food</option>
+                <option value="clothes">Clothes</option>
+              </select>
+            </div>
+
+            <table className="bordered">
+              <thead>
+                <tr>
+                    <th data-field="id">Name</th>
+                    <th data-field="name">Type</th>
+                    <th data-field="price">Price</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {this.state.items.map(item => {
+                  return <tr>
+                    <td>{item.get('name')}</td>
+                    <td>{item.get('type')}</td>
+                    <td>{item.get('price')}</td>
+                  </tr>
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Browser>
       </div>
     )
   }

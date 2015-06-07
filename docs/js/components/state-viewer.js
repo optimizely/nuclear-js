@@ -28,8 +28,22 @@ export default React.createClass({
   },
 
   render() {
-    return <pre className="state-viewer--contents">
-      <strong>{this.props.title}</strong> {this.state.appState}
-    </pre>
+    let title
+    if (this.props.title) {
+      title = <strong>{this.props.title} </strong>
+    }
+
+    var className = "state-viewer"
+
+    if (this.props.active) {
+      className += " active"
+    }
+
+    return <div className={className}>
+      <pre className="state-viewer--contents">
+      {title}
+        {this.state.appState}
+      </pre>
+    </div>
   }
 })

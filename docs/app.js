@@ -76,6 +76,18 @@
 
 	var _componentsStateViewer2 = _interopRequireDefault(_componentsStateViewer);
 
+	var _componentsExampleStep = __webpack_require__(164);
+
+	var _componentsExampleStep2 = _interopRequireDefault(_componentsExampleStep);
+
+	var _componentsBrowser = __webpack_require__(162);
+
+	var _componentsBrowser2 = _interopRequireDefault(_componentsBrowser);
+
+	var _componentsBrowserDevPanel = __webpack_require__(163);
+
+	var _componentsBrowserDevPanel2 = _interopRequireDefault(_componentsBrowserDevPanel);
+
 	var reactor = new _nuclearJs.Reactor({ debug: true });
 
 	reactor.registerStores({
@@ -99,13 +111,9 @@
 	});
 
 	var filteredItemsGetter = [['typeFilter'], ['items'], function (filter, items) {
-	  if (!filter) {
-	    return items;
-	  }
-
-	  return items.filter(function (i) {
+	  return filter ? items.filter(function (i) {
 	    return i.get('type') === filter;
-	  });
+	  }) : items;
 	}];
 
 	var ItemFilterExample = _react2['default'].createClass({
@@ -128,57 +136,128 @@
 	  },
 
 	  render: function render() {
-	    var stateViewerStyle = {
-	      position: 'absolute',
-	      bottom: 0,
-	      left: 0
-	    };
 	    return _react2['default'].createElement(
 	      'div',
 	      null,
 	      _react2['default'].createElement(
 	        'div',
-	        null,
-	        'Filter by type:',
+	        { className: 'row valign-wrapper example-step' },
 	        _react2['default'].createElement(
-	          'select',
-	          { className: 'browser-default', onChange: this._onChange },
+	          'div',
+	          { className: 'col l4 s12 ' },
 	          _react2['default'].createElement(
-	            'option',
-	            { value: 'all' },
-	            'All'
-	          ),
-	          _react2['default'].createElement(
-	            'option',
-	            { value: 'food' },
-	            'Food'
-	          ),
-	          _react2['default'].createElement(
-	            'option',
-	            { value: 'clothes' },
-	            'Clothes'
+	            'h6',
+	            { className: 'example-step--title valign' },
+	            'User action updates application state'
 	          )
+	        ),
+	        _react2['default'].createElement(
+	          'div',
+	          { className: 'col l8 s12' },
+	          _react2['default'].createElement(_componentsStateViewer2['default'], { title: 'AppState', reactor: reactor })
 	        )
 	      ),
 	      _react2['default'].createElement(
-	        'ul',
-	        null,
-	        this.state.items.map(function (item) {
-	          return _react2['default'].createElement(
-	            'li',
-	            null,
-	            '$',
-	            item.get('price'),
-	            ' - ',
-	            item.get('name')
-	          );
-	        })
+	        'div',
+	        { className: 'row valign-wrapper example-step' },
+	        _react2['default'].createElement(
+	          'div',
+	          { className: 'col l4 s12 ' },
+	          _react2['default'].createElement(
+	            'h6',
+	            { className: 'example-step--title' },
+	            'Getter transforms and composes data then notifies component to update'
+	          )
+	        ),
+	        _react2['default'].createElement(
+	          'div',
+	          { className: 'col l8 s12' },
+	          _react2['default'].createElement(_componentsStateViewer2['default'], { title: 'filteredItems Getter', reactor: reactor, getter: filteredItemsGetter })
+	        )
 	      ),
 	      _react2['default'].createElement(
-	        'div',
-	        { className: 'state-viewer--container', style: stateViewerStyle },
-	        _react2['default'].createElement(_componentsStateViewer2['default'], { title: 'AppState', reactor: reactor }),
-	        _react2['default'].createElement(_componentsStateViewer2['default'], { title: 'filteredItems', reactor: reactor, getter: filteredItemsGetter })
+	        _componentsBrowser2['default'],
+	        null,
+	        _react2['default'].createElement(
+	          'div',
+	          { style: { minHeight: 200 } },
+	          _react2['default'].createElement(
+	            'div',
+	            { className: 'example-select-wrapper' },
+	            'Filter by type: ',
+	            _react2['default'].createElement(
+	              'select',
+	              { className: 'browser-default', onChange: this._onChange },
+	              _react2['default'].createElement(
+	                'option',
+	                { value: 'all' },
+	                'All'
+	              ),
+	              _react2['default'].createElement(
+	                'option',
+	                { value: 'food' },
+	                'Food'
+	              ),
+	              _react2['default'].createElement(
+	                'option',
+	                { value: 'clothes' },
+	                'Clothes'
+	              )
+	            )
+	          ),
+	          _react2['default'].createElement(
+	            'table',
+	            { className: 'bordered' },
+	            _react2['default'].createElement(
+	              'thead',
+	              null,
+	              _react2['default'].createElement(
+	                'tr',
+	                null,
+	                _react2['default'].createElement(
+	                  'th',
+	                  { 'data-field': 'id' },
+	                  'Name'
+	                ),
+	                _react2['default'].createElement(
+	                  'th',
+	                  { 'data-field': 'name' },
+	                  'Type'
+	                ),
+	                _react2['default'].createElement(
+	                  'th',
+	                  { 'data-field': 'price' },
+	                  'Price'
+	                )
+	              )
+	            ),
+	            _react2['default'].createElement(
+	              'tbody',
+	              null,
+	              this.state.items.map(function (item) {
+	                return _react2['default'].createElement(
+	                  'tr',
+	                  null,
+	                  _react2['default'].createElement(
+	                    'td',
+	                    null,
+	                    item.get('name')
+	                  ),
+	                  _react2['default'].createElement(
+	                    'td',
+	                    null,
+	                    item.get('type')
+	                  ),
+	                  _react2['default'].createElement(
+	                    'td',
+	                    null,
+	                    item.get('price')
+	                  )
+	                );
+	              })
+	            )
+	          )
+	        )
 	      )
 	    );
 	  }
@@ -20620,16 +20699,145 @@
 	  },
 
 	  render: function render() {
-	    return _react2['default'].createElement(
-	      'pre',
-	      { className: 'state-viewer--contents' },
-	      _react2['default'].createElement(
+	    var title = undefined;
+	    if (this.props.title) {
+	      title = _react2['default'].createElement(
 	        'strong',
 	        null,
-	        this.props.title
+	        this.props.title,
+	        ' '
+	      );
+	    }
+
+	    var className = 'state-viewer';
+
+	    if (this.props.active) {
+	      className += ' active';
+	    }
+
+	    return _react2['default'].createElement(
+	      'div',
+	      { className: className },
+	      _react2['default'].createElement(
+	        'pre',
+	        { className: 'state-viewer--contents' },
+	        title,
+	        this.state.appState
+	      )
+	    );
+	  }
+	});
+	module.exports = exports['default'];
+
+/***/ },
+/* 161 */,
+/* 162 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+	var _react = __webpack_require__(2);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	exports['default'] = _react2['default'].createClass({
+	  displayName: 'browser',
+
+	  render: function render() {
+	    var className = 'browser-component';
+
+	    if (this.props.size) {
+	      className += ' browser-component__' + this.props.size;
+	    }
+
+	    var contentClassName = 'browser-component--content';
+
+	    return _react2['default'].createElement(
+	      'div',
+	      { className: className },
+	      _react2['default'].createElement(
+	        'div',
+	        { className: 'browser-component--top' },
+	        _react2['default'].createElement('div', { className: 'browser-component--top-left' }),
+	        _react2['default'].createElement('div', { className: 'browser-component--top-middle' }),
+	        _react2['default'].createElement('div', { className: 'browser-component--top-right' })
 	      ),
-	      ' ',
-	      this.state.appState
+	      _react2['default'].createElement(
+	        'div',
+	        { className: contentClassName },
+	        this.props.children
+	      )
+	    );
+	  }
+	});
+	module.exports = exports['default'];
+
+/***/ },
+/* 163 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+
+	var _react = __webpack_require__(2);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	exports["default"] = _react2["default"].createClass({
+	  displayName: "browser-dev-panel",
+
+	  render: function render() {
+	    return _react2["default"].createElement(
+	      "div",
+	      { className: "browser-component--dev-panel" },
+	      this.props.children
+	    );
+	  }
+	});
+	module.exports = exports["default"];
+
+/***/ },
+/* 164 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+	var _react = __webpack_require__(2);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	exports['default'] = _react2['default'].createClass({
+	  displayName: 'example-step',
+
+	  render: function render() {
+	    var className = 'example-step';
+
+	    var push = this.props.push;
+	    if (push === 'right') {
+	      className += ' example-step__push-right';
+	    }
+
+	    return _react2['default'].createElement(
+	      'div',
+	      { className: className },
+	      this.props.children
 	    );
 	  }
 	});

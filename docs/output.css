@@ -4807,14 +4807,6 @@ span.badge {
   max-width: 1280px;
   width: 90%; }
 
-@media only screen and (min-width: 601px) {
-  .container {
-    width: 85%; } }
-
-@media only screen and (min-width: 993px) {
-  .container {
-    width: 70%; } }
-
 .container .row {
   margin-left: -0.75rem;
   margin-right: -0.75rem; }
@@ -7227,29 +7219,74 @@ button.picker__today:focus, button.picker__clear:focus, button.picker__close:foc
   .tour-section--bullet-item {
     /*margin-bottom: 2em;*/ }
 
-.browser-example {
-  position: relative;
-  background-repeat: no-repeat;
-  background-image: url("img/browser.png");
-  width: 457px;
-  box-sizing: border-box;
-  padding: 40px 10px 10px; }
-  .browser-example__bottom {
-    bottom: 0; }
+.example-select-wrapper {
+  font-size: 14px;
+  text-align: center;
+  margin: 1em 0; }
 
-.state-viewer--container {
-  background-color: #f8f8f8;
-  border: 1px solid #ddd;
-  border-top: 10px solid #ebebeb;
+.example-shadow, .browser-component, .state-viewer.active {
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.2); }
+
+.example-box, .browser-component, .state-viewer {
+  margin: 0 auto 10px; }
+
+.example-step {
+  min-height: 150px; }
+  .example-step--title {
+    line-height: 1.5em;
+    font-weight: 300;
+    margin-left: 1em; }
+
+.browser-component {
+  background: white; }
+  .browser-component__small {
+    width: 200px; }
+  .browser-component--top {
+    width: 100%;
+    height: 34px;
+    display: flex;
+    flex-direction: "row"; }
+  .browser-component--top-left {
+    width: 50px;
+    height: 34px;
+    background-image: url("img/browser_top_left.png"); }
+  .browser-component--top-middle {
+    height: 34px;
+    flex: 1;
+    background-image: url("img/browser_top_middle.png"); }
+  .browser-component--top-right {
+    height: 34px;
+    width: 50px;
+    background-image: url("img/browser_top_right.png"); }
+  .browser-component--content {
+    padding: 5px 10px;
+    width: 100%;
+    min-height: 60px;
+    border: 1px solid #ebebeb;
+    border-top: none; }
+  .browser-component .collection-item {
+    padding: 3px 7px;
+    font-size: 12px; }
+  .browser-component th, .browser-component td {
+    padding: 3px;
+    transition: fade 1s; }
+  .browser-component table {
+    margin-bottom: 1em; }
+
+.state-viewer {
+  overflow: auto;
+  text-align: left;
   padding: 0 10px;
-  width: 100%; }
-
-.state-viewer--contents {
-  font-size: 11px;
-  font-family: Consolas, "Courier New", monospace; }
-  .state-viewer--contents strong {
-    font-weight: 800; }
-
-.state-viewer--title {
-  padding: 3px 5px;
-  font-weight: 300; }
+  display: inline-block; }
+  .state-viewer.active {
+    background-color: #f8f8f8;
+    border: 1px solid #ddd;
+    border-top: 10px solid #ddd; }
+  .state-viewer--contents {
+    font-size: 11px;
+    font-family: Consolas, "Courier New", monospace; }
+    .state-viewer--contents strong {
+      font-weight: 800; }
+  .state-viewer--title {
+    padding: 3px 5px;
+    font-weight: 300; }
