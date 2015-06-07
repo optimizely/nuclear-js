@@ -44,7 +44,7 @@
   position: relative;
 
   &--example {
-    padding: 5em 0 0 !important;
+    padding: 7em 0 0 !important;
   }
 
   &--bg {
@@ -84,11 +84,12 @@
 
 .example-step {
   min-height: 150px;
+  margin: 1em 0;
 
   &--title {
     line-height: 1.5em;
     font-weight: 300;
-    margin-left: 1em;
+    /*margin-left: 1em;*/
   }
 }
 
@@ -150,8 +151,7 @@
   }
 
   table {
-    margin-bottom: 1em;
-
+    margin-bottom: 2em;
   }
 }
 
@@ -160,10 +160,8 @@
   overflow: auto;
 
   &.active {
-    @extend .example-shadow;
     background-color: #f8f8f8;
-    border: 1px solid #ddd;
-    border-top: 10px solid #ddd;
+    border: 1px solid #eee;
   }
 
   text-align: left;

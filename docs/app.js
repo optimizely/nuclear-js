@@ -140,50 +140,6 @@
 	      'div',
 	      null,
 	      _react2['default'].createElement(
-	        'div',
-	        { className: 'row example-step' },
-	        _react2['default'].createElement(
-	          'div',
-	          { className: 'col l4 s12 ' },
-	          _react2['default'].createElement(
-	            'div',
-	            { 'class': 'valign-wrapper' },
-	            _react2['default'].createElement(
-	              'h6',
-	              { className: 'example-step--title valign' },
-	              'User action updates application state'
-	            )
-	          )
-	        ),
-	        _react2['default'].createElement(
-	          'div',
-	          { className: 'col l8 s12' },
-	          _react2['default'].createElement(_componentsStateViewer2['default'], { title: 'AppState', reactor: reactor })
-	        )
-	      ),
-	      _react2['default'].createElement(
-	        'div',
-	        { className: 'row example-step' },
-	        _react2['default'].createElement(
-	          'div',
-	          { className: 'col l4 s12 ' },
-	          _react2['default'].createElement(
-	            'div',
-	            { 'class': 'valign-wrapper' },
-	            _react2['default'].createElement(
-	              'h6',
-	              { className: 'example-step--title' },
-	              'Getter transforms and composes data then notifies component to update'
-	            )
-	          )
-	        ),
-	        _react2['default'].createElement(
-	          'div',
-	          { className: 'col l8 s12' },
-	          _react2['default'].createElement(_componentsStateViewer2['default'], { title: 'filteredItems Getter', reactor: reactor, getter: filteredItemsGetter })
-	        )
-	      ),
-	      _react2['default'].createElement(
 	        _componentsBrowser2['default'],
 	        null,
 	        _react2['default'].createElement(
@@ -264,6 +220,26 @@
 	                );
 	              })
 	            )
+	          ),
+	          _react2['default'].createElement(
+	            'div',
+	            { className: 'example-step' },
+	            _react2['default'].createElement(
+	              'h6',
+	              { className: 'example-step--title valign' },
+	              'User action updates application state'
+	            ),
+	            _react2['default'].createElement(_componentsStateViewer2['default'], { active: 'true', title: 'AppState', reactor: reactor })
+	          ),
+	          _react2['default'].createElement(
+	            'div',
+	            { className: 'example-step' },
+	            _react2['default'].createElement(
+	              'h6',
+	              { className: 'example-step--title' },
+	              'Getters compose and transform application state reactively notifying components of any changes.'
+	            ),
+	            _react2['default'].createElement(_componentsStateViewer2['default'], { active: 'true', title: 'filteredItems Getter', reactor: reactor, getter: filteredItemsGetter })
 	          )
 	        )
 	      )

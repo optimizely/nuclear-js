@@ -61,31 +61,6 @@ const ItemFilterExample = React.createClass({
   render() {
     return (
       <div>
-        <div className="row example-step">
-          <div className="col l4 s12 ">
-            <div class="valign-wrapper">
-              <h6 className="example-step--title valign">User action updates application state</h6>
-
-            </div>
-          </div>
-
-          <div className="col l8 s12">
-            <StateViewer title="AppState" reactor={reactor} />
-          </div>
-
-        </div>
-
-        <div className="row example-step">
-          <div className="col l4 s12 ">
-            <div class="valign-wrapper">
-            <h6 className="example-step--title">Getter transforms and composes data then notifies component to update</h6>
-          </div>
-          </div>
-
-          <div className="col l8 s12">
-            <StateViewer title="filteredItems Getter" reactor={reactor} getter={filteredItemsGetter} />
-          </div>
-        </div>
         <Browser>
           <div style={{ minHeight: 200 }}>
             <div className="example-select-wrapper">
@@ -115,6 +90,15 @@ const ItemFilterExample = React.createClass({
                 })}
               </tbody>
             </table>
+            <div className="example-step">
+              <h6 className="example-step--title valign">User action updates application state</h6>
+              <StateViewer active="true" title="AppState" reactor={reactor} />
+            </div>
+
+            <div className="example-step">
+              <h6 className="example-step--title">Getters compose and transform application state reactively notifying components of any changes.</h6>
+              <StateViewer active="true" title="filteredItems Getter" reactor={reactor} getter={filteredItemsGetter} />
+            </div>
           </div>
         </Browser>
       </div>
