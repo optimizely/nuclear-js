@@ -1,3 +1,9 @@
+## 1.0.5
+
+- **fixed** removed accidentally checked in node_modules directory
+- **fixed** all the styling issues in the code using the new rules in `.eslintrc`
+- **added** linting using eslint. Linting is now part of the contributing process. Can be run using: `grunt eslint`
+
 ## 1.0.2
 
 - **deprecated** `reactor.registerStore` will be deprecated in 1.1.x - use `reactor.registerStores` instead.  Add deprecation warning.
