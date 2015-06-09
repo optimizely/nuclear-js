@@ -1,5 +1,6 @@
 import React from 'react'
 import { toJS } from 'nuclear-js'
+import Code from './code'
 
 function formatState(state) {
   return JSON.stringify(toJS(state), null, '  ').replace(/\{([^{}]+)\}/g, function(match, contents, index, all) {
@@ -33,17 +34,8 @@ export default React.createClass({
       title = <strong>{this.props.title} </strong>
     }
 
-    var className = "state-viewer"
-
-    if (this.props.active) {
-      className += " active"
-    }
-
-    return <div className={className}>
-      <pre className="state-viewer--contents">
-      {title}
-        {this.state.appState}
-      </pre>
-    </div>
+    return <Code lang="json">
+      {title}{this.state.appState}
+    </Code>
   }
 })

@@ -83,41 +83,82 @@
   <div class="tour-section--bg">
     <div class="container">
       <div class="section tour-section">
-        <!--   Icon Section   -->
         <div class="row" style="margin-bottom: 0;">
+          <div class="col s12 m12 l7 tour-section--info">
 
-          <div class="col s12 m12 l5">
+            <div id="code-example"></div>
           </div>
 
-          <div class="col s12 m12 l6 offset-m1 valign-wrapper tour-section--info">
-            <div class="valign">
-              <h4 class="red-text tour-section--title">
-                Tested & Production Ready
-              </h4>
+          <div class="col s12 m12 l4 offset-l1 tour-section--info">
+            <h4 class="red-text tour-section--title">
+              Usage:
+            </h4>
 
-              <h5 class="tour-section--bullet-title">
-                Maintained by Optimizely
-              </h5>
-              <p class="tour-section--bullet-item">
-                Optimizely has been using NuclearJS in production since 2014 and will offer long term support and a stable API.
-              </p>
+            <h5 class="tour-section--bullet-title">
+              Create a <code>Reactor</code>
+            </h5>
 
-              <h5 class="tour-section--bullet-title">
-                Easy Debugging
-              </h5>
-              <p class="tour-section--bullet-item">
-                Developing with NuclearJS is a true pleasure! By being able to see your application state at any time you finding bugs
-                becomes easier and you spend more time writing productive code!
-              </p>
+            <p class="tour-section--bullet-item">
+              The Reactor maintains the application state map, and handles dispatching actions.
+            </p>
 
-              <h5 class="tour-section--bullet-title">
-                Opinionated about testing
-              </h5>
-              <p class="tour-section--bullet-item">
-                When building with NuclearJS there is never a question of "How do I test this?". There are prescribed testing strategies
-                for every type of thing you will build with NuclearJS.
-              </p>
-            </div>
+            <h5 class="tour-section--bullet-title">
+              Register stores
+            </h5>
+            <p class="tour-section--bullet-item">
+              In NuclearJS determine the shape of your application state.  Stores must define two methods: 
+            </p>
+
+            <p>
+              <code>getInitialState</code> - Returns the initial state for that stores specific key in the application state.
+            </p>
+
+            <p>
+              <code>initialize</code> - Sets up any action handlers, by specifying the action type and a function that transforms 
+              <pre><code>(storeState, action) => (newStoreState)</code></pre>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="section tour-section">
+      <!--   Icon Section   -->
+      <div class="row" style="margin-bottom: 0;">
+
+        <div class="col s12 m12 l5">
+        </div>
+
+        <div class="col s12 m12 l6 offset-m1 valign-wrapper tour-section--info">
+          <div class="valign">
+            <h4 class="red-text tour-section--title">
+              Tested & Production Ready
+            </h4>
+
+            <h5 class="tour-section--bullet-title">
+              Maintained by Optimizely
+            </h5>
+            <p class="tour-section--bullet-item">
+              Optimizely has been using NuclearJS in production since 2014 and will offer long term support and a stable API.
+            </p>
+
+            <h5 class="tour-section--bullet-title">
+              Easy Debugging
+            </h5>
+            <p class="tour-section--bullet-item">
+              Developing with NuclearJS is a true pleasure! By being able to see your application state at any time you finding bugs
+              becomes easier and you spend more time writing productive code!
+            </p>
+
+            <h5 class="tour-section--bullet-title">
+              Opinionated about testing
+            </h5>
+            <p class="tour-section--bullet-item">
+              When building with NuclearJS there is never a question of "How do I test this?". There are prescribed testing strategies
+              for every type of thing you will build with NuclearJS.
+            </p>
           </div>
         </div>
       </div>

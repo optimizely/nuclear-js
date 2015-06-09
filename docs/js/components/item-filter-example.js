@@ -1,10 +1,8 @@
 import React from 'react'
 import { Reactor, Store, toImmutable } from 'nuclear-js'
-import StateViewer from '../../components/state-viewer'
-import ExampleStep from '../../components/example-step'
-import Browser from '../../components/browser'
-import BrowserDevPanel from '../../components/browser-dev-panel'
-
+import StateViewer from './state-viewer'
+import ExampleStep from './example-step'
+import Browser from './browser'
 
 const reactor = new Reactor({ debug: true });
 
@@ -41,7 +39,7 @@ const filteredItemsGetter = [
   }
 ]
 
-const ItemFilterExample = React.createClass({
+export default React.createClass({
   mixins: [reactor.ReactMixin],
 
   getDataBindings() {
@@ -92,12 +90,12 @@ const ItemFilterExample = React.createClass({
             </table>
             <div className="example-step">
               <h6 className="example-step--title valign">User action updates application state</h6>
-              <StateViewer active="true" title="AppState" reactor={reactor} />
+              <StateViewer title="AppState" reactor={reactor} />
             </div>
 
             <div className="example-step">
               <h6 className="example-step--title">Getters compose and transform application state reactively notifying components of any changes.</h6>
-              <StateViewer active="true" title="filteredItems Getter" reactor={reactor} getter={filteredItemsGetter} />
+              <StateViewer title="filteredItems Getter" reactor={reactor} getter={filteredItemsGetter} />
             </div>
           </div>
         </Browser>
@@ -105,10 +103,3 @@ const ItemFilterExample = React.createClass({
     )
   }
 })
-
-export default function(el) {
-  React.render(
-    <ItemFilterExample />,
-    el
-  )
-}

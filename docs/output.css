@@ -7293,3 +7293,6 @@ button.picker__today:focus, button.picker__clear:focus, button.picker__close:foc
     font-size: 1.5em;
     padding: 3px 5px;
     font-weight: 300; }
+
+.highlighted-code {
+  font-size: 12px; }

@@ -1,3 +1,13 @@
-import InitItemFilterExample from './examples/item-filter'
+import React from 'react'
+import ItemFilterExample from './components/item-filter-example'
+import CodeExample from './components/code-example'
 
-InitItemFilterExample(document.getElementById('ex1'))
+React.render(
+  <ItemFilterExample />,
+  document.getElementById('ex1')
+)
+
+React.render(
+  <CodeExample />,
+  document.getElementById('code-example')
+)

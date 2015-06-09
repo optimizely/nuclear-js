@@ -38,7 +38,6 @@
 @import "components/date_picker/default.time.scss";
 
 
-
 .tour-section {
   padding: 0;
   position: relative;
@@ -180,4 +179,8 @@
     padding: 3px 5px;
     font-weight: 300;
   }
+}
+
+.highlighted-code {
+  font-size: 12px;
 }
