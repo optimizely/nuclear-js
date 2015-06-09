@@ -56,13 +56,13 @@
 
 	var _componentsItemFilterExample2 = _interopRequireDefault(_componentsItemFilterExample);
 
-	var _componentsCodeExample = __webpack_require__(162);
+	var _componentsUsageExample = __webpack_require__(296);
 
-	var _componentsCodeExample2 = _interopRequireDefault(_componentsCodeExample);
+	var _componentsUsageExample2 = _interopRequireDefault(_componentsUsageExample);
 
 	_react2['default'].render(_react2['default'].createElement(_componentsItemFilterExample2['default'], null), document.getElementById('ex1'));
 
-	_react2['default'].render(_react2['default'].createElement(_componentsCodeExample2['default'], null), document.getElementById('code-example'));
+	_react2['default'].render(_react2['default'].createElement(_componentsUsageExample2['default'], null), document.getElementById('usage-example'));
 
 /***/ },
 /* 1 */
@@ -20792,63 +20792,7 @@
 	module.exports = exports['default'];
 
 /***/ },
-/* 162 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, '__esModule', {
-	  value: true
-	});
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
-
-	var _react = __webpack_require__(1);
-
-	var _react2 = _interopRequireDefault(_react);
-
-	var _nuclearJs = __webpack_require__(158);
-
-	var _code = __webpack_require__(295);
-
-	var _code2 = _interopRequireDefault(_code);
-
-	__webpack_require__(291);
-
-	var storeCode = 'const reactor = new Reactor({ debug: true });\n\nreactor.registerStores({\n  typeFilter: Store({\n    getInitialState() {\n      return null;\n    },\n\n    initialize() {\n      this.on(\'FILTER_TYPE\', (state, type) => type)\n    }\n  }),\n\n  items: Store({\n    getInitialState() {\n      return toImmutable([\n        { type: \'food\', name: \'banana\', price: 1 },\n        { type: \'food\', name: \'doritos\', price: 4 },\n        { type: \'clothes\', name: \'shirt\', price: 15 },\n        { type: \'clothes\', name: \'pants\', price: 20 },\n      ])\n    },\n\n    initialize() {\n      this.on(\'ADD_ITEM\', (state, item) => state.push(item))\n    }\n  })\n})';
-
-	var getterCode = 'const filteredItemsGetter = [\n  [\'typeFilter\'],\n  [\'items\'],\n  (filter, items) => {\n    return (filter)\n      ? items.filter(i => i.get(\'type\') === filter)\n      : items\n  }\n]';
-
-	var componentCode = 'const ItemViewer = React.createClass({\n  mixins: [reactor.ReactMixin],\n\n  getDataBindings() {\n    return {\n      items: filteredItemsGetter\n    }\n  },\n\n  render() {\n    return (\n      <table>\n        <thead>\n          <tr>\n            <th>Name</th>\n            <th>Type</th>\n            <th>Price</th>\n          </tr>\n        </thead>\n\n        <tbody>\n          {this.state.items.map(item => {\n            return <tr>\n              <td>{item.get(\'name\')}</td>\n              <td>{item.get(\'type\')}</td>\n              <td>{item.get(\'price\')}</td>\n            </tr>\n          })}\n        </tbody>\n      </table>\n    )\n  }\n})';
-
-	exports['default'] = _react2['default'].createClass({
-	  displayName: 'code-example',
-
-	  render: function render() {
-	    return _react2['default'].createElement(
-	      'div',
-	      null,
-	      _react2['default'].createElement(
-	        _code2['default'],
-	        { lang: 'javascript' },
-	        storeCode
-	      ),
-	      _react2['default'].createElement(
-	        _code2['default'],
-	        { lang: 'javascript' },
-	        getterCode
-	      ),
-	      _react2['default'].createElement(
-	        _code2['default'],
-	        { lang: 'javascript' },
-	        componentCode
-	      )
-	    );
-	  }
-	});
-	module.exports = exports['default'];
-
-/***/ },
+/* 162 */,
 /* 163 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -32707,6 +32651,313 @@
 	        _reactHighlight2['default'],
 	        { className: this.props.lang },
 	        this.props.children
+	      )
+	    );
+	  }
+	});
+	module.exports = exports['default'];
+
+/***/ },
+/* 296 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _nuclearJs = __webpack_require__(158);
+
+	var _code = __webpack_require__(295);
+
+	var _code2 = _interopRequireDefault(_code);
+
+	var storeCode = 'import { Reactor, Store, toImmutable } from \'nuclear-js\'\nimport React from \'react\'\n\nconst reactor = new Reactor({ debug: true });\n\nreactor.registerStores({\n  typeFilter: Store({\n    getInitialState() {\n      return null;\n    },\n\n    initialize() {\n      this.on(\'FILTER_TYPE\', (state, type) => type)\n    }\n  }),\n\n  items: Store({\n    getInitialState() {\n      return toImmutable([\n        { type: \'food\', name: \'banana\', price: 1 },\n        { type: \'food\', name: \'doritos\', price: 4 },\n        { type: \'clothes\', name: \'shirt\', price: 15 },\n        { type: \'clothes\', name: \'pants\', price: 20 },\n      ])\n    },\n\n    initialize() {\n      this.on(\'ADD_ITEM\', (state, item) => state.push(item))\n    }\n  })\n})';
+
+	var getterCode = 'const filteredItemsGetter = [\n  [\'typeFilter\'],\n  [\'items\'],\n  (filter, items) => {\n    return (filter)\n      ? items.filter(i => i.get(\'type\') === filter)\n      : items\n  }\n]';
+
+	var componentCode = 'const ItemViewer = React.createClass({\n  mixins: [reactor.ReactMixin],\n\n  getDataBindings() {\n    return {\n      items: filteredItemsGetter\n    }\n  },\n\n  render() {\n    return (\n      <table>\n        <thead>\n          <tr>\n            <th>Name</th>\n            <th>Type</th>\n            <th>Price</th>\n          </tr>\n        </thead>\n\n        <tbody>\n          {this.state.items.map(item => {\n            return <tr>\n              <td>{item.get(\'name\')}</td>\n              <td>{item.get(\'type\')}</td>\n              <td>{item.get(\'price\')}</td>\n            </tr>\n          })}\n        </tbody>\n      </table>\n    )\n  }\n})';
+
+	var dispatchCode = 'const actions = {\n  setFilter(type) {\n    reactor.dispatch(\'FILTER_TYPE\' type)\n  },\n\n  addItem(name, type, price) {\n    reactor.dispatch(\'ADD_ITEM\', toImmutable({\n      name,\n      type,\n      price\n    }))\n  }\n}\n\nactions.addItem(\'computer\', \'electronics\', 1999)\nactions.setFilter(\'electronics\')';
+
+	var evaluateCode = '// Evaluate by key path\nvar itemsList = reactor.evaluate([\'items\'])\nvar item0Price = reactor.evaluate([\'items\', 0, \'price\'])\n\n// Evaluate by getter\nvar filteredItems = reactor.evaluate(filteredItemsGetter)\n\n// Evaluate and coerce to plain javascript\nvar itemsPOJO = reactor.evaluateToJS(filteredItemsGetter)\n\n// Observation\nreactor.observe(filteredItemsGetter, items => {\n  console.log(items)\n})\n';
+	exports['default'] = _react2['default'].createClass({
+	  displayName: 'usage-example',
+
+	  render: function render() {
+	    return _react2['default'].createElement(
+	      'div',
+	      null,
+	      _react2['default'].createElement(
+	        'div',
+	        { className: 'row' },
+	        _react2['default'].createElement(
+	          'div',
+	          { className: 'col s12 m12 l7' },
+	          _react2['default'].createElement(
+	            _code2['default'],
+	            { lang: 'javascript' },
+	            storeCode
+	          )
+	        ),
+	        _react2['default'].createElement(
+	          'div',
+	          { className: 'col s12 m12 l5 code-explanation' },
+	          _react2['default'].createElement(
+	            'h5',
+	            { className: 'tour-section--bullet-title' },
+	            'Create a ',
+	            _react2['default'].createElement(
+	              'code',
+	              null,
+	              'Reactor'
+	            )
+	          ),
+	          _react2['default'].createElement(
+	            'p',
+	            { className: 'tour-section--bullet-item' },
+	            'In NuclearJS the ',
+	            _react2['default'].createElement(
+	              'code',
+	              null,
+	              'reactor'
+	            ),
+	            ' acts as the dispatcher, maintains the application state and provides an API for data access and observation.'
+	          ),
+	          _react2['default'].createElement(
+	            'h5',
+	            { className: 'tour-section--bullet-title' },
+	            'Register stores'
+	          ),
+	          _react2['default'].createElement(
+	            'p',
+	            { className: 'tour-section--bullet-item' },
+	            'Stores determine the shape of your application state.  Stores define two methods:'
+	          ),
+	          _react2['default'].createElement(
+	            'p',
+	            null,
+	            _react2['default'].createElement(
+	              'code',
+	              null,
+	              'getInitialState()'
+	            ),
+	            ' - Returns the initial state for that stores specific key in the application state.'
+	          ),
+	          _react2['default'].createElement(
+	            'p',
+	            null,
+	            _react2['default'].createElement(
+	              'code',
+	              null,
+	              'initialize()'
+	            ),
+	            ' - Sets up any action handlers, by specifying the action type and a function that transforms',
+	            _react2['default'].createElement(
+	              'pre',
+	              null,
+	              _react2['default'].createElement(
+	                'code',
+	                null,
+	                '(storeState, action) => (newStoreState)'
+	              )
+	            )
+	          )
+	        )
+	      ),
+	      _react2['default'].createElement(
+	        'div',
+	        { className: 'row' },
+	        _react2['default'].createElement(
+	          'div',
+	          { className: 'col s12 m12 l7' },
+	          _react2['default'].createElement(
+	            _code2['default'],
+	            { lang: 'javascript' },
+	            getterCode
+	          )
+	        ),
+	        _react2['default'].createElement(
+	          'div',
+	          { className: 'col s12 m12 l5 code-explanation' },
+	          _react2['default'].createElement(
+	            'h5',
+	            { className: 'tour-section--bullet-title' },
+	            'Accessing your data'
+	          ),
+	          _react2['default'].createElement(
+	            'p',
+	            null,
+	            'Getters allow you to easily compose and transform your application state in a reusable way.'
+	          ),
+	          _react2['default'].createElement('h5', { className: 'tour-section--bullet-title' })
+	        )
+	      ),
+	      _react2['default'].createElement(
+	        'div',
+	        { className: 'row' },
+	        _react2['default'].createElement(
+	          'div',
+	          { className: 'col s12 m12 l7' },
+	          _react2['default'].createElement(
+	            _code2['default'],
+	            { lang: 'javascript' },
+	            componentCode
+	          )
+	        ),
+	        _react2['default'].createElement(
+	          'div',
+	          { className: 'col s12 m12 l5 code-explanation' },
+	          _react2['default'].createElement(
+	            'h5',
+	            { className: 'tour-section--bullet-title' },
+	            'Automatic component data binding'
+	          ),
+	          _react2['default'].createElement(
+	            'p',
+	            null,
+	            'Simply use the ',
+	            _react2['default'].createElement(
+	              'code',
+	              null,
+	              'reactor.ReactMixin'
+	            ),
+	            ' and implement the ',
+	            _react2['default'].createElement(
+	              'code',
+	              null,
+	              'getDataBindings()'
+	            ),
+	            ' function to automatically sync any getter to a ',
+	            _react2['default'].createElement(
+	              'code',
+	              null,
+	              'this.state'
+	            ),
+	            ' property on a React component.'
+	          ),
+	          _react2['default'].createElement(
+	            'p',
+	            null,
+	            'Since application state can only change after a dispatch then NuclearJS can be intelligent and only call ',
+	            _react2['default'].createElement(
+	              'code',
+	              null,
+	              'this.setState'
+	            ),
+	            ' whenever the actual value of the getter changes.  Meaning less pressure on React\'s DOM diffing.'
+	          ),
+	          _react2['default'].createElement(
+	            'h5',
+	            { className: 'tour-section--bullet-title' },
+	            'Framework agnostic'
+	          ),
+	          _react2['default'].createElement(
+	            'p',
+	            null,
+	            'This example shows how to use NuclearJS with React, however the same concepts can be extended to any reactive UI framework. In fact, the ReactMixin code is only about 40 lines.'
+	          )
+	        )
+	      ),
+	      _react2['default'].createElement(
+	        'div',
+	        { className: 'row' },
+	        _react2['default'].createElement(
+	          'div',
+	          { className: 'col s12 m12 l7' },
+	          _react2['default'].createElement(
+	            _code2['default'],
+	            { lang: 'javascript' },
+	            dispatchCode
+	          )
+	        ),
+	        _react2['default'].createElement(
+	          'div',
+	          { className: 'col s12 m12 l5 code-explanation' },
+	          _react2['default'].createElement(
+	            'h5',
+	            { className: 'tour-section--bullet-title' },
+	            'Dispatching actions'
+	          ),
+	          _react2['default'].createElement(
+	            'p',
+	            null,
+	            'Nuclear maintains a very non-magical approach to dispatching actions.  Simply call ',
+	            _react2['default'].createElement(
+	              'code',
+	              null,
+	              'reactor.dispatch'
+	            ),
+	            ' with the ',
+	            _react2['default'].createElement(
+	              'code',
+	              null,
+	              'actionType'
+	            ),
+	            ' and ',
+	            _react2['default'].createElement(
+	              'code',
+	              null,
+	              'payload'
+	            ),
+	            '.'
+	          ),
+	          _react2['default'].createElement(
+	            'p',
+	            null,
+	            'All action handling is done synchronously, leaving the state of the system very predicatable after every action.'
+	          ),
+	          _react2['default'].createElement(
+	            'p',
+	            null,
+	            'Because actions are simply functions, it is very easy to compose actions together using plain javascript.'
+	          )
+	        )
+	      ),
+	      _react2['default'].createElement(
+	        'div',
+	        { className: 'row' },
+	        _react2['default'].createElement(
+	          'div',
+	          { className: 'col s12 m12 l7' },
+	          _react2['default'].createElement(
+	            _code2['default'],
+	            { lang: 'javascript' },
+	            evaluateCode
+	          )
+	        ),
+	        _react2['default'].createElement(
+	          'div',
+	          { className: 'col s12 m12 l5 code-explanation' },
+	          _react2['default'].createElement(
+	            'h5',
+	            { className: 'tour-section--bullet-title' },
+	            'Reading application state'
+	          ),
+	          _react2['default'].createElement(
+	            'p',
+	            null,
+	            'Nuclear also provides imperative mechanisms for evaluating and observing state.'
+	          ),
+	          _react2['default'].createElement(
+	            'p',
+	            null,
+	            'In fact any getter can synchronously and imperatively evaluated or observed.  The entire ',
+	            _react2['default'].createElement(
+	              'code',
+	              null,
+	              'ReactMixin'
+	            ),
+	            ' is built using only those two functions.'
+	          )
+	        )
 	      )
 	    );
 	  }

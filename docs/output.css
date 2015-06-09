@@ -7206,12 +7206,10 @@ button.picker__today:focus, button.picker__clear:focus, button.picker__close:foc
     margin-bottom: 5em; } }
 
 .tour-section {
-  padding: 0;
+  padding: 3em 0 !important;
   position: relative; }
   .tour-section--example {
     padding: 7em 0 0 !important; }
-  .tour-section--info {
-    padding: 3em 0 !important; }
   .tour-section--title {
     margin-bottom: 1em; }
   .tour-section--bullet-title {
@@ -7296,3 +7294,6 @@ button.picker__today:focus, button.picker__clear:focus, button.picker__close:foc
 
 .highlighted-code {
   font-size: 12px; }
+
+.code-explanation {
+  margin-left: 50px; }

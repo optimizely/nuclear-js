@@ -39,7 +39,7 @@
 
 
 .tour-section {
-  padding: 0;
+  padding: 3em 0 !important;
   position: relative;
 
   &--example {
@@ -48,10 +48,6 @@
 
   &--bg {
     @extend .grey.lighten-3
-  }
-
-  &--info {
-    padding: 3em 0 !important;
   }
 
   &--title {
@@ -183,4 +179,8 @@
 
 .highlighted-code {
   font-size: 12px;
+}
+
+.code-explanation {
+  margin-left: 50px;
 }

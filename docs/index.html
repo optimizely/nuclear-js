@@ -27,7 +27,7 @@
     <div class="section tour-section">
       <!--   Icon Section   -->
       <div class="row " style="margin-bottom: 0;">
-        <div class="col s12 m12 l5 valign-wrapper tour-section--info">
+        <div class="col s12 m12 l5 valign-wrapper">
           <div class="valign">
             <h4 class="red-text tour-section--title">
               Simple & Elegant Flux
@@ -84,41 +84,14 @@
     <div class="container">
       <div class="section tour-section">
         <div class="row" style="margin-bottom: 0;">
-          <div class="col s12 m12 l7 tour-section--info">
-
-            <div id="code-example"></div>
-          </div>
-
-          <div class="col s12 m12 l4 offset-l1 tour-section--info">
+          <div class="col s12 m12 l12">
             <h4 class="red-text tour-section--title">
               Usage:
             </h4>
-
-            <h5 class="tour-section--bullet-title">
-              Create a <code>Reactor</code>
-            </h5>
-
-            <p class="tour-section--bullet-item">
-              The Reactor maintains the application state map, and handles dispatching actions.
-            </p>
-
-            <h5 class="tour-section--bullet-title">
-              Register stores
-            </h5>
-            <p class="tour-section--bullet-item">
-              In NuclearJS determine the shape of your application state.  Stores must define two methods: 
-            </p>
-
-            <p>
-              <code>getInitialState</code> - Returns the initial state for that stores specific key in the application state.
-            </p>
-
-            <p>
-              <code>initialize</code> - Sets up any action handlers, by specifying the action type and a function that transforms 
-              <pre><code>(storeState, action) => (newStoreState)</code></pre>
-            </p>
           </div>
         </div>
+
+        <div id="usage-example"></div>
       </div>
     </div>
   </div>

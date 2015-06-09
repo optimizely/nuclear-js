@@ -1,6 +1,6 @@
 import React from 'react'
 import ItemFilterExample from './components/item-filter-example'
-import CodeExample from './components/code-example'
+import UsageExample from './components/usage-example'
 
 React.render(
   <ItemFilterExample />,
@@ -8,6 +8,6 @@ React.render(
 )
 
 React.render(
-  <CodeExample />,
-  document.getElementById('code-example')
+  <UsageExample />,
+  document.getElementById('usage-example')
 )
