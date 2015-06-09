@@ -8,6 +8,8 @@
 
 Traditional Flux architecture built with ImmutableJS data structures.
 
+[Why you should use NuclearJS](http://developers.optimizely.com/nuclear-js/docs/).
+
 ## How NuclearJS differs from other Flux implementations
 
 1.  All app state is in a singular immutable map, think Om.  In development you can see your entire application state at every point in time thanks to awesome debugging tools built into NuclearJS.
