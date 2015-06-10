@@ -37,6 +37,8 @@
 @import "components/date_picker/default.date.scss";
 @import "components/date_picker/default.time.scss";
 
+@import "../node_modules/highlight.js/styles/github.css";
+
 
 .tour-section {
   padding: 3em 0 !important;

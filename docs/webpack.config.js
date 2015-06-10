@@ -14,13 +14,6 @@ module.exports = {
     loaders: [
       { test: /\.js$/, exclude: /node_modules/, loader: 'babel-loader'},
       { test: /\.jsx$/, loader: 'babel-loader'},
-      { test: /\.css/, loader: 'style-loader!css-loader'},
     ]
-  },
-
-  resolve: {
-    alias: {
-      'nuclear-js': path.join(__dirname, '../dist/nuclear.js'),
-    },
   },
 }

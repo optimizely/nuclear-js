@@ -1,4 +1,5 @@
 @charset "UTF-8";
+@import url(../node_modules/highlight.js/styles/github.css);
 .materialize-red.lighten-5 {
   background-color: #fdeaeb !important; }
 
