@@ -1,5 +1,3 @@
-require('highlight.js/styles/github.css')
-
 import React from 'react'
 import Highlight from 'react-highlight'
 

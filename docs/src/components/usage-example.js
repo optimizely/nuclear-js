@@ -114,7 +114,7 @@ export default React.createClass({
   render() {
     return (
       <div>
-        <div className="row">
+        <div className="row code-explanation--row">
           <div className="col s12 m12 l7">
             <Code lang="javascript">{storeCode}</Code>
           </div>
@@ -146,7 +146,7 @@ export default React.createClass({
           </div>
         </div>
 
-        <div className="row">
+        <div className="row code-explanation--row">
           <div className="col s12 m12 l7">
             <Code lang="javascript">
               {getterCode}
@@ -166,7 +166,7 @@ export default React.createClass({
           </div>
         </div>
 
-        <div className="row">
+        <div className="row code-explanation--row">
           <div className="col s12 m12 l7">
             <Code lang="javascript">
               {componentCode}
@@ -200,7 +200,7 @@ export default React.createClass({
           </div>
         </div>
 
-        <div className="row">
+        <div className="row code-explanation--row">
           <div className="col s12 m12 l7">
             <Code lang="javascript">
               {dispatchCode}
@@ -226,7 +226,7 @@ export default React.createClass({
           </div>
         </div>
 
-        <div className="row">
+        <div className="row code-explanation--row">
           <div className="col s12 m12 l7">
             <Code lang="javascript">
               {evaluateCode}

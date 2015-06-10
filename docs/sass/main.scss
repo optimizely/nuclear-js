@@ -37,10 +37,22 @@
 @import "components/date_picker/default.date.scss";
 @import "components/date_picker/default.time.scss";
 
+@import "github.scss";
+
+
+$img-path: "../img/" !default;
+
+.hero {
+  &--bg {
+    @extend .red.darken-2;
+    padding: 3em 0;
+  }
+}
 
 .tour-section {
   padding: 3em 0 !important;
   position: relative;
+  overflow: hidden;
 
   &--example {
     padding: 7em 0 0 !important;
@@ -111,20 +123,20 @@
   &--top-left {
     width: 50px;
     height: 34px;
-    background-image: url('img/browser_top_left.png')
+    background-image: url("#{$img-path}/browser_top_left.png")
   }
 
   &--top-middle {
     height: 34px;
     -webkit-flex: 1;
     flex: 1;
-    background-image: url('img/browser_top_middle.png')
+    background-image: url("#{$img-path}/browser_top_middle.png")
   }
 
   &--top-right {
     height: 34px;
     width: 50px;
-    background-image: url('img/browser_top_right.png')
+    background-image: url("#{$img-path}/browser_top_right.png")
   }
 
   &--content {
@@ -177,10 +189,15 @@
   }
 }
 
-.highlighted-code {
+pre code.hljs {
   font-size: 12px;
 }
 
 .code-explanation {
   margin-left: 50px;
+
+  &--row {
+    padding-bottom: 0;
+    margin-bottom: 0;
+  }
 }

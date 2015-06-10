@@ -4,7 +4,10 @@ import StateViewer from './state-viewer'
 import ExampleStep from './example-step'
 import Browser from './browser'
 
-const reactor = new Reactor({ debug: true });
+const reactor = new Reactor({
+  debug: true,
+  expose: 'itemFilterReactor'
+});
 
 reactor.registerStores({
   typeFilter: Store({
@@ -58,7 +61,7 @@ export default React.createClass({
 
   render() {
     return (
-      <div>
+      <div id="item-filter-example">
         <Browser>
           <div style={{ minHeight: 200 }}>
             <div className="example-select-wrapper">
