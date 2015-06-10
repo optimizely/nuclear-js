@@ -1,3 +1,7 @@
+var CMD = 'node_modules/.bin/node-sass sass/main.scss dist/assets/css/output.css'
+var WATCH_CMD = CMD + ' -w'
+
 module.exports = {
-  transpile: 'node_modules/.bin/babel src --out-dir compiled',
+  'watch-sass':  WATCH_CMD,
+  'sass': CMD,
 }

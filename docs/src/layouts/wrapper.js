@@ -10,7 +10,7 @@ export default React.createClass({
           <meta httpEquiv="Content-Type" content="text/html; charset=UTF-8"/>
           <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"/>
           <title>{pageTitle}</title>
-          <link href="output.css" type="text/css" rel="stylesheet" media="screen,projection"/>
+          <link href="assets/css/output.css" type="text/css" rel="stylesheet" media="screen,projection"/>
         </head>
         <body>
           {this.props.children}

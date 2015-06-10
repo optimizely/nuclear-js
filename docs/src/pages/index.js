@@ -144,7 +144,7 @@ export default React.createClass({
             </div>
 
             <div className="col s12 m12 l5 offset-l1 tour-section--example">
-              <img src="img/debug_console.jpg" width="750px" alt="" />
+              <img src="assets/img/debug_console.jpg" width="750px" alt="" />
             </div>
           </div>
         </div>

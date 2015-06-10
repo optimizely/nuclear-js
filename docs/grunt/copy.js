@@ -1,7 +1,7 @@
 module.exports = {
-  img: {
-    src: 'img/**',
+  assets: {
+    src: 'assets/**',
     expand: true,
     dest: 'dist/',
-  }
+  },
 }

@@ -1,9 +1,18 @@
 module.exports = {
+  dev: [
+    'clean',
+    'copy:assets',
+    'connect:dev',
+    'exec:sass',
+    'build-site',
+    'webpack:dev',
+    'concurrent:dev',
+  ],
   generate: [
     'clean',
-    'copy:img',
-    'sass',
-    'build-js',
+    'copy:assets',
+    'exec:sass',
     'build-site',
+    'webpack:prod',
   ]
 }

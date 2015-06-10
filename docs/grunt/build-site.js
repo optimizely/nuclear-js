@@ -1,6 +1,4 @@
 var path = require('path');
-var webpack = require('webpack')
-var webpackConfig = require('../webpack.config.js')
 
 require('babel/register')({
   only: [
@@ -16,8 +14,6 @@ var OUT = 'dist/'
 
 module.exports = function(grunt) {
   grunt.registerTask('build-site', function() {
-    var done = this.async()
-
     var files = grunt.file.expand({
       cwd: 'src/pages',
     }, '**.js')
@@ -30,18 +26,5 @@ module.exports = function(grunt) {
 
       grunt.file.write(outfile, html);
     });
-
-  });
-
-  grunt.registerTask('build-js', function() {
-    var done = this.async()
-    webpackConfig.output = {
-      path: OUT,
-      filename: '[name].js',
-    }
-
-    webpack(webpackConfig, function(err, stats) {
-      done(err)
-    })
   });
 }
