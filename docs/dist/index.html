@@ -1,0 +1,121 @@
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"><title>NuclearJS</title><link href="assets/css/output.css" type="text/css" rel="stylesheet" media="screen,projection"></head><body><div class="hero--bg" id="index-banner"><div class="container"><h1 class="header center white-text">NuclearJS</h1><div class="row center"><h5 class="header col s12 light white-text">Reactive Flux built with ImmutableJS data structures.</h5></div><div class="row center"><iframe src="https://ghbtns.com/github-btn.html?user=optimizely&amp;repo=nuclear-js&amp;type=star&amp;count=true&amp;size=large" frameborder="0" scrolling="0" width="140px" height="30px"></iframe></div></div></div><div class="tour-section"><div class="container"><div class="row"><div class="col s12 m12 l5 valign-wrapper"><div class="valign"><h4 class="red-text tour-section--title">Simple &amp; Elegant Flux</h4><h5 class="tour-section--bullet-title">Singular application state</h5><p class="tour-section--bullet-item">All application state is stored in one Immutable Map, similar to <a href="https://github.com/omcljs/om" target="_blank">Om</a>.</p><p class="tour-section--bullet-item">Stores declaratively register pure functions to handle state changes, massively simplifying testing and debugging state changes.</p><h5 class="tour-section--bullet-title">Powerful functional dataflow</h5><p class="tour-section--bullet-item">Compose and transform your data together statelessly and efficiently using a functional lens concept called <strong>Getters</strong>.</p><p class="tour-section--bullet-item">This allows your views to receive exactly the data they need in a way that is fully decoupled from stores. Best of all, this pattern eliminates the confusing <code>store.waitsFor</code> method found in other Flux implementations.</p><h5 class="tour-section--bullet-title">Reactive</h5><p class="tour-section--bullet-item">Any Getter can be observed by a view to be notified whenever its derived value changes.</p><p class="tour-section--bullet-item">Nuclear includes tools to integrate with libraries such as React and VueJS out of the box.</p><h5 class="tour-section--bullet-title">Efficient</h5><p class="tour-section--bullet-item">Thanks to immutable data, change detection can be efficiently performed at any level of granularity by a constant time reference equality <code>(===)</code> check.</p><p class="tour-section--bullet-item">Since Getters use pure functions, Nuclear utilizes memoization to only recompute parts of the dataflow that might change.</p></div></div><div class="col s12 m12 l6 offset-l1 tour-section--example"><div id="item-filter-example"><div class="browser-component"><div class="browser-component--top"><div class="browser-component--top-left"></div><div class="browser-component--top-middle"></div><div class="browser-component--top-right"></div></div><div class="browser-component--content"><div style="min-height:200px;"><div class="example-select-wrapper">Filter by type: <select class="browser-default"><option value="all">All</option><option value="food">Food</option><option value="clothes">Clothes</option></select></div><table class="bordered"><thead><tr><th data-field="id">Name</th><th data-field="name">Type</th><th data-field="price">Price</th></tr></thead><tbody><tr><td>banana</td><td>food</td><td>1</td></tr><tr><td>doritos</td><td>food</td><td>4</td></tr><tr><td>shirt</td><td>clothes</td><td>15</td></tr><tr><td>pants</td><td>clothes</td><td>20</td></tr></tbody></table><div class="example-step"><h6 class="example-step--title valign">User action updates application state</h6><div class="highlighted-code"><pre>
+<code class="json"><strong>AppState </strong>{
+  &quot;typeFilter&quot;: null,
+  &quot;items&quot;: [
+    {&quot;type&quot;: &quot;food&quot;,&quot;name&quot;: &quot;banana&quot;,&quot;price&quot;: 1},
+    {&quot;type&quot;: &quot;food&quot;,&quot;name&quot;: &quot;doritos&quot;,&quot;price&quot;: 4},
+    {&quot;type&quot;: &quot;clothes&quot;,&quot;name&quot;: &quot;shirt&quot;,&quot;price&quot;: 15},
+    {&quot;type&quot;: &quot;clothes&quot;,&quot;name&quot;: &quot;pants&quot;,&quot;price&quot;: 20}
+  ]
+}</code></pre></div></div><div class="example-step"><h6 class="example-step--title">Getters compose and transform application state reactively notifying components of any changes.</h6><div class="highlighted-code"><pre>
+<code class="json"><strong>filteredItems Getter </strong>[
+  {&quot;type&quot;: &quot;food&quot;,&quot;name&quot;: &quot;banana&quot;,&quot;price&quot;: 1},
+  {&quot;type&quot;: &quot;food&quot;,&quot;name&quot;: &quot;doritos&quot;,&quot;price&quot;: 4},
+  {&quot;type&quot;: &quot;clothes&quot;,&quot;name&quot;: &quot;shirt&quot;,&quot;price&quot;: 15},
+  {&quot;type&quot;: &quot;clothes&quot;,&quot;name&quot;: &quot;pants&quot;,&quot;price&quot;: 20}
+]</code></pre></div></div></div></div></div></div></div></div></div></div><div class="tour-section tour-section--bg"><div class="container"><h4 class="red-text tour-section--title">Usage:</h4><div><div class="row code-explanation--row"><div class="col s12 m12 l7"><div class="highlighted-code"><pre>
+<code class="javascript">import { Reactor, Store, toImmutable } from &#x27;nuclear-js&#x27;
+import React from &#x27;react&#x27;
+
+const reactor = new Reactor({ debug: true });
+
+reactor.registerStores({
+  typeFilter: Store({
+    getInitialState() {
+      return null;
+    },
+
+    initialize() {
+      this.on(&#x27;FILTER_TYPE&#x27;, (state, type) =&gt; type)
+    }
+  }),
+
+  items: Store({
+    getInitialState() {
+      return toImmutable([
+        { type: &#x27;food&#x27;, name: &#x27;banana&#x27;, price: 1 },
+        { type: &#x27;food&#x27;, name: &#x27;doritos&#x27;, price: 4 },
+        { type: &#x27;clothes&#x27;, name: &#x27;shirt&#x27;, price: 15 },
+        { type: &#x27;clothes&#x27;, name: &#x27;pants&#x27;, price: 20 },
+      ])
+    },
+
+    initialize() {
+      this.on(&#x27;ADD_ITEM&#x27;, (state, item) =&gt; state.push(item))
+    }
+  })
+})</code></pre></div></div><div class="col s12 m12 l5 code-explanation"><h5 class="tour-section--bullet-title">Create a <code>Reactor</code></h5><p class="tour-section--bullet-item">In NuclearJS the <code>reactor</code> acts as the dispatcher, maintains the application state and provides an API for data access and observation.</p><h5 class="tour-section--bullet-title">Register stores</h5><p class="tour-section--bullet-item">Stores determine the shape of your application state.  Stores define two methods:</p><p><code>getInitialState()</code> - Returns the initial state for that stores specific key in the application state.</p><p><code>initialize()</code> - Sets up any action handlers, by specifying the action type and a function that transforms<pre>
+<code>(storeState, action) =&gt; (newStoreState)</code></pre></p></div></div><div class="row code-explanation--row"><div class="col s12 m12 l7"><div class="highlighted-code"><pre>
+<code class="javascript">const filteredItemsGetter = [
+  [&#x27;typeFilter&#x27;],
+  [&#x27;items&#x27;],
+  (filter, items) =&gt; {
+    return (filter)
+      ? items.filter(i =&gt; i.get(&#x27;type&#x27;) === filter)
+      : items
+  }
+]</code></pre></div></div><div class="col s12 m12 l5 code-explanation"><h5 class="tour-section--bullet-title">Accessing your data</h5><p>Getters allow you to easily compose and transform your application state in a reusable way.</p><h5 class="tour-section--bullet-title"></h5></div></div><div class="row code-explanation--row"><div class="col s12 m12 l7"><div class="highlighted-code"><pre>
+<code class="javascript">const ItemViewer = React.createClass({
+  mixins: [reactor.ReactMixin],
+
+  getDataBindings() {
+    return {
+      items: filteredItemsGetter
+    }
+  },
+
+  render() {
+    return (
+      &lt;table&gt;
+        &lt;thead&gt;
+          &lt;tr&gt;
+            &lt;th&gt;Name&lt;/th&gt;
+            &lt;th&gt;Type&lt;/th&gt;
+            &lt;th&gt;Price&lt;/th&gt;
+          &lt;/tr&gt;
+        &lt;/thead&gt;
+
+        &lt;tbody&gt;
+          {this.state.items.map(item =&gt; {
+            return &lt;tr&gt;
+              &lt;td&gt;{item.get(&#x27;name&#x27;)}&lt;/td&gt;
+              &lt;td&gt;{item.get(&#x27;type&#x27;)}&lt;/td&gt;
+              &lt;td&gt;{item.get(&#x27;price&#x27;)}&lt;/td&gt;
+            &lt;/tr&gt;
+          })}
+        &lt;/tbody&gt;
+      &lt;/table&gt;
+    )
+  }
+})</code></pre></div></div><div class="col s12 m12 l5 code-explanation"><h5 class="tour-section--bullet-title">Automatic component data binding</h5><p>Simply use the <code>reactor.ReactMixin</code> and implement the <code>getDataBindings()</code> function to automatically sync any getter to a <code>this.state</code> property on a React component.</p><p>Since application state can only change after a dispatch then NuclearJS can be intelligent and only call <code>this.setState</code> whenever the actual value of the getter changes.  Meaning less pressure on React&#x27;s DOM diffing.</p><h5 class="tour-section--bullet-title">Framework agnostic</h5><p>This example shows how to use NuclearJS with React, however the same concepts can be extended to any reactive UI framework. In fact, the ReactMixin code is only about 40 lines.</p></div></div><div class="row code-explanation--row"><div class="col s12 m12 l7"><div class="highlighted-code"><pre>
+<code class="javascript">const actions = {
+  setFilter(type) {
+    reactor.dispatch(&#x27;FILTER_TYPE&#x27; type)
+  },
+
+  addItem(name, type, price) {
+    reactor.dispatch(&#x27;ADD_ITEM&#x27;, toImmutable({
+      name,
+      type,
+      price
+    }))
+  }
+}
+
+actions.addItem(&#x27;computer&#x27;, &#x27;electronics&#x27;, 1999)
+actions.setFilter(&#x27;electronics&#x27;)</code></pre></div></div><div class="col s12 m12 l5 code-explanation"><h5 class="tour-section--bullet-title">Dispatching actions</h5><p>Nuclear maintains a very non-magical approach to dispatching actions.  Simply call <code>reactor.dispatch</code> with the <code>actionType</code> and <code>payload</code>.</p><p>All action handling is done synchronously, leaving the state of the system very predicatable after every action.</p><p>Because actions are simply functions, it is very easy to compose actions together using plain javascript.</p></div></div><div class="row code-explanation--row"><div class="col s12 m12 l7"><div class="highlighted-code"><pre>
+<code class="javascript">// Evaluate by key path
+var itemsList = reactor.evaluate([&#x27;items&#x27;])
+var item0Price = reactor.evaluate([&#x27;items&#x27;, 0, &#x27;price&#x27;])
+
+// Evaluate by getter
+var filteredItems = reactor.evaluate(filteredItemsGetter)
+
+// Evaluate and coerce to plain javascript
+var itemsPOJO = reactor.evaluateToJS(filteredItemsGetter)
+
+// Observation
+reactor.observe(filteredItemsGetter, items =&gt; {
+  console.log(items)
+})
+</code></pre></div></div><div class="col s12 m12 l5 code-explanation"><h5 class="tour-section--bullet-title">Reading application state</h5><p>Nuclear also provides imperative mechanisms for evaluating and observing state.</p><p>In fact any getter can synchronously and imperatively evaluated or observed.  The entire <code>ReactMixin</code> is built using only those two functions.</p></div></div></div></div></div><div class="tour-section"><div class="container"><div class="row"><div class="col s12 m12 l6 tour-section--info"><h4 class="red-text tour-section--title">Tested &amp; Production Ready</h4><h5 class="tour-section--bullet-title">Maintained by Optimizely</h5><p class="tour-section--bullet-item">Optimizely has been using NuclearJS in production since 2014 and will offer long term support and a stable API.</p><h5 class="tour-section--bullet-title">Easy debugging</h5><p class="tour-section--bullet-item">With NuclearJS&#x27; built in logger you can inspect your application state from the beginning of time. NuclearJS makes tracking down difficult bugs a breeze, allowing you to focus more time writing code.</p><h5 class="tour-section--bullet-title">Testable</h5><p class="tour-section--bullet-item">When building with NuclearJS there is never a question of &quot;How do I test this?&quot;. There are prescribed testing strategies for every type of thing you will build with NuclearJS.</p><h5 class="tour-section--bullet-title">Prescribed code organization structure</h5><p>For large codebases the prescribed way of organization is to group all stores, actions and getters of the same domain in a module.</p><p>This method of code organization is extremely portable, making it almost trivial to refactor, split code into multiple bundles and create contracts between modules.</p><p>In fact, Optimizely&#x27;s codebase has over 50 modules and is growing everyday.  Using this pattern makes it easy for teams to consume other teams modules, leading to great code reusability.</p></div><div class="col s12 m12 l5 offset-l1 tour-section--example"><img src="assets/img/debug_console.jpg" width="750px" alt=""></div></div></div></div><script src="app.js"></script></body></html>
