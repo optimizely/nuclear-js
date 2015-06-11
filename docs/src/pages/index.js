@@ -30,40 +30,43 @@ export default React.createClass({
                 </h4>
 
                 <h5 className="tour-section--bullet-title">
-                Singular application state
+                  Singular application state
                 </h5>
                 <p className="tour-section--bullet-item">
-                  All application state is stored in one Immutable Map - think <a href="https://github.com/swanodette/om">Om</a>.
+                  All application state is stored in one Immutable Map, similar to <a href="https://github.com/omcljs/om" target="_blank">Om</a>.
                 </p>
-
                 <p className="tour-section--bullet-item">
-                  Stores are stateless and declarative.  Each store in Nuclear specifies the initial state and how subsequent actions mutate that state for a section of application.
+                  Stores declaratively register pure functions to handle state changes, massively simplifying testing and debugging state changes.
                 </p>
 
                 <h5 className="tour-section--bullet-title">
-                  First class support for derived data
+                  Powerful functional dataflow 
                 </h5>
                 <p className="tour-section--bullet-item">
                   Compose and transform your data together statelessly and efficiently using a functional lens concept called <strong>Getters</strong>.
-                  This pattern eliminates the confusing <code>store.waitsFor</code> method found in other Flux implementations.
+                </p>
+                <p className="tour-section--bullet-item">
+                   This allows your views to receive exactly the data they need in a way that is fully decoupled from stores. Best of all, this pattern eliminates the confusing <code>store.waitsFor</code> method found in other Flux implementations.
                 </p>
 
                 <h5 className="tour-section--bullet-title">
                   Reactive
                 </h5>
                 <p className="tour-section--bullet-item">
-                  Nuclear can observe and react to any granularity of state change, including derived state through Getters.
+                  Any Getter can be observed by a view to be notified whenever its derived value changes.
                 </p>
-
                 <p className="tour-section--bullet-item">
-                  Mixins and higher order components make automatic data binding between Nuclear and frameworks such as React and VueJS a breeze!
+                  Nuclear includes tools to integrate with libraries such as React and VueJS out of the box.
                 </p>
 
                 <h5 className="tour-section--bullet-title">
                   Efficient
                 </h5>
                 <p className="tour-section--bullet-item">
-                  Thanks to immutable state, all change detection can be done with a constant time triple equals (<code>===</code>) check.
+                  Thanks to immutable data, change detection can be efficiently performed at any level of granularity by a constant time reference equality <code>(===)</code> check.
+                </p>
+                <p className="tour-section--bullet-item">
+                  Since Getters use pure functions, Nuclear utilizes memoization to only recompute parts of the dataflow that might change.
                 </p>
               </div>
             </div>
