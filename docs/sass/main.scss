@@ -42,9 +42,17 @@
 
 $img-path: "../img/" !default;
 
+.hero {
+  &--bg {
+    @extend .red.darken-2;
+    padding: 3em 0;
+  }
+}
+
 .tour-section {
   padding: 3em 0 !important;
   position: relative;
+  overflow: hidden;
 
   &--example {
     padding: 7em 0 0 !important;
@@ -181,10 +189,15 @@ $img-path: "../img/" !default;
   }
 }
 
-.highlighted-code {
+pre code.hljs {
   font-size: 12px;
 }
 
 .code-explanation {
   margin-left: 50px;
+
+  &--row {
+    padding-bottom: 0;
+    margin-bottom: 0;
+  }
 }

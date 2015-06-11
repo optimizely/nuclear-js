@@ -16,7 +16,7 @@ module.exports = function(grunt) {
   grunt.registerTask('build-site', function() {
     var files = grunt.file.expand({
       cwd: 'src/pages',
-    }, '**.js')
+    }, '**/*.js')
 
     files.forEach(function(f) {
       var Component = require('../src/pages/' + f)

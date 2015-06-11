@@ -6,7 +6,7 @@ import UsageExample from '../components/usage-example'
 export default React.createClass({
   render() {
     return <Wrapper>
-      <div className="section pad-bot red darken-2" id="index-banner">
+      <div className="hero--bg" id="index-banner">
         <div className="container">
           <h1 className="header center white-text">NuclearJS</h1>
           <div className="row center">
@@ -20,8 +20,8 @@ export default React.createClass({
         </div>
       </div>
 
-      <div className="container">
-        <div className="section tour-section">
+      <div className="tour-section">
+        <div className="container">
           <div className="row">
             <div className="col s12 m12 l5 valign-wrapper">
               <div className="valign">
@@ -72,31 +72,22 @@ export default React.createClass({
               <ItemFilterExample />
             </div>
           </div>
-
         </div>
       </div>
 
-      <div className="tour-section--bg">
+      <div className="tour-section tour-section--bg">
         <div className="container">
-          <div className="section tour-section">
-            <div className="row">
-              <div className="col s12 m12 l12">
-                <h4 className="red-text tour-section--title">
-                  Usage:
-                </h4>
-              </div>
-            </div>
+          <h4 className="red-text tour-section--title">
+            Usage:
+          </h4>
 
-            <UsageExample />
-          </div>
+          <UsageExample />
         </div>
       </div>
 
-      <div className="container">
-        <div className="section tour-section">
+      <div className="tour-section">
+        <div className="container">
           <div className="row">
-
-
             <div className="col s12 m12 l6 tour-section--info">
               <h4 className="red-text tour-section--title">
                 Tested & Production Ready
