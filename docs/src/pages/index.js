@@ -2,10 +2,12 @@ import React from 'react'
 import Wrapper from '../layouts/wrapper'
 import ItemFilterExample from '../components/item-filter-example'
 import UsageExample from '../components/usage-example'
+import Nav from '../components/nav'
 
 export default React.createClass({
   render() {
     return <Wrapper>
+      <Nav />
       <div className="hero--bg" id="index-banner">
         <div className="container">
           <h1 className="header center white-text">NuclearJS</h1>

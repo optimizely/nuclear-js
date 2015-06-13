@@ -201,3 +201,19 @@ pre code.hljs {
     margin-bottom: 0;
   }
 }
+
+.nav {
+  @extend .red.darken-2;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+  box-shadow: none;
+}
+
+.nav-wrapper {
+  @extend .container;
+}
+
+.scrolled .nav {
+  @extend .z-depth-1;
+}
+
