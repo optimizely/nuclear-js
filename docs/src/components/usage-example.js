@@ -120,17 +120,17 @@ export default React.createClass({
           </div>
 
           <div className="col s12 m12 l5 code-explanation">
-            <h5 className="tour-section--bullet-title">
+            <h3 className="tour-section--bullet-title">
               Create a <code>Reactor</code>
-            </h5>
+            </h3>
 
             <p className="tour-section--bullet-item">
               In NuclearJS the <code>reactor</code> acts as the dispatcher, maintains the application state and provides an API for data access and observation.
             </p>
 
-            <h5 className="tour-section--bullet-title">
+            <h3 className="tour-section--bullet-title">
               Register stores
-            </h5>
+            </h3>
             <p className="tour-section--bullet-item">
               Stores determine the shape of your application state.  Stores define two methods:
             </p>
@@ -154,15 +154,15 @@ export default React.createClass({
           </div>
 
           <div className="col s12 m12 l5 code-explanation">
-            <h5 className="tour-section--bullet-title">
+            <h3 className="tour-section--bullet-title">
               Accessing your data
-            </h5>
+            </h3>
 
             <p>
               Getters allow you to easily compose and transform your application state in a reusable way.
             </p>
-            <h5 className="tour-section--bullet-title">
-            </h5>
+            <h3 className="tour-section--bullet-title">
+            </h3>
           </div>
         </div>
 
@@ -174,9 +174,9 @@ export default React.createClass({
           </div>
 
           <div className="col s12 m12 l5 code-explanation">
-            <h5 className="tour-section--bullet-title">
+            <h3 className="tour-section--bullet-title">
               Automatic component data binding
-            </h5>
+            </h3>
 
             <p>
               Simply use the <code>reactor.ReactMixin</code> and implement the <code>getDataBindings()</code> function to automatically sync any
@@ -188,9 +188,9 @@ export default React.createClass({
               value of the getter changes.  Meaning less pressure on React's DOM diffing.
             </p>
 
-            <h5 className="tour-section--bullet-title">
+            <h3 className="tour-section--bullet-title">
               Framework agnostic
-            </h5>
+            </h3>
 
 
             <p>
@@ -208,9 +208,9 @@ export default React.createClass({
           </div>
 
           <div className="col s12 m12 l5 code-explanation">
-            <h5 className="tour-section--bullet-title">
+            <h3 className="tour-section--bullet-title">
               Dispatching actions
-            </h5>
+            </h3>
 
             <p>
               Nuclear maintains a very non-magical approach to dispatching actions.  Simply call <code>reactor.dispatch</code> with the <code>actionType</code> and <code>payload</code>.
@@ -234,9 +234,9 @@ export default React.createClass({
           </div>
 
           <div className="col s12 m12 l5 code-explanation">
-            <h5 className="tour-section--bullet-title">
+            <h3 className="tour-section--bullet-title">
               Reading application state
-            </h5>
+            </h3>
 
             <p>
               Nuclear also provides imperative mechanisms for evaluating and observing state.

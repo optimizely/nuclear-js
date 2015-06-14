@@ -8,13 +8,13 @@ export default React.createClass({
   render() {
     return <Wrapper>
       <Nav />
-      <div className="hero--bg" id="index-banner">
+      <div className="hero hero--bg" id="index-banner">
         <div className="container">
           <h1 className="header center white-text">NuclearJS</h1>
           <div className="row center">
-            <h5 className="header col s12 light white-text">
+            <h3 className="header col s12 light white-text">
               Reactive Flux built with ImmutableJS data structures.
-            </h5>
+            </h3>
           </div>
           <div className="row center">
             <iframe src="https://ghbtns.com/github-btn.html?user=optimizely&repo=nuclear-js&type=star&count=true&size=large" frameBorder="0" scrolling="0" width="140px" height="30px"></iframe>
@@ -27,13 +27,13 @@ export default React.createClass({
           <div className="row">
             <div className="col s12 m12 l5 valign-wrapper">
               <div className="valign">
-                <h4 className="red-text tour-section--title">
+                <h2 className="red-text tour-section--title">
                   Simple & Elegant Flux
-                </h4>
+                </h2>
 
-                <h5 className="tour-section--bullet-title">
+                <h3 className="tour-section--bullet-title">
                   Singular application state
-                </h5>
+                </h3>
                 <p className="tour-section--bullet-item">
                   All application state is stored in one Immutable Map, similar to <a href="https://github.com/omcljs/om" target="_blank">Om</a>.
                 </p>
@@ -41,9 +41,9 @@ export default React.createClass({
                   Stores declaratively register pure functions to handle state changes, massively simplifying testing and debugging state changes.
                 </p>
 
-                <h5 className="tour-section--bullet-title">
+                <h3 className="tour-section--bullet-title">
                   Powerful functional dataflow 
-                </h5>
+                </h3>
                 <p className="tour-section--bullet-item">
                   Compose and transform your data together statelessly and efficiently using a functional lens concept called <strong>Getters</strong>.
                 </p>
@@ -51,9 +51,9 @@ export default React.createClass({
                    This allows your views to receive exactly the data they need in a way that is fully decoupled from stores. Best of all, this pattern eliminates the confusing <code>store.waitsFor</code> method found in other Flux implementations.
                 </p>
 
-                <h5 className="tour-section--bullet-title">
+                <h3 className="tour-section--bullet-title">
                   Reactive
-                </h5>
+                </h3>
                 <p className="tour-section--bullet-item">
                   Any Getter can be observed by a view to be notified whenever its derived value changes.
                 </p>
@@ -61,9 +61,9 @@ export default React.createClass({
                   Nuclear includes tools to integrate with libraries such as React and VueJS out of the box.
                 </p>
 
-                <h5 className="tour-section--bullet-title">
+                <h3 className="tour-section--bullet-title">
                   Efficient
-                </h5>
+                </h3>
                 <p className="tour-section--bullet-item">
                   Thanks to immutable data, change detection can be efficiently performed at any level of granularity by a constant time reference equality <code>(===)</code> check.
                 </p>
@@ -82,9 +82,9 @@ export default React.createClass({
 
       <div className="tour-section tour-section--bg">
         <div className="container">
-          <h4 className="red-text tour-section--title">
+          <h2 className="red-text tour-section--title">
             Usage:
-          </h4>
+          </h2>
 
           <UsageExample />
         </div>
@@ -94,36 +94,36 @@ export default React.createClass({
         <div className="container">
           <div className="row">
             <div className="col s12 m12 l6 tour-section--info">
-              <h4 className="red-text tour-section--title">
+              <h2 className="red-text tour-section--title">
                 Tested & Production Ready
-              </h4>
+              </h2>
 
-              <h5 className="tour-section--bullet-title">
+              <h3 className="tour-section--bullet-title">
                 Maintained by Optimizely
-              </h5>
+              </h3>
               <p className="tour-section--bullet-item">
                 Optimizely has been using NuclearJS in production since 2014 and will offer long term support and a stable API.
               </p>
 
-              <h5 className="tour-section--bullet-title">
+              <h3 className="tour-section--bullet-title">
                 Easy debugging
-              </h5>
+              </h3>
               <p className="tour-section--bullet-item">
                 With NuclearJS' built in logger you can inspect your application state from the beginning of time. NuclearJS makes tracking down difficult bugs
                 a breeze, allowing you to focus more time writing code.
               </p>
 
-              <h5 className="tour-section--bullet-title">
+              <h3 className="tour-section--bullet-title">
                 Testable
-              </h5>
+              </h3>
               <p className="tour-section--bullet-item">
                 When building with NuclearJS there is never a question of "How do I test this?". There are prescribed testing strategies
                 for every type of thing you will build with NuclearJS.
               </p>
 
-              <h5 className="tour-section--bullet-title">
+              <h3 className="tour-section--bullet-title">
                 Prescribed code organization structure
-              </h5>
+              </h3>
 
               <p>
                 For large codebases the prescribed way of organization is to group all stores, actions and getters of the same domain in a module.

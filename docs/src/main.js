@@ -12,6 +12,6 @@ render(ItemFilterExample, 'item-filter-example')
 function render(component, id) {
   var el = document.getElementById(id)
   if (el) {
-    React.render(React.createElement(ItemFilterExample))
+    React.render(React.createElement(ItemFilterExample), el)
   }
 }

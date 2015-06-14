@@ -12,10 +12,13 @@ export default React.createClass({
   render() {
     return (
       <div className="docs-page--sidebar col l2">
-        <ul>
+        <h3>{this.props.sectionTitle}</h3>
+        <ul className="sidebar-links">
           {this.props.navData.map(function(navItem) {
             var href = BASE_HOST + navItem.relative
-            return <li><a href={href}>{navItem.title}</a></li>
+            return <li className="sidebar-links--item">
+              <a href={href}>{navItem.title}</a>
+            </li>
           })}
         </ul>
       </div>

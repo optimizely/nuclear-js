@@ -47,6 +47,13 @@ $img-path: "../img/" !default;
     @extend .red.darken-2;
     padding: 3em 0;
   }
+
+  h1 {
+    $hero-fontsize: 4.2rem;
+    font-size: $hero-fontsize;
+    line-height: 1.1*$hero-fontsize;
+    margin: ($hero-fontsize / 2) 0 ($hero-fontsize / 2.5) 0;
+  }
 }
 
 .tour-section {
@@ -209,6 +216,7 @@ pre code.hljs {
   box-shadow: none;
 }
 
+
 .nav-wrapper {
   @extend .container;
 }
@@ -218,14 +226,27 @@ pre code.hljs {
 }
 
 .docs-page {
-  @extend .row;
 
-  &--sidebar {
-    @extend .col.l3;
+  h2 {
+    margin-top: $h2-fontsize * 1.33;
   }
 
-  &--contents {
-    @extend .col.l9;
+  h4 {
+    font-weight: 600;
+  }
+
+  &--sidebar {
+    padding-top: 26px !important;
+  }
+}
+
+.docs-page--sidebar {
+
+}
+
+.sidebar-links {
+  &--item {
+    line-height: 2em;
   }
 }
 

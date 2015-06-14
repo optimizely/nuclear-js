@@ -12,12 +12,12 @@ export default React.createClass({
   render() {
     return (
       <Wrapper title={this.props.title}>
-        <Nav />
+        <Nav includeLogo={true} />
 
         <div className="container">
           <div className="docs-page row">
-            <DocSidebar navData={this.props.navData} />
-            <div className="docs-page--contents col l10" dangerouslySetInnerHTML={{ __html: this.props.contents }}></div>
+            <DocSidebar navData={this.props.navData} sectionTitle="Docs" />
+            <div className="docs-page--contents col l8" dangerouslySetInnerHTML={{ __html: this.props.contents }}></div>
           </div>
         </div>
       </Wrapper>
