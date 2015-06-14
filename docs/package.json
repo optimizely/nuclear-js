@@ -18,6 +18,14 @@
     "nuclear-js": "^1.0.5",
     "webpack": "^1.9.11",
     "webpack-dev-server": "^1.9.0"
+    "grunt-concurrent": "^1.0.0",
+    "grunt-contrib-connect": "^0.10.1",
+    "remarkable": "^1.6.0",
+    "front-matter": "^1.0.0",
+    "glob": "^5.0.10",
+    "async": "^1.2.1",
+    "through": "^2.3.7",
+    "mkdirp": "^0.5.1"
   },
   "dependencies": {
     "babel": "^5.5.8",
@@ -36,7 +44,6 @@
     "react": "^0.13.3",
     "react-highlight": "^0.4.1",
     "sass-loader": "^1.0.2",
-    "style-loader": "^0.12.3",
-    "webpack": "^1.9.11"
+    "style-loader": "^0.12.3"
   }
 }

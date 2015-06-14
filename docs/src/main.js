@@ -7,7 +7,11 @@ addScrollClass("scrolled")
 
 hljs.initHighlightingOnLoad();
 
-React.render(
-  <ItemFilterExample />,
-  document.getElementById('item-filter-example')
-)
+render(ItemFilterExample, 'item-filter-example')
+
+function render(component, id) {
+  var el = document.getElementById(id)
+  if (el) {
+    React.render(React.createElement(ItemFilterExample))
+  }
+}

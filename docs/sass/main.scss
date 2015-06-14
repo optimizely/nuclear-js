@@ -217,3 +217,15 @@ pre code.hljs {
   @extend .z-depth-1;
 }
 
+.docs-page {
+  @extend .row;
+
+  &--sidebar {
+    @extend .col.l3;
+  }
+
+  &--contents {
+    @extend .col.l9;
+  }
+}
+
