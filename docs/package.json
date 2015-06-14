@@ -16,7 +16,7 @@
     "grunt-webpack": "^1.0.8",
     "node-libs-browser": "^0.5.2",
     "nuclear-js": "^1.0.5",
-    "webpack": "^1.9.10",
+    "webpack": "^1.9.11",
     "webpack-dev-server": "^1.9.0"
   },
   "dependencies": {
@@ -37,6 +37,6 @@
     "react-highlight": "^0.4.1",
     "sass-loader": "^1.0.2",
     "style-loader": "^0.12.3",
-    "webpack": "^1.9.10"
+    "webpack": "^1.9.11"
   }
 }
