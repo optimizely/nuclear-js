@@ -8,7 +8,7 @@
 
 Traditional Flux architecture built with ImmutableJS data structures.
 
-[Why you should use NuclearJS](http://developers.optimizely.com/nuclear-js/docs/).
+[Why you should use NuclearJS](http://optimizely.github.io/nuclear-js/).
 
 ## How NuclearJS differs from other Flux implementations
 
