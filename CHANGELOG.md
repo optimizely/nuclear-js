@@ -3,7 +3,7 @@
 - **fixed** removed accidentally checked in node_modules directory
 - **fixed** all the styling issues in the code using the new rules in `.eslintrc`
 - **added** linting using eslint. Linting is now part of the contributing process. Can be run using: `grunt eslint`
-- **added** new developer docs website. This website is still in beta. You can view it here: http://developers.optimizely.com/nuclear-js/docs/
+- **added** new developer docs website. This website is still in beta. You can view it here: http://optimizely.github.io/nuclear-js/
 
 ## 1.0.2
 
