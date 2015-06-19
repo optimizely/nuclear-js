@@ -3,7 +3,7 @@
 Welcome to NuclearJS!
 If you are reading this, it probably means that you are interested in contributing to this awesome open source project.
 To make the process of contributing more straightforward, we have prepared this guideline for you.
-To learn more about NuclearJS, check out our new [developer website!](http://developers.optimizely.com/nuclear-js/docs/)
+To learn more about NuclearJS, check out our new [developer website!](http://optimizely.github.io/nuclear-js/)
 
 ## Development Setup
 
