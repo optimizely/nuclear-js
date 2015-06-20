@@ -231,8 +231,13 @@ pre code.hljs {
     margin-top: $h2-fontsize * 1.33;
   }
 
+  h3 {
+    margin-top: $h3-fontsize * 1.33;
+  }
+
   h4 {
     font-weight: 600;
+    margin-top: $h4-fontsize * 1.33;
   }
 
   &--sidebar {
