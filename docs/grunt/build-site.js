@@ -21,7 +21,6 @@ var React = require('react')
 var OUT = path.join(process.cwd(), 'dist/')
 
 module.exports = function(grunt) {
-  console.log('grunt cwd', grunt.option('cwd'))
   grunt.registerTask('build-site', function() {
     var done = this.async()
 

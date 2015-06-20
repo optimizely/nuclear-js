@@ -1,6 +1,6 @@
 ---
 title: "Getting Started"
-section: "Getting Started"
+section: "Guide"
 ---
 
 # Getting Started
@@ -205,128 +205,106 @@ reactor.registerStores({
 })
 ```
 
+## Recap
 
-## Getters
+At this we've created actions for fetching products and adding an item to the cart.  We also have the `ProductStore` and `CartStore` registered on the reactor.
 
-Notice that the above `CartStore` does keeping track of entire items, only the id and quantity.  
-
-Nuclear allows us to use the `ProductStore` as the singular source of truth for products by composing the the `ProductStore` and `CartStore` with **Getters**.  This also eliminates any issues with state
-becoming out of sync between stores.
-
-Getters can take 2 forms:
-
-1. A KeyPath - such as `['products']` or `['cart', 'itemQty']` which the latter equates to a `state.getIn(['cart', 'itemQty'])` on the app state `Immutable.Map`.
-
-2. A Getter of the form:
-  ```javascript
-  [[KeyPath | Getter], [KeyPath | Getter], ..., tranformFunction]
-  ```
-
-#### `getters.js`
+Lets see what our application state looks like by using the `reactor.evaluate` function:
 
 ```javascript
-// it is idiomatic to facade all data access through getters, that way a component only has to subscribe to a getter making it agnostic
-// to the underlying stores / data transformation that is taking place
-const products = ['products']
+// providing an empty array to `evaluate` will return a snapshop of the entire app state
+reactor.evalaute([])
+// result
+Map {
+  cart: Map {
+    itemQty: Map {}
+  },
+  products: Map {}
+}
 
-const cartProducts = [
-  ['products'],
-  ['cart', 'productQuantities'],
-  (products, quantities) => {
-    return quantities.map((quantity, productId) => {
-      let product = products.get(productId)
-      return product
-        .set('quantity', quantity)
-        .remove('inventory') // inventory shouldnt be known in cart
-    })
-  }
-]
-
-const cartTotal = [
-  cartProducts,
-  (items) => {
-    const total = items.reduce((total, item) => {
-      return total + (item.get('quantity') * item.get('price'))
-    }, 0) || 0
-    return total.toFixed(2)
-  }
-]
-
-export default { products, cartProducts, cartTotal }
+reactor.evaluate(['cart'])
+// result
+Map {
+  itemQty: Map {}
+}
 ```
 
-## Putting it all together
+The application state is rather empty, each top level key is populated by the stores `getInitialState()` method.
 
-First lets expand our main file to initiate the fetch for products.
-
-#### `main.js`
+Lets see what our application looks like after we fetch some products.
 
 ```javascript
-import reactor from './reactor'
-import actions from './actions'
-import ProductStore from './stores/ProductStore'
-import CartStore from './stores/CartStore'
-
-reactor.registerStores({
-  'products': ProductStore,
-  'cart': CartStore,
-})
-
 actions.fetchProducts()
 ```
 
-#### `components/App.jsx`
+After the products have been fetched:
 
 ```javascript
-import React from 'react'
-import CartContainer from './CartContainer.jsx'
-import ProductsContainer from './ProductsContainer.jsx'
-
-export default React.createClass({
-  render() {
-    return (
-      <div>
-        <ProductsContainer />
-        <CartContainer />
-      </div>
-    )
+Map {
+  cart: Map {
+    itemQty: Map {}
+  },
+  products: Map {
+    1: Map { id: 1, title: "iPad 4 Mini", price: 500.01, inventory: 2, image: "../common/assets/ipad-mini.png" },
+    2: Map { id: 2, title: "H&M T-Shirt White", price: 10.99, inventory: 10, image: "../common/assets/t-shirt.png" },
+    3: Map { id: 3, title: "Charli XCX - Sucker CD", price: 19.99, inventory: 5, image: "../common/assets/sucker.png" }
   }
-});
+}
 ```
 
-#### `components/CartContainer.jsx`
+Now lets add a product to our shopping cart
 
 ```javascript
-import React from 'react'
-
-import Cart from '../../../common/components/Cart.jsx'
-import reactor from '../reactor'
-import getters from '../getters'
-import actions from '../actions'
-
-export default React.createClass({
-  mixins: [reactor.ReactMixin],
-
-  getDataBindings() {
-    return {
-      products: getters.cartProducts,
-      total: getters.cartTotal,
-    }
-  },
-
-  onCheckoutClicked: function () {
-    // we will fill this in a bit later
-    if (!this.state.products.length) {
-      return;
-    }
-  },
-
-  render: function () {
-    return (
-      <Cart products={this.state.products} total={this.state.total} onCheckoutClicked={this.onCheckoutClicked} />
-    )
-  },
-})
+actions.addToCart({ id: 3 })
 ```
 
+Notice there is an entry in the `itemQty` map as well as the inventory for **Charli XCX - Sucker CD** went from 5 to 4.
+
+```javascript
+Map {
+  cart: Map {
+    itemQty: Map {
+      3: 1
+    }
+  },
+  products: Map {
+    1: Map { id: 1, title: "iPad 4 Mini", price: 500.01, inventory: 2, image: "../common/assets/ipad-mini.png" },
+    2: Map { id: 2, title: "H&M T-Shirt White", price: 10.99, inventory: 10, image: "../common/assets/t-shirt.png" },
+    3: Map { id: 3, title: "Charli XCX - Sucker CD", price: 19.99, inventory: 4, image: "../common/assets/sucker.png" }
+  }
+}
+```
+
+The information in our stores are pretty minimal, the cart store doesn't actually know anything about the product, like its title, price or images
+all information that we would need if we were to build a cart component.
+
+Nuclear allows you to combine data from stores in a non-destructive manner, check it out:
+
+```javascript
+reactor.evaluate([
+  ['cart', 'itemQty'],
+  ['products'],
+  (itemQty, products) => {
+    return itemQty.map((qty, itemId) => {
+      return toImmutable({
+        product: products.get(itemId),
+        quantity: qty
+      })
+    }).toList()
+  }
+])
+```
+
+```javascript
+List [
+  Map {
+    product: Map { id: 3, title: "Charli XCX - Sucker CD", price: 19.99, inventory: 4, image: "../common/assets/sucker.png" },
+    quantity: 1,
+  }
+}
+```
+
+You've just seen your first **Getter**, and just in time too!  The next section is all about getters, one of the most powerful abstractions in Nuclear.
+
+#### [Next: Getters](./02-getters.html)
 

@@ -1,5 +1,5 @@
 import React from 'react'
-import { BASE_HOST } from '../globals'
+import { BASE_URL } from '../globals'
 
 export default React.createClass({
   //propTypes: {
@@ -15,7 +15,7 @@ export default React.createClass({
         <h3>{this.props.sectionTitle}</h3>
         <ul className="sidebar-links">
           {this.props.navData.map(function(navItem) {
-            var href = BASE_HOST + navItem.relative
+            var href = BASE_URL + navItem.relative
             return <li className="sidebar-links--item">
               <a href={href}>{navItem.title}</a>
             </li>

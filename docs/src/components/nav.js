@@ -1,10 +1,10 @@
 import React from 'react'
-import { BASE_URI } from '../globals'
+import { BASE_URL } from '../globals'
 
 export default React.createClass({
   render() {
     const logo = this.props.includeLogo
-      ? <a href={BASE_URI} class="brand-logo">NuclearJS</a>
+      ? <a href={BASE_URL} class="brand-logo">NuclearJS</a>
       : null
 
     return <div className="navbar-fixed">

@@ -1,8 +1,8 @@
 import React from 'react'
-import { BASE_HOST } from '../globals'
+import { BASE_URL } from '../globals'
 
-const CSS_PATH = BASE_HOST + 'assets/css/output.css'
-const JS_PATH = BASE_HOST + 'app.js'
+const CSS_PATH = BASE_URL + 'assets/css/output.css'
+const JS_PATH = BASE_URL + 'app.js'
 
 const GA_SCRIPT = `(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
 (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
