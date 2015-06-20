@@ -3,11 +3,14 @@ import Highlight from 'react-highlight'
 
 export default React.createClass({
   render() {
+    var languageClass = 'language-' + this.props.lang
     return (
       <div className="highlighted-code">
-        <Highlight className={this.props.lang}>
-          {this.props.children}
-        </Highlight>
+        <pre className={languageClass}>
+          <code className={languageClass}>
+            {this.props.children}
+          </code>
+        </pre>
       </div>
     )
   }

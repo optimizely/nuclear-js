@@ -34,7 +34,7 @@ export default React.createClass({
       title = <strong>{this.props.title} </strong>
     }
 
-    return <Code lang="json">
+    return <Code lang="javascript">
       {title}{this.state.appState}
     </Code>
   }

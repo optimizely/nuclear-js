@@ -25,7 +25,8 @@
     "glob": "^5.0.10",
     "async": "^1.2.1",
     "through": "^2.3.7",
-    "mkdirp": "^0.5.1"
+    "mkdirp": "^0.5.1",
+    "marked": "^0.3.3"
   },
   "dependencies": {
     "babel": "^5.5.8",

@@ -4,8 +4,9 @@ var glob = require('glob')
 var async = require('async')
 var fm = require('front-matter')
 var fs = require('fs')
-var Remarkable = require('remarkable');
-var md = new Remarkable();
+//var Remarkable = require('remarkable');
+//var md = new Remarkable();
+var marked = require('marked')
 
 require('babel/register')({
   only: [
@@ -104,7 +105,7 @@ function parseDocs(globPattern, opts, cb) {
         }
 
         var fmData = fm(data)
-        fmData.body = md.render(fmData.body)
+        fmData.body = marked(fmData.body)
         fmData.src = filepath
         fmData.relative = relativeFilepath
 
