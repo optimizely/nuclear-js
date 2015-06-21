@@ -226,6 +226,7 @@ pre code.hljs {
 }
 
 .docs-page {
+  padding-bottom: 3em;
 
   h2 {
     margin-top: $h2-fontsize * 1.33;
@@ -246,12 +247,15 @@ pre code.hljs {
 }
 
 .docs-page--sidebar {
-
+  h3 {
+    margin-top: 0;
+  }
 }
 
 .sidebar-links {
   &--item {
-    line-height: 2em;
+    line-height: 1.2em;
+    margin-bottom: 1em;
   }
 }
 

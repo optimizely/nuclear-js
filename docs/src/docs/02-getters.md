@@ -38,54 +38,29 @@ Map {
 }
 ```
 
+Lets create getters for:
 
-```javascript
-reactor.evaluate([
-  ['cart', 'itemQty'],
-  ['products'],
-  (itemQty, products) => {
-    return itemQty.map((qty, itemId) => {
-      return toImmutable({
-        product: products.get(itemId),
-        quantity: qty
-      })
-    }).toList()
-  }
-])
-```
-
-```javascript
-List [
-  Map {
-    product: Map { id: 3, title: "Charli XCX - Sucker CD", price: 19.99, inventory: 4, image: "../common/assets/sucker.png" },
-    quantity: 1,
-  }
-}
-```
-
-If you recall, the `CartStore` does keeping track of entire items, only the id and quantity.  
-
-Nuclear allows us to use the `ProductStore` as the singular source of truth for products by composing the the `ProductStore` and `CartStore` with **Getters**.  This also eliminates any issues with state
-becoming out of sync between stores.
-
+1. All products with their inventories
+2. Products in the shopping cart and the quantity
+3. The total of all products in the shopping cart
 
 #### `getters.js`
 
 ```javascript
 // it is idiomatic to facade all data access through getters, that way a component only has to subscribe to a getter making it agnostic
-// to the underlying stores / data transformation that is taking place
+// to the underlying stores and data transformation that is taking place
 const products = ['products']
 
 const cartProducts = [
   ['products'],
-  ['cart', 'productQuantities'],
-  (products, quantities) => {
-    return quantities.map((quantity, productId) => {
-      let product = products.get(productId)
+  ['cart', 'itemQty'],
+  (products, itemQty) => {
+    return itemQty.map((quantity, productId) => {
+      var product = products.get(productId)
       return product
         .set('quantity', quantity)
         .remove('inventory') // inventory shouldnt be known in cart
-    })
+    }).toList()
   }
 ]
 
@@ -93,7 +68,7 @@ const cartTotal = [
   cartProducts,
   (items) => {
     const total = items.reduce((total, item) => {
-      return total + (item.get('quantity') * item.get('price'))
+      return total + (item.get('quantity')* item.get('price'))
     }, 0) || 0
     return total.toFixed(2)
   }
@@ -102,139 +77,37 @@ const cartTotal = [
 export default { products, cartProducts, cartTotal }
 ```
 
-## Putting it all together
-
-First lets expand our main file to initiate the fetch for products.
-
-#### `main.js`
+Here's what our getters evaluate to:
 
 ```javascript
 import reactor from './reactor'
-import actions from './actions'
-import ProductStore from './stores/ProductStore'
-import CartStore from './stores/CartStore'
+import getters from './getters'
 
-reactor.registerStores({
-  'products': ProductStore,
-  'cart': CartStore,
-})
+reactor.evaluate(getters.products);
+// result
+Map {
+  1: Map { id: 1, title: "iPad 4 Mini", price: 500.01, inventory: 2, image: "common/assets/ipad-mini.png" },
+  2: Map { id: 2, title: "H&M T-Shirt White", price: 10.99, inventory: 10, image: "common/assets/t-shirt.png" },
+  3: Map { id: 3, title: "Charli XCX - Sucker CD", price: 19.99, inventory: 4, image: "common/assets/sucker.png" }
+}
 
-actions.fetchProducts()
+reactor.evaluate(getters.cartProducts);
+// result
+List [
+  Map { id: 3, title: "Charli XCX - Sucker CD", price: 19.99, quantity: 1, image: "common/assets/sucker.png" }
+]
+
+reactor.evaluate(getters.cartTotal);
+// result
+19.99
 ```
 
-#### `components/App.jsx`
+## Recap
 
-```javascript
-import React from 'react'
-import CartContainer from './CartContainer.jsx'
-import ProductsContainer from './ProductsContainer.jsx'
+Getters provide an incredibly powerful mechanism to both evaluate and observe any piece of application state or
+composite state.  Behind getters is a powerful caching mechanism that memoizes computation, and will only reevaluate
+when the underlying depdenncies change.
 
-export default React.createClass({
-  render() {
-    return (
-      <div>
-        <ProductsContainer />
-        <CartContainer />
-      </div>
-    )
-  }
-});
-```
+In the next section we will take this full circle and hook up our application state to components
 
-### Binding application state to components
-
-Every Nuclear Reactor comes with `reactor.ReactMixin` to easily create an alway-in-sync binding between any KeyPath or Getter value
-and a React component's state.
-
-The ability to observe any piece of composite data is immensely powerful and trivializes a lot of what other frameworks work hard to solve.
-
-To use simply include the `reactor.ReactMixin` and implement the `getDataBindings()` function that returns an object of state properties
-to `KeyPath` or `Getter`.  Nuclear will take care of the initial sync, observation and destroying the subscription when on `componentWillUnmount`.
-
-#### `components/CartContainer.jsx`
-
-```javascript
-import React from 'react'
-
-import Cart from '../../../common/components/Cart.jsx'
-import reactor from '../reactor'
-import getters from '../getters'
-import actions from '../actions'
-
-export default React.createClass({
-  mixins: [reactor.ReactMixin],
-
-  getDataBindings() {
-    return {
-      products: getters.cartProducts,
-      total: getters.cartTotal,
-    }
-  },
-
-  onCheckoutClicked: function () {
-    // we will fill this in a bit later
-    if (!this.state.products.length) {
-      return;
-    }
-  },
-
-  render: function () {
-    return (
-      <Cart products={this.state.products} total={this.state.total} onCheckoutClicked={this.onCheckoutClicked} />
-    )
-  },
-})
-```
-
-#### `components/ProductsContainer.jsx`
-
-```javascript
-import React from 'react'
-
-import ProductItem from '../../../common/components/ProductItem.jsx'
-import ProductsList from '../../../common/components/ProductsList.jsx'
-
-import reactor from '../reactor'
-import getters from '../getters'
-import actions from '../actions'
-
-const ProductItemContainer = React.createClass({
-  onAddToCartClicked() {
-    // we will implement this in the next section
-  },
-
-  render() {
-    return (
-      <ProductItem product={this.props.product} onAddToCartClicked={this.onAddToCartClicked} />
-    )
-  }
-})
-
-export default React.createClass({
-  mixins: [reactor.ReactMixin],
-
-  getDataBindings() {
-    return {
-      products: getters.products,
-    }
-  },
-
-  render: function () {
-    return (
-      <ProductsList title="Flux Shop Demo (NuclearJS)">
-        {this.state.products.map(product => {
-          return <ProductItemContainer key={product.get('id')} product={product.toJS()} />
-        })}
-      </ProductsList>
-    )
-  },
-})
-```
-
-## Final thoughts
-
-There you have it, we've created a fully functioning Nuclear Reactor to manage our application's state.  By this point the power of
-NuclearJS should be apparent.
-
-So go start building something, or if you want to see more examples checkout the next section [Async Actions and Optimistic Updates](./docs/02-optimistic-updates.html).
-
+#### [Hooking up to React](./03-hooking-up-to-react.html)

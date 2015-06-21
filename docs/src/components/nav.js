@@ -1,6 +1,10 @@
 import React from 'react'
 import { BASE_URL } from '../globals'
 
+function urlize(uri) {
+  return BASE_URL + uri
+}
+
 export default React.createClass({
   render() {
     const logo = this.props.includeLogo
@@ -12,9 +16,9 @@ export default React.createClass({
         <div className="nav-wrapper">
           {logo}
           <ul id="nav-mobile" className="right hide-on-med-and-down">
-            <li><a href="docs/01-getting-started.html">Docs</a></li>
-            <li><a href="examples/">Examples</a></li>
-            <li><a href="api/">API</a></li>
+            <li><a href={urlize("docs/01-getting-started.html")}>Docs</a></li>
+            <li><a href={urlize("examples/")}>Examples</a></li>
+            <li><a href={urlize("api/")}>API</a></li>
             <li><a href="https://github.com/optimizely/nuclear-js">Github</a></li>
           </ul>
         </div>
