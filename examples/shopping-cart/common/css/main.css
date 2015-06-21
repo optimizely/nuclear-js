@@ -1,0 +1,10 @@
+.shop-wrap {
+    max-width: 900px;
+    width: 60%;
+    margin: 20px 25px;
+}
+.cart {
+    position: fixed;
+    right: 50px;
+    top: 30px;
+}
