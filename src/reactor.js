@@ -17,7 +17,7 @@ var each = require('./utils').each
  * contain a 'state' object which is an Immutable.Map
  *
  * The only way Reactors can change state is by reacting to
- * messages.  To update staet, Reactor's dispatch messages to
+ * messages.  To update state, Reactor's dispatch messages to
  * all registered cores, and the core returns it's new
  * state based on the message
  */
