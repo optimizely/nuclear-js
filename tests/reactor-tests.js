@@ -133,6 +133,7 @@ describe('Reactor', () => {
       })
     })
 
+
     describe('when dispatching a relevant action', () => {
       var item = {
         name: 'item 1',
@@ -706,6 +707,142 @@ describe('Reactor', () => {
         expect(function() {
           reactor.reset()
         }).toThrow()
+      })
+    })
+  })
+
+  describe('serialize/loadState', () => {
+    var reactor
+    var stores
+
+    beforeEach(() => {
+      reactor = new Reactor({
+        debug: true,
+      })
+
+      stores = {
+        mapStore: Store({
+          getInitialState() {
+            return Immutable.Map([
+              [1, 'one'],
+              [2, 'two'],
+            ])
+          },
+          initialize() {
+            this.on('clear', state => null)
+          },
+          serialize(state) {
+            if (!state) {
+              return state;
+            }
+            return state.entrySeq().toJS()
+          },
+          deserialize(state) {
+            return Immutable.Map(state)
+          },
+        }),
+
+        stringStore: Store({
+          getInitialState() {
+            return 'foo'
+          },
+          initialize() {
+            this.on('clear', state => null)
+          },
+        }),
+
+        listStore: Store({
+          getInitialState() {
+            return toImmutable([1,2,'three'])
+          },
+          initialize() {
+            this.on('clear', state => null)
+          },
+        }),
+
+        booleanStore: Store({
+          getInitialState() {
+            return true
+          },
+          initialize() {
+            this.on('clear', state => null)
+          },
+        }),
+      }
+
+      reactor.registerStores(stores)
+    })
+
+    afterEach(() => {
+      reactor.reset()
+    })
+
+    it('should serialize -> loadState effectively', () => {
+      var serialized = reactor.serialize()
+      var reactor2 = new Reactor();
+      reactor2.registerStores(stores)
+      reactor2.dispatch('clear')
+
+      expect(Immutable.is(reactor.evaluate([]), reactor2.evaluate([]))).toBe(false)
+
+      reactor2.loadState(serialized)
+      expect(Immutable.is(reactor.evaluate([]), reactor2.evaluate([]))).toBe(true)
+    })
+
+    it('should notify observer', () => {
+      var mockFn = jasmine.createSpy()
+      var serialized = reactor.serialize()
+      var reactor2 = new Reactor();
+      reactor2.registerStores(stores)
+      reactor2.dispatch('clear')
+
+      reactor2.observe(['stringStore'], mockFn)
+
+      reactor2.loadState(serialized)
+
+      var firstCallArg = mockFn.calls.argsFor(0)
+
+      expect(mockFn.calls.count()).toBe(1)
+      expect(Immutable.is(firstCallArg, 'foo'))
+    })
+
+    describe('when extending Reactor#serialize and Reactor#loadState', () => {
+      var loadStateSpy = jasmine.createSpy('loadState')
+      var serializeSpy = jasmine.createSpy('serialize')
+
+      it('should respect the extended methods', () => {
+        class MyReactor extends Reactor {
+          constructor() {
+            super(arguments)
+          }
+
+          serialize(state) {
+            serializeSpy(state)
+            var serialized = super(state)
+            return JSON.stringify(serialized)
+          }
+
+          loadState(state) {
+            loadStateSpy(state)
+            super(JSON.parse(state))
+          }
+        }
+        var reactor1 = new MyReactor();
+        reactor1.registerStores(stores)
+        var reactor2 = new MyReactor();
+        reactor2.registerStores(stores)
+
+        var serialized = reactor1.serialize()
+
+        reactor2.dispatch('clear');
+
+        expect(Immutable.is(reactor1.evaluate([]), reactor2.evaluate([]))).toBe(false)
+
+        reactor2.loadState(serialized)
+        expect(Immutable.is(reactor.evaluate([]), reactor2.evaluate([]))).toBe(true)
+
+        expect(serializeSpy.calls.count()).toBe(1)
+        expect(loadStateSpy.calls.count()).toBe(1)
       })
     })
   })

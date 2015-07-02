@@ -8,6 +8,7 @@ var createReactMixin = require('./create-react-mixin')
 
 // helper fns
 var toJS = require('./immutable-helpers').toJS
+var toImmutable = require('./immutable-helpers').toImmutable
 var isImmutableValue = require('./immutable-helpers').isImmutableValue
 var each = require('./utils').each
 
@@ -171,6 +172,36 @@ class Reactor {
       this.__state = this.__state.set(id, initialState)
     })
 
+    this.__changeObserver.notifyObservers(this.__state)
+  }
+
+  /**
+   * Returns a plain object representing the application state
+   * @return {Object}
+   */
+  serialize() {
+    var serialized = {}
+    this.__stores.forEach((store, id) => {
+      var storeState = this.__state.get(id)
+      serialized[id] = store.serialize(storeState)
+    })
+    return serialized
+  }
+
+  /**
+   * @param {Object} state
+   */
+  loadState(state) {
+    var stateToLoad = toImmutable({}).withMutations(stateToLoad => {
+      each(state, (serializedStoreState, storeId) => {
+        var store = this.__stores.get(storeId)
+        if (store) {
+          stateToLoad.set(storeId, store.deserialize(serializedStoreState))
+        }
+      })
+    })
+
+    this.__state = this.__state.merge(stateToLoad)
     this.__changeObserver.notifyObservers(this.__state)
   }
 
