@@ -4,4 +4,5 @@ var WATCH_CMD = CMD + ' -w'
 module.exports = {
   'watch-sass':  WATCH_CMD,
   'sass': CMD,
+  'generate': "BASE_URL='https://optimizely.github.io/nuclear-js/' grunt generate",
 }
