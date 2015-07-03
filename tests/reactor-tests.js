@@ -846,4 +846,55 @@ describe('Reactor', () => {
       })
     })
   })
+
+  describe('#batch', () => {
+    var reactor
+
+    beforeEach(() => {
+      reactor = new Reactor({
+        debug: true,
+      })
+      reactor.registerStores({
+        listStore: Store({
+          getInitialState() {
+            return toImmutable([])
+          },
+          initialize() {
+            this.on('add', (state, item) => state.push(toImmutable(item)))
+          },
+        }),
+      })
+    })
+
+    afterEach(() => {
+      reactor.reset()
+    })
+
+    it('should execute multiple dispatches within the queue function', () => {
+      reactor.batch(() => {
+        reactor.dispatch('add', 'one')
+        reactor.dispatch('add', 'two')
+      })
+
+      expect(reactor.evaluateToJS(['listStore'])).toEqual(['one', 'two'])
+    })
+
+    it('should notify observers only once', () => {
+      var observeSpy = jasmine.createSpy()
+
+      reactor.observe(['listStore'], list => observeSpy(list.toJS()))
+
+      reactor.batch(() => {
+        reactor.dispatch('add', 'one')
+        reactor.dispatch('add', 'two')
+      })
+
+      expect(observeSpy.calls.count()).toBe(1)
+
+      var firstCallArg = observeSpy.calls.argsFor(0)[0]
+
+      expect(observeSpy.calls.count()).toBe(1)
+      expect(firstCallArg).toEqual(['one', 'two'])
+    })
+  })
 })

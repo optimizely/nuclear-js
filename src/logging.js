@@ -21,7 +21,7 @@ exports.dispatchError = function(error) {
 exports.storeHandled = function(id, before, after) {
   if (console.group) {
     if (before !== after) {
-      console.debug('Core changed: ' + id)
+      console.debug('Store ' + id + ' handled action')
     }
   }
 }
