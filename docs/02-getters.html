@@ -1,0 +1,99 @@
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"><title>NuclearJS | Getters</title><link href="https://optimizely.github.io/nuclear-jsassets/css/output.css" type="text/css" rel="stylesheet" media="screen,projection"><script src="//cdn.optimizely.com/js/3006700484.js"></script><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-64060472-1', 'auto');
+ga('send', 'pageview');</script></head><body><div class="navbar-fixed"><nav class="nav"><div class="nav-wrapper"><a href="https://optimizely.github.io/nuclear-js">NuclearJS</a><ul id="nav-mobile" class="right hide-on-med-and-down"><li><a href="https://optimizely.github.io/nuclear-jsdocs/01-getting-started.html">Docs</a></li><li><a href="https://optimizely.github.io/nuclear-jsdocs/05-api.html">API</a></li><li><a href="https://github.com/optimizely/nuclear-js">Github</a></li></ul></div></nav></div><div class="container"><div class="docs-page row"><div class="docs-page--sidebar col l2"><h3>Docs</h3><ul class="sidebar-links"><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-jsdocs/01-getting-started.html">Getting Started</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-jsdocs/02-getters.html">Getters</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-jsdocs/03-hooking-up-to-react.html">Hooking up to React</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-jsdocs/04-async-actions-and-optimistic-updates.html">Async Actions and Optimistic Updates</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-jsdocs/05-api.html">API</a></li></ul></div><div class="docs-page--contents col l8"><h1 id="getters">Getters</h1>
+<p>In the <a href="./01-getting-started.html">previous section</a> we created stores and actions for our shopping application. At the very end we introduced the concept of getters.
+This section will explain the details behind getters and how they can used, combined and observed to build a rich user interface.</p>
+<h3 id="definition">Definition</h3>
+<p>Getters can take 2 forms:</p>
+<ol>
+<li><p>A KeyPath - such as <code>[&#39;products&#39;]</code> or <code>[&#39;cart&#39;, &#39;itemQty&#39;]</code> which the latter equates to a <code>state.getIn([&#39;cart&#39;, &#39;itemQty&#39;])</code> on the app state <code>Immutable.Map</code>.</p>
+</li>
+<li><p>An array of Getters or KeyPaths and a combine function.</p>
+<pre><code class="lang-javascript">[[KeyPath | Getter], [KeyPath | Getter], ..., combineFunction]
+</code></pre>
+</li>
+</ol>
+<h2 id="back-to-our-example">Back to our example</h2>
+<p>Recall our application state looks something like after we&#39;ve fetched the products and the user added something to their cart&#39;:</p>
+<pre><code class="lang-javascript">Map {
+  cart: Map {
+    itemQty: Map {
+      3: 1
+    }
+  },
+  products: Map {
+    1: Map { id: 1, title: &quot;iPad 4 Mini&quot;, price: 500.01, inventory: 2, image: &quot;../common/assets/ipad-mini.png&quot; },
+    2: Map { id: 2, title: &quot;H&amp;M T-Shirt White&quot;, price: 10.99, inventory: 10, image: &quot;../common/assets/t-shirt.png&quot; },
+    3: Map { id: 3, title: &quot;Charli XCX - Sucker CD&quot;, price: 19.99, inventory: 4, image: &quot;../common/assets/sucker.png&quot; }
+  }
+}
+</code></pre>
+<p>Lets create getters for:</p>
+<ol>
+<li>All products with their inventories</li>
+<li>Products in the shopping cart and the quantity</li>
+<li>The total of all products in the shopping cart</li>
+</ol>
+<h4 id="-getters-js-"><code>getters.js</code></h4>
+<pre><code class="lang-javascript">// it is idiomatic to facade all data access through getters, that way a component only has to subscribe to a getter making it agnostic
+// to the underlying stores and data transformation that is taking place
+const products = [&#39;products&#39;]
+
+const cartProducts = [
+  [&#39;products&#39;],
+  [&#39;cart&#39;, &#39;itemQty&#39;],
+  (products, itemQty) =&gt; {
+    return itemQty.map((quantity, productId) =&gt; {
+      var product = products.get(productId)
+      return product
+        .set(&#39;quantity&#39;, quantity)
+        .remove(&#39;inventory&#39;) // inventory shouldnt be known in cart
+    }).toList()
+  }
+]
+
+const cartTotal = [
+  cartProducts,
+  (items) =&gt; {
+    const total = items.reduce((total, item) =&gt; {
+      return total + (item.get(&#39;quantity&#39;)* item.get(&#39;price&#39;))
+    }, 0) || 0
+    return total.toFixed(2)
+  }
+]
+
+export default { products, cartProducts, cartTotal }
+</code></pre>
+<p>Here&#39;s what our getters evaluate to:</p>
+<pre><code class="lang-javascript">import reactor from &#39;./reactor&#39;
+import getters from &#39;./getters&#39;
+
+reactor.evaluate(getters.products);
+// result
+Map {
+  1: Map { id: 1, title: &quot;iPad 4 Mini&quot;, price: 500.01, inventory: 2, image: &quot;common/assets/ipad-mini.png&quot; },
+  2: Map { id: 2, title: &quot;H&amp;M T-Shirt White&quot;, price: 10.99, inventory: 10, image: &quot;common/assets/t-shirt.png&quot; },
+  3: Map { id: 3, title: &quot;Charli XCX - Sucker CD&quot;, price: 19.99, inventory: 4, image: &quot;common/assets/sucker.png&quot; }
+}
+
+reactor.evaluate(getters.cartProducts);
+// result
+List [
+  Map { id: 3, title: &quot;Charli XCX - Sucker CD&quot;, price: 19.99, quantity: 1, image: &quot;common/assets/sucker.png&quot; }
+]
+
+reactor.evaluate(getters.cartTotal);
+// result
+19.99
+</code></pre>
+<h2 id="recap">Recap</h2>
+<p>Getters provide an incredibly powerful mechanism to both evaluate and observe any piece of application state or
+composite state.  Behind getters is a powerful caching mechanism that memoizes computation, and will only reevaluate
+when the underlying depdenncies change.</p>
+<p>In the next section we will take this full circle and hook up our application state to components</p>
+<h4 id="-next-hooking-up-to-react-03-hooking-up-to-react-html-"><a href="./03-hooking-up-to-react.html">Next: Hooking up to React</a></h4>
+</div></div></div><script src="https://optimizely.github.io/nuclear-jsapp.js"></script></body></html>

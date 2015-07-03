@@ -101,7 +101,7 @@
 .red-text.text-darken-1 {
   color: #E53935 !important; }
 
-.red.darken-2, .hero--bg {
+.red.darken-2, .hero--bg, .nav {
   background-color: #D32F2F !important; }
 
 .red-text.text-darken-2 {
@@ -2030,7 +2030,7 @@ ul {
 .clearfix {
   clear: both; }
 
-.z-depth-1, nav, .card-panel, .card, .toast, .btn, .btn-large, .btn-floating, .dropdown-content, .collapsible, .side-nav {
+.z-depth-1, nav, .card-panel, .card, .toast, .btn, .btn-large, .btn-floating, .dropdown-content, .collapsible, .side-nav, .scrolled .nav {
   -webkit-box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
   -moz-box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);
   box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12); }
@@ -4801,13 +4801,13 @@ span.badge {
 .mdi-toggle-radio-button-on:before {
   content: ; }
 
-.container {
+.container, .nav-wrapper {
   padding: 0 1.5rem;
   margin: 0 auto;
   max-width: 1280px;
   width: 90%; }
 
-.container .row {
+.container .row, .nav-wrapper .row {
   margin-left: -0.75rem;
   margin-right: -0.75rem; }
 
@@ -5181,29 +5181,29 @@ h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
   font-weight: inherit; }
 
 h1 {
-  font-size: 4.2rem;
-  line-height: 4.62rem;
-  margin: 2.1rem 0 1.68rem 0; }
-
-h2 {
-  font-size: 3.56rem;
-  line-height: 3.916rem;
-  margin: 1.78rem 0 1.424rem 0; }
-
-h3 {
   font-size: 2.92rem;
   line-height: 3.212rem;
   margin: 1.46rem 0 1.168rem 0; }
 
-h4 {
+h2 {
   font-size: 2.28rem;
   line-height: 2.508rem;
   margin: 1.14rem 0 0.912rem 0; }
 
-h5 {
+h3 {
   font-size: 1.64rem;
   line-height: 1.804rem;
   margin: 0.82rem 0 0.656rem 0; }
+
+h4 {
+  font-size: 1rem;
+  line-height: 1.1rem;
+  margin: 0.5rem 0 0.4rem 0; }
+
+h5 {
+  font-size: 1rem;
+  line-height: 1.1rem;
+  margin: 0.5rem 0 0.4rem 0; }
 
 h6 {
   font-size: 1rem;
@@ -7205,113 +7205,140 @@ button.picker__today:focus, button.picker__clear:focus, button.picker__close:foc
   .picker--time .picker__box {
     margin-bottom: 5em; } }
 
-/*
+/* http://prismjs.com/download.html?themes=prism-okaidia&languages=markup+css+clike+javascript+bash&plugins=highlight-keywords */
+/**
+ * okaidia theme for JavaScript, CSS and HTML
+ * Loosely based on Monokai textmate theme by http://www.monokai.nl/
+ * @author ocodia
+ */
+code[class*="language-"],
+pre[class*="language-"] {
+  color: #f8f8f2;
+  text-shadow: 0 1px rgba(0, 0, 0, 0.3);
+  font-family: Consolas, Monaco, 'Andale Mono', monospace;
+  direction: ltr;
+  text-align: left;
+  white-space: pre;
+  word-spacing: normal;
+  word-break: normal;
+  line-height: 1.5;
+  -moz-tab-size: 4;
+  -o-tab-size: 4;
+  tab-size: 4;
+  -webkit-hyphens: none;
+  -moz-hyphens: none;
+  -ms-hyphens: none;
+  hyphens: none; }
 
-github.com style (c) Vasily Polovnyov <vast@whiteants.net>
+/* Code blocks */
+pre[class*="language-"] {
+  padding: 1em;
+  margin: .5em 0;
+  overflow: auto;
+  border-radius: 0.3em; }
 
-*/
-.hljs {
-  display: block;
-  overflow-x: auto;
-  padding: 0.5em;
-  color: #333;
-  background: #f8f8f8;
-  -webkit-text-size-adjust: none; }
+:not(pre) > code[class*="language-"],
+pre[class*="language-"] {
+  background: #272822; }
 
-.hljs-comment,
-.diff .hljs-header {
-  color: #998;
+/* Inline code */
+:not(pre) > code[class*="language-"] {
+  padding: .1em;
+  border-radius: .3em; }
+
+pre {
+  padding: 1em;
+  margin: .5em 0;
+  overflow: auto;
+  border-radius: 0.3em;
+  background: #272822; }
+
+pre > code {
+  color: #f8f8f2;
+  text-shadow: 0 1px rgba(0, 0, 0, 0.3);
+  font-family: Consolas, Monaco, 'Andale Mono', monospace;
+  direction: ltr;
+  text-align: left;
+  white-space: pre;
+  word-spacing: normal;
+  word-break: normal;
+  line-height: 1.5;
+  -moz-tab-size: 4;
+  -o-tab-size: 4;
+  tab-size: 4;
+  -webkit-hyphens: none;
+  -moz-hyphens: none;
+  -ms-hyphens: none;
+  hyphens: none; }
+
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: slategray; }
+
+.token.punctuation {
+  color: #f8f8f2; }
+
+.namespace {
+  opacity: .7; }
+
+.token.property,
+.token.tag,
+.token.constant,
+.token.symbol,
+.token.deleted {
+  color: #f92672; }
+
+.token.boolean,
+.token.number {
+  color: #ae81ff; }
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+  color: #a6e22e; }
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string,
+.token.variable {
+  color: #f8f8f2; }
+
+.token.atrule,
+.token.attr-value,
+.token.function {
+  color: #e6db74; }
+
+.token.keyword {
+  color: #66d9ef; }
+
+.token.regex,
+.token.important {
+  color: #fd971f; }
+
+.token.important,
+.token.bold {
+  font-weight: bold; }
+
+.token.italic {
   font-style: italic; }
 
-.hljs-keyword,
-.css .rule .hljs-keyword,
-.hljs-winutils,
-.nginx .hljs-title,
-.hljs-subst,
-.hljs-request,
-.hljs-status {
-  color: #333;
-  font-weight: bold; }
-
-.hljs-number,
-.hljs-hexcolor,
-.ruby .hljs-constant {
-  color: #008080; }
-
-.hljs-string,
-.hljs-tag .hljs-value,
-.hljs-doctag,
-.tex .hljs-formula {
-  color: #d14; }
-
-.hljs-title,
-.hljs-id,
-.scss .hljs-preprocessor {
-  color: #900;
-  font-weight: bold; }
-
-.hljs-list .hljs-keyword,
-.hljs-subst {
-  font-weight: normal; }
-
-.hljs-class .hljs-title,
-.hljs-type,
-.vhdl .hljs-literal,
-.tex .hljs-command {
-  color: #458;
-  font-weight: bold; }
-
-.hljs-tag,
-.hljs-tag .hljs-title,
-.hljs-rule .hljs-property,
-.django .hljs-tag .hljs-keyword {
-  color: #000080;
-  font-weight: normal; }
-
-.hljs-attribute,
-.hljs-variable,
-.lisp .hljs-body,
-.hljs-name {
-  color: #008080; }
-
-.hljs-regexp {
-  color: #009926; }
-
-.hljs-symbol,
-.ruby .hljs-symbol .hljs-string,
-.lisp .hljs-keyword,
-.clojure .hljs-keyword,
-.scheme .hljs-keyword,
-.tex .hljs-special,
-.hljs-prompt {
-  color: #990073; }
-
-.hljs-built_in {
-  color: #0086b3; }
-
-.hljs-preprocessor,
-.hljs-pragma,
-.hljs-pi,
-.hljs-doctype,
-.hljs-shebang,
-.hljs-cdata {
-  color: #999;
-  font-weight: bold; }
-
-.hljs-deletion {
-  background: #fdd; }
-
-.hljs-addition {
-  background: #dfd; }
-
-.diff .hljs-change {
-  background: #0086b3; }
-
-.hljs-chunk {
-  color: #aaa; }
+.token.entity {
+  cursor: help; }
 
 .hero--bg {
   padding: 3em 0; }
+
+.hero h1 {
+  font-size: 4.2rem;
+  line-height: 4.62rem;
+  margin: 2.1rem 0 1.68rem 0; }
 
 .tour-section {
   padding: 3em 0 !important;
@@ -7409,3 +7436,27 @@ pre code.hljs {
   .code-explanation--row {
     padding-bottom: 0;
     margin-bottom: 0; }
+
+.nav {
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+  box-shadow: none; }
+
+.docs-page {
+  padding-bottom: 3em; }
+  .docs-page h2 {
+    margin-top: 3.0324rem; }
+  .docs-page h3 {
+    margin-top: 2.1812rem; }
+  .docs-page h4 {
+    font-weight: 600;
+    margin-top: 1.33rem; }
+  .docs-page--sidebar {
+    padding-top: 26px !important; }
+
+.docs-page--sidebar h3 {
+  margin-top: 0; }
+
+.sidebar-links--item {
+  line-height: 1.2em;
+  margin-bottom: 1em; }

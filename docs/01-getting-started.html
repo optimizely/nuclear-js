@@ -1,0 +1,249 @@
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"><title>NuclearJS | Getting Started</title><link href="https://optimizely.github.io/nuclear-jsassets/css/output.css" type="text/css" rel="stylesheet" media="screen,projection"><script src="//cdn.optimizely.com/js/3006700484.js"></script><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-64060472-1', 'auto');
+ga('send', 'pageview');</script></head><body><div class="navbar-fixed"><nav class="nav"><div class="nav-wrapper"><a href="https://optimizely.github.io/nuclear-js">NuclearJS</a><ul id="nav-mobile" class="right hide-on-med-and-down"><li><a href="https://optimizely.github.io/nuclear-jsdocs/01-getting-started.html">Docs</a></li><li><a href="https://optimizely.github.io/nuclear-jsdocs/05-api.html">API</a></li><li><a href="https://github.com/optimizely/nuclear-js">Github</a></li></ul></div></nav></div><div class="container"><div class="docs-page row"><div class="docs-page--sidebar col l2"><h3>Docs</h3><ul class="sidebar-links"><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-jsdocs/01-getting-started.html">Getting Started</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-jsdocs/02-getters.html">Getters</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-jsdocs/03-hooking-up-to-react.html">Hooking up to React</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-jsdocs/04-async-actions-and-optimistic-updates.html">Async Actions and Optimistic Updates</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-jsdocs/05-api.html">API</a></li></ul></div><div class="docs-page--contents col l8"><h1 id="getting-started">Getting Started</h1>
+<p>This guide will take you through the process of install NuclearJS and familiarize you with the concepts found in Nuclear to build Flux systems.</p>
+<h2 id="installation">Installation</h2>
+<pre><code class="lang-shell">npm install --save nuclear-js
+</code></pre>
+<h2 id="overview">Overview</h2>
+<p>In this tutorial we will create a Nuclear flux system to show a list of products and add them to a shopping cart.  Here&#39;s the plan:</p>
+<ol>
+<li><p>Create a <strong>Reactor</strong></p>
+</li>
+<li><p>Create <strong>actions</strong> to fetch products from a server and to add a product to the shopping cart</p>
+</li>
+<li><p>Create a <strong>ProductStore</strong> and <strong>ShoppingCartStore</strong></p>
+</li>
+<li><p>Create <strong>getters</strong> to transform and compose our store data into a consumable format for the UI</p>
+</li>
+<li><p>Hook everything up to React</p>
+</li>
+</ol>
+<h3 id="a-few-things-to-do-know-before-we-start">A few things to do know before we start</h3>
+<ol>
+<li><p>Although the example code is written using ES6, this is totally optional.  NuclearJS fully supports ES5 out of the box </p>
+</li>
+<li><p>Nuclear stores work best when using ImmutableJS data structures.  You will see <code>toImmutable</code> quite often, this is simply sugar
+to convert plain javascript arrays into <a href="http://facebook.github.io/immutable-js/docs/#/List"><code>Immutable.List</code></a> and objects to
+<a href="http://facebook.github.io/immutable-js/docs/#/Map"><code>Immutable.Map</code></a>.  The use of <code>toImmutable</code> is optional, you are free to use
+any ImmutableJS data structure with no penalty.</p>
+</li>
+</ol>
+<h2 id="creating-a-reactor-">Creating a <code>Reactor</code></h2>
+<p>In Nuclear the <code>Reactor</code> is the brains of the system.  Generally you will only have one reactor for your application, however they are instanceable
+for server-side rendering.</p>
+<p>The reactor holds the application state in the form of an <code>Immutable.Map</code>, while dispatching actions transform the application state.</p>
+<h4 id="-reactor-js-"><code>reactor.js</code></h4>
+<pre><code class="lang-javascript">import { Reactor } from &#39;nuclear-js&#39;
+
+const reactor = new Reactor({
+  debug: true
+})
+
+export default reactor
+</code></pre>
+<h2 id="actions">Actions</h2>
+<p>Actions are categorized as any function that calls <code>reactor.dispatch(actionType, payload)</code>.</p>
+<p>For our example we will start by creating actions to fetch products from a server and to add a product to the users shopping cart.</p>
+<h4 id="-actiontypes-js-"><code>actionTypes.js</code></h4>
+<pre><code class="lang-javascript">import keyMirror from &#39;react/lib/keyMirror&#39;
+
+export default keyMirror({
+    RECEIVE_PRODUCTS: null,
+    ADD_TO_CART: null,
+    CHECKOUT_START: null,
+    CHECKOUT_SUCCESS: null,
+    CHECKOUT_FAILED: null,
+})
+</code></pre>
+<h4 id="-actions-js-"><code>actions.js</code></h4>
+<pre><code class="lang-javascript">import shop from &#39;../../common/api/shop&#39;
+import reactor from &#39;./reactor&#39;
+import {
+    RECEIVE_PRODUCTS,
+    ADD_TO_CART,
+    CHECKOUT_START,
+    CHECKOUT_SUCCESS,
+    CHECKOUT_FAILED,
+} from &#39;./actionTypes&#39;
+
+export default {
+  fetchProducts() {
+    shop.getProducts(products =&gt; {
+      reactor.dispatch(RECEIVE_PRODUCTS, { products })
+    });
+  },
+
+  addToCart(product) {
+    reactor.dispatch(ADD_TO_CART, { product })
+  },
+}
+</code></pre>
+<h2 id="creating-stores">Creating Stores</h2>
+<p>Stores hold no state, instead they provide a collection of functions that transform current state into new state.  They provide an <code>initialize</code> hook used when
+register with a reactor to define what actions they respond to.</p>
+<p>In Nuclear there is no need to worry about stores knowing about other stores or <code>store.waitsFor</code>.  The sole responsibility of stores is to write or mutate application
+state, the responsibility of reading application state falls on Getters.</p>
+<h4 id="-stores-productstore-js-"><code>stores/ProductStore.js</code></h4>
+<pre><code class="lang-javascript">import { Store, toImmutable } from &#39;nuclear-js&#39;
+import { RECEIVE_PRODUCTS, ADD_TO_CART } from &#39;../action-types&#39;
+
+// example product:
+// {{&quot;id&quot;: 1, &quot;title&quot;: &quot;iPad 4 Mini&quot;, &quot;price&quot;: 500.01, &quot;inventory&quot;: 2, &quot;image&quot;: &quot;../common/assets/ipad-mini.png&quot;},&quot;id&quot;: 1, &quot;title&quot;: &quot;iPad 4 Mini&quot;, &quot;price&quot;: 500.01, &quot;inventory&quot;: 2, &quot;image&quot;: &quot;../common/assets/ipad-mini.png&quot;},
+
+export default Store({
+  getInitialState() {
+    return toImmutable({})
+  },
+
+  initialize() {
+    this.on(RECEIVE_PRODUCTS, receiveProducts)
+    this.on(ADD_TO_CART, decrementInventory)
+  }
+})
+
+// store handlers transforms `(currentState, payload) =&gt; (newState)`
+function receiveProducts(state, { products }) {
+  // transform an array of products to a map keyed by product.id
+  let newProducts = toImmutable(products)
+    .toMap()
+    .mapKeys((k, v) =&gt; v.get(&#39;id&#39;))
+  return state.merge(newProducts)
+}
+
+function decrementInventory(state, { product }) {
+  return state.update(product.id, product =&gt; {
+    let currentInventory = product.get(&#39;inventory&#39;)
+    let newInventory = (currentInventory &gt; 0) ? currentInventory - 1 : 0;
+    return product.set(&#39;inventory&#39;, newInventory)
+  })
+}
+</code></pre>
+<h4 id="-stores-cartstore-js-"><code>stores/CartStore.js</code></h4>
+<pre><code class="lang-javascript">import { Store, toImmutable } from &#39;nuclear-js&#39;
+import { ADD_TO_CART } from &#39;../actionTypes&#39;
+
+const initialState = toImmutable({
+  // mapping of product.id to quantity
+  itemQty: {},
+})
+
+/**
+ * CartStores holds the mapping of productId =&gt; quantity
+ * and also maintains rollback information for the checkout process
+ */
+export default Store({
+  getInitialState() {
+    return initialState
+  },
+
+  initialize() {
+    this.on(ADD_TO_CART, addToCart)
+  }
+})
+
+function addToCart(state, { product }) {
+  let id = product.id
+  return (state.hasIn([&#39;itemQty&#39;, id]))
+    ? state.updateIn([&#39;itemQty&#39;, id], quantity =&gt; quantity + 1)
+    : state.setIn([&#39;itemQty&#39;, id], 1)
+}
+</code></pre>
+<h3 id="registering-our-stores">Registering our stores</h3>
+<p>Registering the store with a reactor does two things:</p>
+<ol>
+<li>Passes every dispatched action to the store</li>
+<li>Binds a stores state to the application state by the key used for registration</li>
+</ol>
+<h4 id="-main-js-"><code>main.js</code></h4>
+<pre><code class="lang-javascript">import reactor from &#39;./reactor&#39;
+import ProductStore from &#39;./stores/ProductStore&#39;
+import CartStore from &#39;./stores/CartStore&#39;
+
+reactor.registerStores({
+  &#39;products&#39;: ProductStore,
+  &#39;cart&#39;: CartStore,
+})
+</code></pre>
+<h2 id="recap">Recap</h2>
+<p>At this we&#39;ve created actions for fetching products and adding an item to the cart.  We also have the <code>ProductStore</code> and <code>CartStore</code> registered on the reactor.</p>
+<p>Lets see what our application state looks like by using the <code>reactor.evaluate</code> function:</p>
+<pre><code class="lang-javascript">// providing an empty array to `evaluate` will return a snapshop of the entire app state
+reactor.evalaute([])
+// result
+Map {
+  cart: Map {
+    itemQty: Map {}
+  },
+  products: Map {}
+}
+
+reactor.evaluate([&#39;cart&#39;])
+// result
+Map {
+  itemQty: Map {}
+}
+</code></pre>
+<p>The application state is rather empty, each top level key is populated by the stores <code>getInitialState()</code> method.</p>
+<p>Lets see what our application looks like after we fetch some products.</p>
+<pre><code class="lang-javascript">actions.fetchProducts()
+</code></pre>
+<p>After the products have been fetched:</p>
+<pre><code class="lang-javascript">Map {
+  cart: Map {
+    itemQty: Map {}
+  },
+  products: Map {
+    1: Map { id: 1, title: &quot;iPad 4 Mini&quot;, price: 500.01, inventory: 2, image: &quot;../common/assets/ipad-mini.png&quot; },
+    2: Map { id: 2, title: &quot;H&amp;M T-Shirt White&quot;, price: 10.99, inventory: 10, image: &quot;../common/assets/t-shirt.png&quot; },
+    3: Map { id: 3, title: &quot;Charli XCX - Sucker CD&quot;, price: 19.99, inventory: 5, image: &quot;../common/assets/sucker.png&quot; }
+  }
+}
+</code></pre>
+<p>Now lets add a product to our shopping cart</p>
+<pre><code class="lang-javascript">actions.addToCart({ id: 3 })
+</code></pre>
+<p>Notice there is an entry in the <code>itemQty</code> map as well as the inventory for <strong>Charli XCX - Sucker CD</strong> went from 5 to 4.</p>
+<pre><code class="lang-javascript">Map {
+  cart: Map {
+    itemQty: Map {
+      3: 1
+    }
+  },
+  products: Map {
+    1: Map { id: 1, title: &quot;iPad 4 Mini&quot;, price: 500.01, inventory: 2, image: &quot;../common/assets/ipad-mini.png&quot; },
+    2: Map { id: 2, title: &quot;H&amp;M T-Shirt White&quot;, price: 10.99, inventory: 10, image: &quot;../common/assets/t-shirt.png&quot; },
+    3: Map { id: 3, title: &quot;Charli XCX - Sucker CD&quot;, price: 19.99, inventory: 4, image: &quot;../common/assets/sucker.png&quot; }
+  }
+}
+</code></pre>
+<p>The information in our stores are pretty minimal, the cart store doesn&#39;t actually know anything about the product, like its title, price or images
+all information that we would need if we were to build a cart component.</p>
+<p>Nuclear allows you to combine data from stores in a non-destructive manner, check it out:</p>
+<pre><code class="lang-javascript">reactor.evaluate([
+  [&#39;cart&#39;, &#39;itemQty&#39;],
+  [&#39;products&#39;],
+  (itemQty, products) =&gt; {
+    return itemQty.map((qty, itemId) =&gt; {
+      return toImmutable({
+        product: products.get(itemId),
+        quantity: qty
+      })
+    }).toList()
+  }
+])
+</code></pre>
+<pre><code class="lang-javascript">List [
+  Map {
+    product: Map { id: 3, title: &quot;Charli XCX - Sucker CD&quot;, price: 19.99, inventory: 4, image: &quot;../common/assets/sucker.png&quot; },
+    quantity: 1,
+  }
+}
+</code></pre>
+<p>You&#39;ve just seen your first <strong>Getter</strong>, and just in time too!  The next section is all about getters, one of the most powerful abstractions in Nuclear.</p>
+<h4 id="-next-getters-02-getters-html-"><a href="./02-getters.html">Next: Getters</a></h4>
+</div></div></div><script src="https://optimizely.github.io/nuclear-jsapp.js"></script></body></html>

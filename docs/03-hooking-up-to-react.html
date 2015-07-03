@@ -1,0 +1,130 @@
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"><title>NuclearJS | Hooking up to React</title><link href="https://optimizely.github.io/nuclear-jsassets/css/output.css" type="text/css" rel="stylesheet" media="screen,projection"><script src="//cdn.optimizely.com/js/3006700484.js"></script><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-64060472-1', 'auto');
+ga('send', 'pageview');</script></head><body><div class="navbar-fixed"><nav class="nav"><div class="nav-wrapper"><a href="https://optimizely.github.io/nuclear-js">NuclearJS</a><ul id="nav-mobile" class="right hide-on-med-and-down"><li><a href="https://optimizely.github.io/nuclear-jsdocs/01-getting-started.html">Docs</a></li><li><a href="https://optimizely.github.io/nuclear-jsdocs/05-api.html">API</a></li><li><a href="https://github.com/optimizely/nuclear-js">Github</a></li></ul></div></nav></div><div class="container"><div class="docs-page row"><div class="docs-page--sidebar col l2"><h3>Docs</h3><ul class="sidebar-links"><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-jsdocs/01-getting-started.html">Getting Started</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-jsdocs/02-getters.html">Getters</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-jsdocs/03-hooking-up-to-react.html">Hooking up to React</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-jsdocs/04-async-actions-and-optimistic-updates.html">Async Actions and Optimistic Updates</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-jsdocs/05-api.html">API</a></li></ul></div><div class="docs-page--contents col l8"><h1 id="hooking-up-to-react">Hooking up to React</h1>
+<h3 id="binding-application-state-to-components">Binding application state to components</h3>
+<p>Every Nuclear Reactor comes with <code>reactor.ReactMixin</code> to easily create an alway-in-sync binding between any KeyPath or Getter value
+and a React component&#39;s state.</p>
+<p>The ability to observe any piece of composite data is immensely powerful and trivializes a lot of what other frameworks work hard to solve.</p>
+<p>To use simply include the <code>reactor.ReactMixin</code> and implement the <code>getDataBindings()</code> function that returns an object of state properties
+to <code>KeyPath</code> or <code>Getter</code>.  Nuclear will take care of the initial sync, observation and destroying the subscription when on <code>componentWillUnmount</code>.</p>
+<p><strong>First lets expand our main file to initiate the fetch for products.</strong></p>
+<h4 id="-main-js-"><code>main.js</code></h4>
+<pre><code class="lang-javascript">import React from &#39;react&#39;
+
+import App from &#39;./components/App&#39;
+import reactor from &#39;./reactor&#39;
+import actions from &#39;./actions&#39;
+import CartStore from &#39;./stores/CartStore&#39;
+import ProductStore from &#39;./stores/ProductStore&#39;
+
+reactor.registerStores({
+  cart: CartStore,
+  products: ProductStore,
+})
+
+actions.fetchProducts()
+
+React.render(
+  React.createElement(App, null),
+  document.getElementById(&#39;flux-app&#39;)
+)
+</code></pre>
+<h4 id="-components-app-jsx-"><code>components/App.jsx</code></h4>
+<pre><code class="lang-javascript">import React from &#39;react&#39;
+import CartContainer from &#39;./CartContainer&#39;
+import ProductsContainer from &#39;./ProductsContainer&#39;
+
+export default React.createClass({
+  render() {
+    return (
+      &lt;div&gt;
+        &lt;ProductsContainer /&gt;
+        &lt;CartContainer /&gt;
+      &lt;/div&gt;
+    )
+  }
+})
+</code></pre>
+<h4 id="-components-cartcontainer-jsx-"><code>components/CartContainer.jsx</code></h4>
+<pre><code class="lang-javascript">import React from &#39;react&#39;
+
+import Cart from &#39;../../common/components/Cart&#39;
+import reactor from &#39;../reactor&#39;
+import getters from &#39;../getters&#39;
+import actions from &#39;../actions&#39;
+
+export default React.createClass({
+  mixins: [reactor.ReactMixin],
+
+  getDataBindings() {
+    return {
+      products: getters.cartProducts,
+      total: getters.cartTotal,
+    }
+  },
+
+  onCheckoutClicked: function () {
+    // we will implement this in the next section
+  },
+
+  render: function () {
+    return (
+      &lt;Cart products={this.state.products.toJS()} total={this.state.total} onCheckoutClicked={this.onCheckoutClicked} /&gt;
+    )
+  },
+})
+</code></pre>
+<h4 id="-components-productscontainer-jsx-"><code>components/ProductsContainer.jsx</code></h4>
+<pre><code class="lang-javascript">import React from &#39;react&#39;
+
+import ProductItem from &#39;../../common/components/ProductItem&#39;
+import ProductsList from &#39;../../common/components/ProductsList&#39;
+
+import reactor from &#39;../reactor&#39;
+import getters from &#39;../getters&#39;
+import actions from &#39;../actions&#39;
+
+
+const ProductItemContainer = React.createClass({
+  onAddToCartClicked() {
+    // we will implement this in the next section
+  },
+
+  render() {
+    return (
+      &lt;ProductItem product={this.props.product} onAddToCartClicked={this.onAddToCartClicked} /&gt;
+    )
+  }
+})
+
+export default React.createClass({
+  mixins: [reactor.ReactMixin],
+
+  getDataBindings() {
+    return {
+      products: getters.products,
+    }
+  },
+
+  render: function () {
+    return (
+      &lt;ProductsList title=&quot;Flux Shop Demo (NuclearJS)&quot;&gt;
+        {this.state.products.map(product =&gt; {
+          return &lt;ProductItemContainer key={product.get(&#39;id&#39;)} product={product.toJS()} /&gt;
+        }).toList()}
+      &lt;/ProductsList&gt;
+    )
+  },
+})
+</code></pre>
+<h2 id="recap">Recap</h2>
+<p>Once you have a functioning Nuclear Reactor hooking it up to a React application is very easy using the <code>reactor.ReactMixin</code> + <code>getDataBindings()</code> method.</p>
+<p>Nuclear will automatically sync the value of a getter to your component via <code>this.setState</code> whenever the underlying getter value changes.  Meaning you never
+have to explicitly call <code>this.setState</code> to re-render a component.</p>
+<p>In the next section we will cover hooking up actions to our react components.</p>
+<h4 id="-next-async-actions-and-optimistic-updates-04-async-actions-and-optimistic-updates-html-"><a href="./04-async-actions-and-optimistic-updates.html">Next: Async Actions and Optimistic Updates</a></h4>
+</div></div></div><script src="https://optimizely.github.io/nuclear-jsapp.js"></script></body></html>
