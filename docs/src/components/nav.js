@@ -8,7 +8,7 @@ function urlize(uri) {
 export default React.createClass({
   render() {
     const logo = this.props.includeLogo
-      ? <a href={BASE_URL} class="brand-logo">NuclearJS</a>
+      ? <a href={BASE_URL} className="brand-logo">NuclearJS</a>
       : null
 
     return <div className="navbar-fixed">

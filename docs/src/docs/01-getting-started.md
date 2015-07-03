@@ -108,17 +108,17 @@ export default {
 ## Creating Stores
 
 Stores hold no state, instead they provide a collection of functions that transform current state into new state.  They provide an `initialize` hook used when
-register with a reactor to define what actions they respond to.
+registering with a reactor to define what actions they respond to.
 
 In Nuclear there is no need to worry about stores knowing about other stores or `store.waitsFor`.  The sole responsibility of stores is to write or mutate application
-state, the responsibility of reading application state falls on Getters.
+state, and the responsibility of reading application state falls on Getters.
 
 
 #### `stores/ProductStore.js`
 
 ```javascript
 import { Store, toImmutable } from 'nuclear-js'
-import { RECEIVE_PRODUCTS, ADD_TO_CART } from '../action-types'
+import { RECEIVE_PRODUCTS, ADD_TO_CART } from '../actionTypes'
 
 // example product:
 // {{"id": 1, "title": "iPad 4 Mini", "price": 500.01, "inventory": 2, "image": "../common/assets/ipad-mini.png"},"id": 1, "title": "iPad 4 Mini", "price": 500.01, "inventory": 2, "image": "../common/assets/ipad-mini.png"},
@@ -134,7 +134,7 @@ export default Store({
   }
 })
 
-// store handlers transforms `(currentState, payload) => (newState)`
+// store handlers transform `(currentState, payload) => (newState)`
 function receiveProducts(state, { products }) {
   // transform an array of products to a map keyed by product.id
   let newProducts = toImmutable(products)
@@ -190,7 +190,7 @@ function addToCart(state, { product }) {
 Registering the store with a reactor does two things:
 
 1. Passes every dispatched action to the store
-2. Binds a stores state to the application state by the key used for registration
+2. Binds a store's state to the application state by the key used for registration
 
 #### `main.js`
 
@@ -207,13 +207,13 @@ reactor.registerStores({
 
 ## Recap
 
-At this we've created actions for fetching products and adding an item to the cart.  We also have the `ProductStore` and `CartStore` registered on the reactor.
+At this point we've created actions for fetching products and adding an item to the cart.  We also have the `ProductStore` and `CartStore` registered on the reactor.
 
-Lets see what our application state looks like by using the `reactor.evaluate` function:
+Let's see what our application state looks like by using the `reactor.evaluate` function:
 
 ```javascript
-// providing an empty array to `evaluate` will return a snapshop of the entire app state
-reactor.evalaute([])
+// providing an empty array to `evaluate` will return a snapshot of the entire app state
+reactor.evaluate([])
 // result
 Map {
   cart: Map {
@@ -229,9 +229,9 @@ Map {
 }
 ```
 
-The application state is rather empty, each top level key is populated by the stores `getInitialState()` method.
+The application state is rather empty, each top level key is populated by the store's `getInitialState()` method.
 
-Lets see what our application looks like after we fetch some products.
+Let's see what our application state looks like after we fetch some products.
 
 ```javascript
 actions.fetchProducts()
@@ -252,7 +252,7 @@ Map {
 }
 ```
 
-Now lets add a product to our shopping cart
+Now let's add a product to our shopping cart:
 
 ```javascript
 actions.addToCart({ id: 3 })
@@ -275,7 +275,7 @@ Map {
 }
 ```
 
-The information in our stores are pretty minimal, the cart store doesn't actually know anything about the product, like its title, price or images
+The information in our stores are pretty minimal, the cart store doesn't actually know anything about the product, like its title, price or images -
 all information that we would need if we were to build a cart component.
 
 Nuclear allows you to combine data from stores in a non-destructive manner, check it out:
