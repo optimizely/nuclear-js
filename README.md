@@ -20,7 +20,7 @@ Traditional Flux architecture built with ImmutableJS data structures.
 
 4.  NuclearJS is insanely efficient - change detection granularity is infinitesimal, you can even observe computed state where several pieces of the state map are combined together and run through a transform function.  Nuclear is smart enough to know when the value of any computed changes and only call its observer if and only if its value changed in a way that is orders of magnitude more efficient than traditional dirty checking.  It does this by leveraging ImmutableJS data structure and using a `state1 !== state2` reference comparison which runs in constant time.
 
-5.  Automatic data observation / rendering -- automatic re-rendering is built in for React in the form a very lightweight mixin.  It is also easily possible to build the same functionality for any UI framework such as VueJS, AngularJS and even Backbone.
+5.  Automatic data observation / rendering -- automatic re-rendering is built in for React in the form of a very lightweight mixin.  It is also easily possible to build the same functionality for any UI framework such as VueJS, AngularJS and even Backbone.
 
 6.  NuclearJS is not a side-project, it's used as the default Flux implementation that powers all of Optimizely.  It is well tested and will continue to be maintained for the foreseeable future. Our current codebase has over dozens of stores, actions and getters, we even share our prescribed method of large scale code organization and testing strategies.
 
@@ -262,7 +262,7 @@ exports.unreadCount = [
 ]
 ```
 
-Since stores are registered on the Nuclear Reactor by the module's index file, then a module is the only part of the system that knows the store ids, if this information need to be made public, the module will export a getter of the form `[<storeId>]`
+Since stores are registered on the Nuclear Reactor by the module's index file, then a module is the only part of the system that knows the store ids. If this information needs to be made public, the module will export a getter of the form `[<storeId>]`.
 
 ### Actions
 
@@ -350,7 +350,7 @@ var ThreadSection = React.createClass({
         </div>
         <ul className="thread-list">
           {threadListItems}
-          </ul>
+        </ul>
       </div>
     );
   },
@@ -439,7 +439,7 @@ live in our app state because those are all examples of **computable state**, an
 
 #### Reactor
 
-In Nuclear a Reactor is the container that holds your app state, it's where you register stores, dispatch actions and read the current state of your system.  Reactor's are the only stateful part of Nuclear and have only 3 API methods you REALLY need to know: `dispatch`, `get`, and `observe`. Don't worry extensive API docs will be provided for all of these methods.
+In Nuclear a Reactor is the container that holds your app state, it's where you register stores, dispatch actions and read the current state of your system.  Reactor's are the only stateful part of Nuclear and have only 3 API methods you REALLY need to know: `dispatch`, `get`, and `observe`. Don't worry, extensive API docs will be provided for all of these methods.
 
 #### Stores
 
@@ -447,7 +447,7 @@ Stores define how a portion of the application state will behave over time, they
 
 #### KeyPaths
 
-KeyPaths are a pointer to some piece of your application state.  They can be represented as a `Array<String>`
+KeyPaths are a pointer to some piece of your application state.  They can be represented as a `Array<String>`.
 
 `['foo', 'bar']` is an example of a valid keypath, analogous to `state['foo']['bar']` in JavaScript.
 
@@ -458,7 +458,7 @@ As described above, the state of a reactor is hidden away internally behind the 
 Getters can take 2 forms:
 
   1. A [KeyPath](#keypaths) as described above
-  2. An array with the form `[  [keypath | getter], [keypath | getter], ..., tranformFunction]`
+  2. An array with the form `[  [keypath | getter], [keypath | getter], ..., transformFunction]`
   Note - Often you'll pass the Getter to `reactor.evaluate` to get its value, but we'll touch on the reactor API later.
 
 If you've used [AngularJS](https://angularjs.org/), the 2nd form will seem familiar.  It's essentially a way of specifying
@@ -557,7 +557,7 @@ reactor.dispatch('addItem', {
   quantity: 2,
 })
 
-console.log(reactor.evaluate(['items'])) // List [ Map { name: 'Soap', price:5, quantity: 2 } ]
+console.log(reactor.evaluate(['items'])) // List [ Map { name: 'Soap', price: 5, quantity: 2 } ]
 ```
 
 ### Computing Subtotal, Tax and Total
@@ -597,12 +597,12 @@ reactor.dispatch('setTaxPercent', 10)
 
 console.log(reactor.evaluate(subtotalGetter)) // 11
 console.log(reactor.evaluate(taxGetter)) // 1
-console.log(reactor.evaluate(totalGetter)) // 11
+console.log(reactor.evaluate(totalGetter)) // 12
 ```
 
-### Lets do something more interesting...
+### Let's do something more interesting...
 
-Imagine we want to know any time the total is over 100.  Let's use `reactor.observe`
+Imagine we want to know any time the total is over 100.  Let's use `reactor.observe`.
 
 ```js
 var over100Getter = [
@@ -619,7 +619,7 @@ reactor.observe(over100Getter, function(isOver100) {
 })
 ```
 
-Actually that wasn't that interesting... lets make the threshold dynamic
+Actually that wasn't that interesting... let's make the threshold dynamic.
 
 ```js
 var budgetStore = Nuclear.Store({
@@ -659,7 +659,7 @@ reactor.observe(isOverBudget, function(isOver) {
 
 ### Hooking up a UI: React
 
-Syncing reactor stores and React component state is effortless using `reactor.ReactMixin`
+Syncing reactor stores and React component state is effortless using `reactor.ReactMixin`.
 
 ```js
 var React = require('react')
@@ -667,7 +667,7 @@ var React = require('react')
 var ShoppingCart = React.createClass({
   mixins: [reactor.ReactMixin],
 
-  // simply implement this function to keep a components state
+  // simply implement this function to keep a component's state
   // in sync with a Nuclear Reactor
   getDataBindings() {
     return {
@@ -783,7 +783,7 @@ In `shopping-cart.html`
 
 ## Performance
 
-Getters are only calculated whenever their dependencies change. So if the dependency is a keypath then it will only recalculate when that path in the app state map has changed (which can be done as a simple `state.getIn(keyPath) !== oldState.getIn(keyPath)` which is an `O(log32(n))` operation. The other case is when a getter is dependent on other getters. Since every getter is a pure function, Nuclear will only recompute the getter if the values of its dependencies change.
+Getters are only calculated whenever their dependencies change. So if the dependency is a keypath then it will only recalculate when that path in the app state map has changed (which can be done as a simple `state.getIn(keyPath) !== oldState.getIn(keyPath)` which is an `O(log32(n))` operation. The other case is when a getter is dependent on other getters. Since every getter is a pure function, Nuclear will only recompute the getter if the values if its dependencies change.
 
 You can read more of the implementation here: [src/evaluator.js](./src/evaluator.js)
 
@@ -821,7 +821,7 @@ reactor.evaluate([
 
 #### `Reactor#evaluateToJS(...keyPath, [transformFn])`
 
-Same as `evaluate` but coerces the value to a plain JS before returning
+Same as `evaluate` but coerces the value to a plain JS before returning.
 
 #### `Reactor#observe(keyPathOrGetter, handlerFn)`
 
@@ -890,7 +890,7 @@ var ThreadSection = React.createClass({
         </div>
         <ul className="thread-list">
           {threadListItems}
-          </ul>
+        </ul>
       </div>
     );
   },
@@ -937,7 +937,7 @@ Provides access to the ImmutableJS `Immutable` object.
 
 #### `Nuclear.toImmutable(value)`
 
-Coerces a value to its immutable counterpart, can be called on any type safely.  It will convert Objects to `Immutable.Map` and Arrays to `Immutable.List`
+Coerces a value to its immutable counterpart, can be called on any type safely.  It will convert Objects to `Immutable.Map` and Arrays to `Immutable.List`.
 
 #### `Nuclear.toJS(value)`
 
@@ -949,8 +949,8 @@ Returns true if the value is an ImmutableJS data structure.
 
 #### `Nuclear.isKeyPath(value)` : Boolean
 
-Returns true if the value is the format of a valid keyPath
+Returns true if the value is the format of a valid keyPath.
 
 #### `Nuclear.isGetter(value)` : Boolean
 
-Returns true if the value is the format of a valid getter
+Returns true if the value is the format of a valid getter.
