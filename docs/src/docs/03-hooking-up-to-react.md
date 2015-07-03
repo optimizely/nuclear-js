@@ -7,7 +7,7 @@ section: "Guide"
 
 ### Binding application state to components
 
-Every Nuclear Reactor comes with `reactor.ReactMixin` to easily create an alway-in-sync binding between any KeyPath or Getter value
+Every Nuclear Reactor comes with `reactor.ReactMixin` to easily create an always-in-sync binding between any KeyPath or Getter value
 and a React component's state.
 
 The ability to observe any piece of composite data is immensely powerful and trivializes a lot of what other frameworks work hard to solve.
@@ -15,7 +15,7 @@ The ability to observe any piece of composite data is immensely powerful and tri
 To use simply include the `reactor.ReactMixin` and implement the `getDataBindings()` function that returns an object of state properties
 to `KeyPath` or `Getter`.  Nuclear will take care of the initial sync, observation and destroying the subscription when on `componentWillUnmount`.
 
-**First lets expand our main file to initiate the fetch for products.**
+**First let's expand our main file to initiate the fetch for products.**
 
 #### `main.js`
 
@@ -140,7 +140,7 @@ export default React.createClass({
 
 ## Recap
 
-Once you have a functioning Nuclear Reactor hooking it up to a React application is very easy using the `reactor.ReactMixin` + `getDataBindings()` method.
+Once you have a functioning Nuclear Reactor, hooking it up to a React application is very easy using the `reactor.ReactMixin` + `getDataBindings()` method.
 
 Nuclear will automatically sync the value of a getter to your component via `this.setState` whenever the underlying getter value changes.  Meaning you never
 have to explicitly call `this.setState` to re-render a component.

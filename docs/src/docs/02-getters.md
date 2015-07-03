@@ -21,7 +21,7 @@ Getters can take 2 forms:
 
 ## Back to our example
 
-Recall our application state looks something like after we've fetched the products and the user added something to their cart':
+Recall our application state looks something like this after we've fetched the products and the user added something to their cart:
 
 ```javascript
 Map {
@@ -38,7 +38,7 @@ Map {
 }
 ```
 
-Lets create getters for:
+Let's create getters for:
 
 1. All products with their inventories
 2. Products in the shopping cart and the quantity
@@ -59,7 +59,7 @@ const cartProducts = [
       var product = products.get(productId)
       return product
         .set('quantity', quantity)
-        .remove('inventory') // inventory shouldnt be known in cart
+        .remove('inventory') // inventory shouldn't be known in cart
     }).toList()
   }
 ]
@@ -106,8 +106,8 @@ reactor.evaluate(getters.cartTotal);
 
 Getters provide an incredibly powerful mechanism to both evaluate and observe any piece of application state or
 composite state.  Behind getters is a powerful caching mechanism that memoizes computation, and will only reevaluate
-when the underlying depdenncies change.
+when the underlying dependencies change.
 
-In the next section we will take this full circle and hook up our application state to components
+In the next section we will take this full circle and hook up our application state to components.
 
 #### [Next: Hooking up to React](./03-hooking-up-to-react.html)
