@@ -169,7 +169,10 @@ class Reactor {
     var serialized = {}
     this.__stores.forEach((store, id) => {
       var storeState = this.state.get(id)
-      serialized[id] = store.serialize(storeState)
+      var serializedState = store.serialize(storeState)
+      if (serializedState !== undefined) {
+        serialized[id] = serializedState
+      }
     })
     return serialized
   }
@@ -182,7 +185,10 @@ class Reactor {
       each(state, (serializedStoreState, storeId) => {
         var store = this.__stores.get(storeId)
         if (store) {
-          stateToLoad.set(storeId, store.deserialize(serializedStoreState))
+          var storeState = store.deserialize(serializedStoreState)
+          if (storeState !== undefined) {
+            stateToLoad.set(storeId, storeState)
+          }
         }
       })
     })

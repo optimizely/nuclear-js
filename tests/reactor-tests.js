@@ -862,6 +862,52 @@ describe('Reactor', () => {
         expect(loadStateSpy.calls.count()).toBe(1)
       })
     })
+
+    describe('when a store returns undefined from serialize/deserialize', () => {
+      var loadStateSpy = jasmine.createSpy('loadState')
+      var serializeSpy = jasmine.createSpy('serialize')
+      beforeEach(() => {
+        reactor = new Reactor();
+        reactor.registerStores({
+          serializableStore: Store({
+            getInitialState() {
+              return 'real'
+            },
+          }),
+
+          ignoreStore: Store({
+            getInitialState() {
+              return 'ignore'
+            },
+            serialize() {
+              return
+            },
+            deserialize() {
+              return
+            },
+          }),
+        })
+      })
+
+      it('should not have an entry in the serialized app state', () => {
+        var serialized = reactor.serialize()
+        expect(serialized).toEqual({
+          serializableStore: 'real'
+        })
+      })
+
+      it('should not load state for a store where deserialize returns undefined', () => {
+        var serialized = {
+          serializableStore: 'changed',
+          ignoreStore: 'changed',
+        }
+        reactor.loadState(serialized)
+        expect(reactor.evaluateToJS([])).toEqual({
+          serializableStore: 'changed',
+          ignoreStore: 'ignore',
+        })
+      })
+    })
   })
 
   describe('#batch', () => {
