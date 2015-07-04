@@ -78,8 +78,13 @@ class Evaluator {
     }
 
     __applyingComputeFn = true
-    var evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
-    __applyingComputeFn = false
+    try {
+      var evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
+      __applyingComputeFn = false
+    } catch (e) {
+      __applyingComputeFn = false
+      throw e
+    }
 
     this.__cacheValue(state, keyPathOrGetter, args, evaluatedValue)
 
