@@ -18,7 +18,7 @@ module.exports = {
   ],
 
   publish: [
-    'generate',
+    'exec:generate',
     'gh-pages',
     'clean:gh-pages',
   ],

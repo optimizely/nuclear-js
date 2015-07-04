@@ -8,17 +8,8 @@ Doc site statically generated using `React` + `NuclearJS`.
 grunt dev
 ```
 
-##### To build production static site
-
-Compile static site to `dist/` directory
-
-```sh
-grunt generate
-```
-
 ##### To deploy to gh-pages
 
 ```sh
-cd docs && grunt generate
-cd ../ && git subtree push --prefix docs/dist origin gh-pages
+grunt publish
 ```
