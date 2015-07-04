@@ -32,10 +32,10 @@ describe('ChangeObserver', () => {
 
       observer.notifyObservers(initialState.updateIn(['foo', 'bar'], x => 2))
 
-      var mockCallArg = mockFn.calls.argsFor(0)[1]
+      var mockCallArg = mockFn.calls.argsFor(0)[0]
       var expected = Map({'bar': 2})
 
-      expect(Immutable.is(mockCallArg, expected))
+      expect(Immutable.is(mockCallArg, expected)).toBe(true)
     })
 
     it('should allow registration of a deep string key', () => {
@@ -43,15 +43,15 @@ describe('ChangeObserver', () => {
       observer.onChange([['foo', 'bar'], identity], mockFn)
 
       observer.notifyObservers(initialState.updateIn(['foo', 'bar'], x => {
-        return {
+        return Map({
           'baz': 2,
-        }
+        })
       }))
 
-      var mockCallArg = mockFn.calls.argsFor(0)[1]
+      var mockCallArg = mockFn.calls.argsFor(0)[0]
       var expected = Map({'baz': 2})
 
-      expect(Immutable.is(mockCallArg, expected))
+      expect(Immutable.is(mockCallArg, expected)).toBe(true)
     })
 
     it('should not call the handler if another part of the map changes', () => {
