@@ -80,7 +80,7 @@ class Store {
    * @return {*}
    */
   serialize(state) {
-    return toJS(state);
+    return toJS(state)
   }
 
   /**
@@ -90,7 +90,7 @@ class Store {
    * @return {*}
    */
   deserialize(state) {
-    return toImmutable(state);
+    return toImmutable(state)
   }
 }
 

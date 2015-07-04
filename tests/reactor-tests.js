@@ -733,7 +733,7 @@ describe('Reactor', () => {
           },
           serialize(state) {
             if (!state) {
-              return state;
+              return state
             }
             return state.entrySeq().toJS()
           },
@@ -753,7 +753,7 @@ describe('Reactor', () => {
 
         listStore: Store({
           getInitialState() {
-            return toImmutable([1,2,'three'])
+            return toImmutable([1, 2, 'three'])
           },
           initialize() {
             this.on('clear', state => null)
@@ -779,7 +779,7 @@ describe('Reactor', () => {
 
     it('should serialize -> loadState effectively', () => {
       var serialized = reactor.serialize()
-      var reactor2 = new Reactor();
+      var reactor2 = new Reactor()
       reactor2.registerStores(stores)
       reactor2.dispatch('clear')
 
@@ -792,7 +792,7 @@ describe('Reactor', () => {
     it('should allow loading of state from outside source', () => {
       reactor.loadState({
         stringStore: 'bar',
-        listStore: [4,5,6],
+        listStore: [4, 5, 6],
       })
 
       expect(reactor.evaluateToJS([])).toEqual({
@@ -801,7 +801,7 @@ describe('Reactor', () => {
           2: 'two',
         },
         stringStore: 'bar',
-        listStore: [4,5,6],
+        listStore: [4, 5, 6],
         booleanStore: true,
       })
     })
@@ -809,7 +809,7 @@ describe('Reactor', () => {
     it('should notify observer', () => {
       var mockFn = jasmine.createSpy()
       var serialized = reactor.serialize()
-      var reactor2 = new Reactor();
+      var reactor2 = new Reactor()
       reactor2.registerStores(stores)
       reactor2.dispatch('clear')
 
@@ -844,14 +844,14 @@ describe('Reactor', () => {
             super(JSON.parse(state))
           }
         }
-        var reactor1 = new MyReactor();
+        var reactor1 = new MyReactor()
         reactor1.registerStores(stores)
-        var reactor2 = new MyReactor();
+        var reactor2 = new MyReactor()
         reactor2.registerStores(stores)
 
         var serialized = reactor1.serialize()
 
-        reactor2.dispatch('clear');
+        reactor2.dispatch('clear')
 
         expect(Immutable.is(reactor1.evaluate([]), reactor2.evaluate([]))).toBe(false)
 
@@ -864,10 +864,8 @@ describe('Reactor', () => {
     })
 
     describe('when a store returns undefined from serialize/deserialize', () => {
-      var loadStateSpy = jasmine.createSpy('loadState')
-      var serializeSpy = jasmine.createSpy('serialize')
       beforeEach(() => {
-        reactor = new Reactor();
+        reactor = new Reactor()
         reactor.registerStores({
           serializableStore: Store({
             getInitialState() {
@@ -892,7 +890,7 @@ describe('Reactor', () => {
       it('should not have an entry in the serialized app state', () => {
         var serialized = reactor.serialize()
         expect(serialized).toEqual({
-          serializableStore: 'real'
+          serializableStore: 'real',
         })
       })
 

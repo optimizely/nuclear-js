@@ -48,8 +48,8 @@ class Reactor {
      */
     this.__changeObserver = new ChangeObserver(this.state, this.__evaluator)
 
-    this.__isBatching = false;
-    this.__batchDispatchCount = 0;
+    this.__isBatching = false
+    this.__batchDispatchCount = 0
   }
 
   /**
