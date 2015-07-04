@@ -1,6 +1,9 @@
 var Immutable = require('immutable')
+var KeyPath = require('./key-path')
+var Getter = require('./getter')
 var hashCode = require('./hash-code')
 var isEqual = require('./is-equal')
+var each = require('./utils').each
 
 /**
  * ChangeObserver is an object that contains a set of subscriptions
@@ -64,15 +67,8 @@ class ChangeObserver {
    * @return {function} unwatch function
    */
   onChange(getter, handler) {
-    // TODO: make observers a map of <Getter> => { handlers }
-    var entry = {
-      getter: getter,
-      handler: handler,
-      unwatched: false,
-    }
-    this.__observers.push(entry)
-    // return unwatch function
-    return () => {
+    var entry
+    var unwatch = () => {
       // TODO: untrack from change emitter
       var ind = this.__observers.indexOf(entry)
       if (ind > -1) {
@@ -80,6 +76,62 @@ class ChangeObserver {
         this.__observers.splice(ind, 1)
       }
     }
+
+    // TODO: make observers a map of <Getter> => { handlers }
+    entry = {
+      getter: getter,
+      handler: handler,
+      unwatched: false,
+      unwatchFn: unwatch,
+    }
+
+    this.__observers.push(entry)
+
+    // return unwatch function
+    return unwatch
+  }
+
+  /**
+   * Calls the unwatchFn for each change observer associated with the passed in
+   * keypath or getter. If a handler function is passed as well, then the
+   * unwatchFn is called only for the change observer that holds that handler.
+   *
+   * UnwatchFns are called up the dependency chain.
+   *
+   * @param {KeyPath|Getter} getter
+   * @param {function} handler
+   */
+  unwatch(getter, handler) {
+
+    // Returns unwatchFn if no handler, or if handler is the observer's handler
+    // Otherwise returns `null`
+    var unwatchIfShould = entry => {
+      if (!handler) {
+        return entry.unwatchFn
+      }
+
+      if (handler === entry.handler) {
+        return entry.unwatchFn
+      }
+
+      return null
+    }
+
+    var isKeyPath = KeyPath.isKeyPath(getter)
+
+    // Collects all the unwatchFns that need to be called, without invoking
+    // them, so as to not mutate the observers collection, then invokes each.
+    each(this.__observers.map(entry => {
+      if (isKeyPath && Getter.wasKeyPath(entry.getter)) {
+        if (KeyPath.same(getter, entry.getter[0]) || KeyPath.isUpstream(getter, entry.getter[0])) {
+          return unwatchIfShould(entry)
+        }
+      }
+
+      if (entry.getter === getter) {
+        return unwatchIfShould(entry)
+      }
+    }), unwatchFn => unwatchFn && unwatchFn())
   }
 
   /**
