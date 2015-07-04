@@ -5295,9 +5295,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    /**
 	     * The state for the whole cluster
 	     */
-	    this.__state = Immutable.Map({})
+	    this.state = Immutable.Map({})
 	    /**
-	     * Holds a map of id => reactor instance
+	     * Holds a map of id => store instance
 	     */
 	    this.__stores = Immutable.Map({})
 
@@ -5306,7 +5306,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * Change observer interface to observe certain keypaths
 	     * Created after __initialize so it starts with initialState
 	     */
-	    this.__changeObserver = new ChangeObserver(this.__state, this.__evaluator)
+	    this.__changeObserver = new ChangeObserver(this.state, this.__evaluator)
+
+	    this.__isBatching = false;
+	    this.__batchDispatchCount = 0;
 	  }
 
 	  /**
@@ -5315,7 +5318,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @return {*}
 	   */
 	  Object.defineProperty(Reactor.prototype,"evaluate",{writable:true,configurable:true,value:function(keyPathOrGetter) {"use strict";
-	    return this.__evaluator.evaluate(this.__state, keyPathOrGetter)
+	    return this.__evaluator.evaluate(this.state, keyPathOrGetter)
 	  }});
 
 	  /**
@@ -5360,41 +5363,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @param {object|undefined} payload
 	   */
 	  Object.defineProperty(Reactor.prototype,"dispatch",{writable:true,configurable:true,value:function(actionType, payload) {"use strict";
-	    var debug = this.debug
-	    var prevState = this.__state
+	    var prevState = this.state
+	    this.state = this.__handleAction(prevState, actionType, payload)
 
-	    this.__state = this.__state.withMutations(function(state)  {
-	      if (this.debug) {
-	        logging.dispatchStart(actionType, payload)
-	      }
-
-	      // let each core handle the message
-	      this.__stores.forEach(function(store, id)  {
-	        var currState = state.get(id)
-	        var newState = store.handle(currState, actionType, payload)
-
-	        if (debug && newState === undefined) {
-	          var error = 'Store handler must return a value, did you forget a return statement'
-	          logging.dispatchError(error)
-	          throw new Error(error)
-	        }
-
-	        state.set(id, newState)
-
-	        if (this.debug) {
-	          logging.storeHandled(id, currState, newState)
-	        }
-	      }.bind(this))
-
-	      if (this.debug) {
-	        logging.dispatchEnd(state)
-	      }
-	    }.bind(this))
-
-	    // write the new state to the output stream if changed
-	    if (this.__state !== prevState) {
-	      this.__changeObserver.notifyObservers(this.__state)
+	    if (this.__isBatching) {
+	      this.__batchDispatchCount++
+	    } else if (this.state !== prevState) {
+	      this.__notify()
 	    }
+	  }});
+
+	  /**
+	   * Allows batching of dispatches before notifying change observers
+	   * @param {Function} fn
+	   */
+	  Object.defineProperty(Reactor.prototype,"batch",{writable:true,configurable:true,value:function(fn) {"use strict";
+	    this.__batchStart()
+	    fn()
+	    this.__batchEnd()
 	  }});
 
 	  /**
@@ -5429,10 +5415,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 
 	      this.__stores = this.__stores.set(id, store)
-	      this.__state = this.__state.set(id, initialState)
+	      this.state = this.state.set(id, initialState)
 	    }.bind(this))
 
-	    this.__changeObserver.notifyObservers(this.__state)
+	    this.__notify()
 	  }});
 
 	  /**
@@ -5442,7 +5428,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  Object.defineProperty(Reactor.prototype,"serialize",{writable:true,configurable:true,value:function() {"use strict";
 	    var serialized = {}
 	    this.__stores.forEach(function(store, id)  {
-	      var storeState = this.__state.get(id)
+	      var storeState = this.state.get(id)
 	      serialized[id] = store.serialize(storeState)
 	    }.bind(this))
 	    return serialized
@@ -5461,8 +5447,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }.bind(this))
 	    }.bind(this))
 
-	    this.__state = this.__state.merge(stateToLoad)
-	    this.__changeObserver.notifyObservers(this.__state)
+	    this.state = this.state.merge(stateToLoad)
+	    this.__notify()
 	  }});
 
 	  /**
@@ -5470,9 +5456,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	   */
 	  Object.defineProperty(Reactor.prototype,"reset",{writable:true,configurable:true,value:function() {"use strict";
 	    var debug = this.debug
-	    var prevState = this.__state
+	    var prevState = this.state
 
-	    this.__state = Immutable.Map().withMutations(function(state)  {
+	    this.state = Immutable.Map().withMutations(function(state)  {
 	      this.__stores.forEach(function(store, id)  {
 	        var storeState = prevState.get(id)
 	        var resetStoreState = store.handleReset(storeState)
@@ -5487,7 +5473,70 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }.bind(this))
 
 	    this.__evaluator.reset()
-	    this.__changeObserver.reset(this.__state)
+	    this.__changeObserver.reset(this.state)
+	  }});
+
+	  /**
+	   * Notifies all change observers with the current state
+	   * @private
+	   */
+	  Object.defineProperty(Reactor.prototype,"__notify",{writable:true,configurable:true,value:function() {"use strict";
+	    this.__changeObserver.notifyObservers(this.state)
+	  }});
+
+
+	  /**
+	   * Reduces the current state to the new state given actionType / message
+	   * @param {string} actionType
+	   * @param {object|undefined} payload
+	   * @return {Immutable.Map}
+	   */
+	  Object.defineProperty(Reactor.prototype,"__handleAction",{writable:true,configurable:true,value:function(state, actionType, payload) {"use strict";
+	    return state.withMutations(function(state)  {
+	      if (this.debug) {
+	        logging.dispatchStart(actionType, payload)
+	      }
+
+	      // let each core handle the message
+	      this.__stores.forEach(function(store, id)  {
+	        var currState = state.get(id)
+	        var newState = store.handle(currState, actionType, payload)
+
+	        if (this.debug && newState === undefined) {
+	          var error = 'Store handler must return a value, did you forget a return statement'
+	          logging.dispatchError(error)
+	          throw new Error(error)
+	        }
+
+	        state.set(id, newState)
+
+	        if (this.debug) {
+	          logging.storeHandled(id, currState, newState)
+	        }
+	      }.bind(this))
+
+	      if (this.debug) {
+	        logging.dispatchEnd(state)
+	      }
+	    }.bind(this))
+	  }});
+
+	  Object.defineProperty(Reactor.prototype,"__batchStart",{writable:true,configurable:true,value:function() {"use strict";
+	    if (this.__isBatching) {
+	      throw new Error('Reactor already in batch mode')
+	    }
+	    this.__isBatching = true
+	  }});
+
+	  Object.defineProperty(Reactor.prototype,"__batchEnd",{writable:true,configurable:true,value:function() {"use strict";
+	    if (!this.__isBatching) {
+	      throw new Error('Reactor is not in batch mode')
+	    }
+
+	    if (this.__batchDispatchCount > 0) {
+	      this.__notify()
+	      this.__batchDispatchCount = 0
+	    }
 	  }});
 
 
@@ -5521,7 +5570,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.storeHandled = function(id, before, after) {
 	  if (console.group) {
 	    if (before !== after) {
-	      console.debug('Core changed: ' + id)
+	      console.debug('Store ' + id + ' handled action')
 	    }
 	  }
 	}
@@ -5852,8 +5901,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    __applyingComputeFn = true
-	    var evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
-	    __applyingComputeFn = false
+	    try {
+	      var evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
+	      __applyingComputeFn = false
+	    } catch (e) {
+	      __applyingComputeFn = false
+	      throw e
+	    }
 
 	    this.__cacheValue(state, keyPathOrGetter, args, evaluatedValue)
 
