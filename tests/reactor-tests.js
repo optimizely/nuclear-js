@@ -913,5 +913,22 @@ describe('Reactor', () => {
       expect(observeSpy.calls.count()).toBe(1)
       expect(firstCallArg).toEqual(['one', 'two'])
     })
+
+    it('should throw an error if batches are nested', () => {
+      expect(() => {
+        reactor.batch(() => {
+          reactor.dispatch('add', 'one')
+          reactor.batch(() => {
+            reactor.dispatch('add', 'two')
+          })
+        })
+      }).toThrow()
+    })
+
+    it('should throw an error if __batchEnd is called outside of a batch', () => {
+      expect(() => {
+        reactor.__batchEnd()
+      }).toThrow()
+    })
   })
 })
