@@ -789,6 +789,23 @@ describe('Reactor', () => {
       expect(Immutable.is(reactor.evaluate([]), reactor2.evaluate([]))).toBe(true)
     })
 
+    it('should allow loading of state from outside source', () => {
+      reactor.loadState({
+        stringStore: 'bar',
+        listStore: [4,5,6],
+      })
+
+      expect(reactor.evaluateToJS([])).toEqual({
+        mapStore: {
+          1: 'one',
+          2: 'two',
+        },
+        stringStore: 'bar',
+        listStore: [4,5,6],
+        booleanStore: true,
+      })
+    })
+
     it('should notify observer', () => {
       var mockFn = jasmine.createSpy()
       var serialized = reactor.serialize()
