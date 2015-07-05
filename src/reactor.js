@@ -103,7 +103,7 @@ class Reactor {
     var prevState = this.__state
 
     this.__state = this.__state.withMutations(state => {
-      if (this.debug) {
+      if (debug) {
         logging.dispatchStart(actionType, payload)
       }
 
@@ -120,12 +120,12 @@ class Reactor {
 
         state.set(id, newState)
 
-        if (this.debug) {
+        if (debug) {
           logging.storeHandled(id, currState, newState)
         }
       })
 
-      if (this.debug) {
+      if (debug) {
         logging.dispatchEnd(state)
       }
     })
