@@ -164,10 +164,10 @@ describe('Reactor', () => {
           taxPercent: 0,
         })
 
-        var firstCallArg = mockFn.calls.argsFor(0)
+        var firstCallArg = mockFn.calls.argsFor(0)[0]
 
         expect(mockFn.calls.count()).toBe(1)
-        expect(Immutable.is(firstCallArg, expected))
+        expect(Immutable.is(firstCallArg, expected)).toBe(true)
       })
 
       it('should not emit to the outputStream if state does not change after a dispatch', () => {

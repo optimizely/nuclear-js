@@ -171,7 +171,7 @@ describe('Utils', () => {
     it('does not extend inherited properties', () => {
       var F = function() {}
       F.prototype = { a: 1 }
-      expect(Utils.extend({ a: 10 }).a).toEqual(10)
+      expect(Utils.extend({ a: 10 }, F).a).toEqual(10)
     })
   })
 
