@@ -4,7 +4,7 @@ m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
 ga('create', 'UA-64060472-1', 'auto');
-ga('send', 'pageview');</script></head><body><div class="navbar-fixed"><nav class="nav"><div class="nav-wrapper"><a href="https://optimizely.github.io/nuclear-js/">NuclearJS</a><ul id="nav-mobile" class="right hide-on-med-and-down"><li><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Docs</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/05-api.html">API</a></li><li><a href="https://github.com/optimizely/nuclear-js">Github</a></li></ul></div></nav></div><div class="container"><div class="docs-page row"><div class="docs-page--sidebar col l2"><h3>Docs</h3><ul class="sidebar-links"><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Getting Started</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/02-getters.html">Getters</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/03-hooking-up-to-react.html">Hooking up to React</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/04-async-actions-and-optimistic-updates.html">Async Actions and Optimistic Updates</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/05-api.html">API</a></li></ul></div><div class="docs-page--contents col l8"><h1 id="getters">Getters</h1>
+ga('send', 'pageview');</script></head><body><div class="navbar-fixed"><nav class="nav"><div class="nav-wrapper"><a href="https://optimizely.github.io/nuclear-js/" class="brand-logo">NuclearJS</a><ul id="nav-mobile" class="right hide-on-med-and-down"><li><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Docs</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/05-api.html">API</a></li><li><a href="https://github.com/optimizely/nuclear-js">Github</a></li></ul></div></nav></div><div class="container"><div class="docs-page row"><div class="docs-page--sidebar col l2"><h3>Docs</h3><ul class="sidebar-links"><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Getting Started</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/02-getters.html">Getters</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/03-hooking-up-to-react.html">Hooking up to React</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/04-async-actions-and-optimistic-updates.html">Async Actions and Optimistic Updates</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/05-api.html">API</a></li></ul></div><div class="docs-page--contents col l8"><h1 id="getters">Getters</h1>
 <p>In the <a href="./01-getting-started.html">previous section</a> we created stores and actions for our shopping application. At the very end we introduced the concept of getters.
 This section will explain the details behind getters and how they can used, combined and observed to build a rich user interface.</p>
 <h3 id="definition">Definition</h3>
@@ -18,7 +18,7 @@ This section will explain the details behind getters and how they can used, comb
 </li>
 </ol>
 <h2 id="back-to-our-example">Back to our example</h2>
-<p>Recall our application state looks something like after we&#39;ve fetched the products and the user added something to their cart&#39;:</p>
+<p>Recall our application state looks something like this after we&#39;ve fetched the products and the user added something to their cart:</p>
 <pre><code class="lang-javascript">Map {
   cart: Map {
     itemQty: Map {
@@ -32,7 +32,7 @@ This section will explain the details behind getters and how they can used, comb
   }
 }
 </code></pre>
-<p>Lets create getters for:</p>
+<p>Let&#39;s create getters for:</p>
 <ol>
 <li>All products with their inventories</li>
 <li>Products in the shopping cart and the quantity</li>
@@ -51,7 +51,7 @@ const cartProducts = [
       var product = products.get(productId)
       return product
         .set(&#39;quantity&#39;, quantity)
-        .remove(&#39;inventory&#39;) // inventory shouldnt be known in cart
+        .remove(&#39;inventory&#39;) // inventory shouldn&#39;t be known in cart
     }).toList()
   }
 ]
@@ -93,7 +93,7 @@ reactor.evaluate(getters.cartTotal);
 <h2 id="recap">Recap</h2>
 <p>Getters provide an incredibly powerful mechanism to both evaluate and observe any piece of application state or
 composite state.  Behind getters is a powerful caching mechanism that memoizes computation, and will only reevaluate
-when the underlying depdenncies change.</p>
-<p>In the next section we will take this full circle and hook up our application state to components</p>
+when the underlying dependencies change.</p>
+<p>In the next section we will take this full circle and hook up our application state to components.</p>
 <h4 id="-next-hooking-up-to-react-03-hooking-up-to-react-html-"><a href="./03-hooking-up-to-react.html">Next: Hooking up to React</a></h4>
 </div></div></div><script src="https://optimizely.github.io/nuclear-js/app.js"></script></body></html>

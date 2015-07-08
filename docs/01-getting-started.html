@@ -4,7 +4,7 @@ m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
 ga('create', 'UA-64060472-1', 'auto');
-ga('send', 'pageview');</script></head><body><div class="navbar-fixed"><nav class="nav"><div class="nav-wrapper"><a href="https://optimizely.github.io/nuclear-js/">NuclearJS</a><ul id="nav-mobile" class="right hide-on-med-and-down"><li><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Docs</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/05-api.html">API</a></li><li><a href="https://github.com/optimizely/nuclear-js">Github</a></li></ul></div></nav></div><div class="container"><div class="docs-page row"><div class="docs-page--sidebar col l2"><h3>Docs</h3><ul class="sidebar-links"><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Getting Started</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/02-getters.html">Getters</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/03-hooking-up-to-react.html">Hooking up to React</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/04-async-actions-and-optimistic-updates.html">Async Actions and Optimistic Updates</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/05-api.html">API</a></li></ul></div><div class="docs-page--contents col l8"><h1 id="getting-started">Getting Started</h1>
+ga('send', 'pageview');</script></head><body><div class="navbar-fixed"><nav class="nav"><div class="nav-wrapper"><a href="https://optimizely.github.io/nuclear-js/" class="brand-logo">NuclearJS</a><ul id="nav-mobile" class="right hide-on-med-and-down"><li><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Docs</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/05-api.html">API</a></li><li><a href="https://github.com/optimizely/nuclear-js">Github</a></li></ul></div></nav></div><div class="container"><div class="docs-page row"><div class="docs-page--sidebar col l2"><h3>Docs</h3><ul class="sidebar-links"><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Getting Started</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/02-getters.html">Getters</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/03-hooking-up-to-react.html">Hooking up to React</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/04-async-actions-and-optimistic-updates.html">Async Actions and Optimistic Updates</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/05-api.html">API</a></li></ul></div><div class="docs-page--contents col l8"><h1 id="getting-started">Getting Started</h1>
 <p>This guide will take you through the process of install NuclearJS and familiarize you with the concepts found in Nuclear to build Flux systems.</p>
 <h2 id="installation">Installation</h2>
 <pre><code class="lang-shell">npm install --save nuclear-js
@@ -85,12 +85,12 @@ export default {
 </code></pre>
 <h2 id="creating-stores">Creating Stores</h2>
 <p>Stores hold no state, instead they provide a collection of functions that transform current state into new state.  They provide an <code>initialize</code> hook used when
-register with a reactor to define what actions they respond to.</p>
+registering with a reactor to define what actions they respond to.</p>
 <p>In Nuclear there is no need to worry about stores knowing about other stores or <code>store.waitsFor</code>.  The sole responsibility of stores is to write or mutate application
-state, the responsibility of reading application state falls on Getters.</p>
+state, and the responsibility of reading application state falls on Getters.</p>
 <h4 id="-stores-productstore-js-"><code>stores/ProductStore.js</code></h4>
 <pre><code class="lang-javascript">import { Store, toImmutable } from &#39;nuclear-js&#39;
-import { RECEIVE_PRODUCTS, ADD_TO_CART } from &#39;../action-types&#39;
+import { RECEIVE_PRODUCTS, ADD_TO_CART } from &#39;../actionTypes&#39;
 
 // example product:
 // {{&quot;id&quot;: 1, &quot;title&quot;: &quot;iPad 4 Mini&quot;, &quot;price&quot;: 500.01, &quot;inventory&quot;: 2, &quot;image&quot;: &quot;../common/assets/ipad-mini.png&quot;},&quot;id&quot;: 1, &quot;title&quot;: &quot;iPad 4 Mini&quot;, &quot;price&quot;: 500.01, &quot;inventory&quot;: 2, &quot;image&quot;: &quot;../common/assets/ipad-mini.png&quot;},
@@ -106,7 +106,7 @@ export default Store({
   }
 })
 
-// store handlers transforms `(currentState, payload) =&gt; (newState)`
+// store handlers transform `(currentState, payload) =&gt; (newState)`
 function receiveProducts(state, { products }) {
   // transform an array of products to a map keyed by product.id
   let newProducts = toImmutable(products)
@@ -157,7 +157,7 @@ function addToCart(state, { product }) {
 <p>Registering the store with a reactor does two things:</p>
 <ol>
 <li>Passes every dispatched action to the store</li>
-<li>Binds a stores state to the application state by the key used for registration</li>
+<li>Binds a store&#39;s state to the application state by the key used for registration</li>
 </ol>
 <h4 id="-main-js-"><code>main.js</code></h4>
 <pre><code class="lang-javascript">import reactor from &#39;./reactor&#39;
@@ -170,10 +170,10 @@ reactor.registerStores({
 })
 </code></pre>
 <h2 id="recap">Recap</h2>
-<p>At this we&#39;ve created actions for fetching products and adding an item to the cart.  We also have the <code>ProductStore</code> and <code>CartStore</code> registered on the reactor.</p>
-<p>Lets see what our application state looks like by using the <code>reactor.evaluate</code> function:</p>
-<pre><code class="lang-javascript">// providing an empty array to `evaluate` will return a snapshop of the entire app state
-reactor.evalaute([])
+<p>At this point we&#39;ve created actions for fetching products and adding an item to the cart.  We also have the <code>ProductStore</code> and <code>CartStore</code> registered on the reactor.</p>
+<p>Let&#39;s see what our application state looks like by using the <code>reactor.evaluate</code> function:</p>
+<pre><code class="lang-javascript">// providing an empty array to `evaluate` will return a snapshot of the entire app state
+reactor.evaluate([])
 // result
 Map {
   cart: Map {
@@ -188,8 +188,8 @@ Map {
   itemQty: Map {}
 }
 </code></pre>
-<p>The application state is rather empty, each top level key is populated by the stores <code>getInitialState()</code> method.</p>
-<p>Lets see what our application looks like after we fetch some products.</p>
+<p>The application state is rather empty, each top level key is populated by the store&#39;s <code>getInitialState()</code> method.</p>
+<p>Let&#39;s see what our application state looks like after we fetch some products.</p>
 <pre><code class="lang-javascript">actions.fetchProducts()
 </code></pre>
 <p>After the products have been fetched:</p>
@@ -204,7 +204,7 @@ Map {
   }
 }
 </code></pre>
-<p>Now lets add a product to our shopping cart</p>
+<p>Now let&#39;s add a product to our shopping cart:</p>
 <pre><code class="lang-javascript">actions.addToCart({ id: 3 })
 </code></pre>
 <p>Notice there is an entry in the <code>itemQty</code> map as well as the inventory for <strong>Charli XCX - Sucker CD</strong> went from 5 to 4.</p>
@@ -221,7 +221,7 @@ Map {
   }
 }
 </code></pre>
-<p>The information in our stores are pretty minimal, the cart store doesn&#39;t actually know anything about the product, like its title, price or images
+<p>The information in our stores are pretty minimal, the cart store doesn&#39;t actually know anything about the product, like its title, price or images -
 all information that we would need if we were to build a cart component.</p>
 <p>Nuclear allows you to combine data from stores in a non-destructive manner, check it out:</p>
 <pre><code class="lang-javascript">reactor.evaluate([
