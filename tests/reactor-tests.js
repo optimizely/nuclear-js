@@ -958,21 +958,25 @@ describe('Reactor', () => {
       expect(firstCallArg).toEqual(['one', 'two'])
     })
 
-    it('should throw an error if batches are nested', () => {
-      expect(() => {
-        reactor.batch(() => {
-          reactor.dispatch('add', 'one')
-          reactor.batch(() => {
-            reactor.dispatch('add', 'two')
-          })
-        })
-      }).toThrow()
-    })
+    it('should allow nested batches and only notify observers once', () => {
+      var observeSpy = jasmine.createSpy()
 
-    it('should throw an error if __batchEnd is called outside of a batch', () => {
-      expect(() => {
-        reactor.__batchEnd()
-      }).toThrow()
+      reactor.observe(['listStore'], list => observeSpy(list.toJS()))
+
+      reactor.batch(() => {
+        reactor.dispatch('add', 'one')
+        reactor.batch(() => {
+          reactor.dispatch('add', 'two')
+          reactor.dispatch('add', 'three')
+        })
+      })
+
+      expect(observeSpy.calls.count()).toBe(1)
+
+      var firstCallArg = observeSpy.calls.argsFor(0)[0]
+
+      expect(observeSpy.calls.count()).toBe(1)
+      expect(firstCallArg).toEqual(['one', 'two', 'three'])
     })
   })
 })

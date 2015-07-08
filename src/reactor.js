@@ -48,7 +48,9 @@ class Reactor {
      */
     this.__changeObserver = new ChangeObserver(this.state, this.__evaluator)
 
-    this.__isBatching = false
+    // keep track of the depth of batch nesting
+    this.__batchDepth = 0
+    // number of dispatches in the top most batch cycle
     this.__batchDispatchCount = 0
   }
 
@@ -106,7 +108,7 @@ class Reactor {
     var prevState = this.state
     this.state = this.__handleAction(prevState, actionType, payload)
 
-    if (this.__isBatching) {
+    if (this.__batchDepth > 0) {
       this.__batchDispatchCount++
     } else if (this.state !== prevState) {
       this.__notify()
@@ -268,19 +270,16 @@ class Reactor {
   }
 
   __batchStart() {
-    if (this.__isBatching) {
-      throw new Error('Reactor already in batch mode')
-    }
-    this.__isBatching = true
+    this.__batchDepth++
   }
 
   __batchEnd() {
-    if (!this.__isBatching) {
-      throw new Error('Reactor is not in batch mode')
-    }
+    this.__batchDepth--
 
-    if (this.__batchDispatchCount > 0) {
-      this.__notify()
+    if (this.__batchDepth <= 0) {
+      if (this.__batchDispatchCount > 0) {
+        this.__notify()
+      }
       this.__batchDispatchCount = 0
     }
   }
