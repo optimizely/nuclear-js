@@ -110,4 +110,4 @@ when the underlying dependencies change.
 
 In the next section we will take this full circle and hook up our application state to components.
 
-#### [Next: Hooking up to React](./03-hooking-up-to-react.html)
+#### [Next: Hooking up to React](./05-hooking-up-to-react.html)
