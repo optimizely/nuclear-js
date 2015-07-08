@@ -8,6 +8,7 @@ var createReactMixin = require('./create-react-mixin')
 
 // helper fns
 var toJS = require('./immutable-helpers').toJS
+var toImmutable = require('./immutable-helpers').toImmutable
 var isImmutableValue = require('./immutable-helpers').isImmutableValue
 var each = require('./utils').each
 
@@ -34,9 +35,9 @@ class Reactor {
     /**
      * The state for the whole cluster
      */
-    this.__state = Immutable.Map({})
+    this.state = Immutable.Map({})
     /**
-     * Holds a map of id => reactor instance
+     * Holds a map of id => store instance
      */
     this.__stores = Immutable.Map({})
 
@@ -45,7 +46,12 @@ class Reactor {
      * Change observer interface to observe certain keypaths
      * Created after __initialize so it starts with initialState
      */
-    this.__changeObserver = new ChangeObserver(this.__state, this.__evaluator)
+    this.__changeObserver = new ChangeObserver(this.state, this.__evaluator)
+
+    // keep track of the depth of batch nesting
+    this.__batchDepth = 0
+    // number of dispatches in the top most batch cycle
+    this.__batchDispatchCount = 0
   }
 
   /**
@@ -54,7 +60,7 @@ class Reactor {
    * @return {*}
    */
   evaluate(keyPathOrGetter) {
-    return this.__evaluator.evaluate(this.__state, keyPathOrGetter)
+    return this.__evaluator.evaluate(this.state, keyPathOrGetter)
   }
 
   /**
@@ -99,41 +105,24 @@ class Reactor {
    * @param {object|undefined} payload
    */
   dispatch(actionType, payload) {
-    var debug = this.debug
-    var prevState = this.__state
+    var prevState = this.state
+    this.state = this.__handleAction(prevState, actionType, payload)
 
-    this.__state = this.__state.withMutations(state => {
-      if (debug) {
-        logging.dispatchStart(actionType, payload)
-      }
-
-      // let each core handle the message
-      this.__stores.forEach((store, id) => {
-        var currState = state.get(id)
-        var newState = store.handle(currState, actionType, payload)
-
-        if (debug && newState === undefined) {
-          var error = 'Store handler must return a value, did you forget a return statement'
-          logging.dispatchError(error)
-          throw new Error(error)
-        }
-
-        state.set(id, newState)
-
-        if (debug) {
-          logging.storeHandled(id, currState, newState)
-        }
-      })
-
-      if (debug) {
-        logging.dispatchEnd(state)
-      }
-    })
-
-    // write the new state to the output stream if changed
-    if (this.__state !== prevState) {
-      this.__changeObserver.notifyObservers(this.__state)
+    if (this.__batchDepth > 0) {
+      this.__batchDispatchCount++
+    } else if (this.state !== prevState) {
+      this.__notify()
     }
+  }
+
+  /**
+   * Allows batching of dispatches before notifying change observers
+   * @param {Function} fn
+   */
+  batch(fn) {
+    this.__batchStart()
+    fn()
+    this.__batchEnd()
   }
 
   /**
@@ -168,10 +157,46 @@ class Reactor {
       }
 
       this.__stores = this.__stores.set(id, store)
-      this.__state = this.__state.set(id, initialState)
+      this.state = this.state.set(id, initialState)
     })
 
-    this.__changeObserver.notifyObservers(this.__state)
+    this.__notify()
+  }
+
+  /**
+   * Returns a plain object representing the application state
+   * @return {Object}
+   */
+  serialize() {
+    var serialized = {}
+    this.__stores.forEach((store, id) => {
+      var storeState = this.state.get(id)
+      var serializedState = store.serialize(storeState)
+      if (serializedState !== undefined) {
+        serialized[id] = serializedState
+      }
+    })
+    return serialized
+  }
+
+  /**
+   * @param {Object} state
+   */
+  loadState(state) {
+    var stateToLoad = toImmutable({}).withMutations(stateToLoad => {
+      each(state, (serializedStoreState, storeId) => {
+        var store = this.__stores.get(storeId)
+        if (store) {
+          var storeState = store.deserialize(serializedStoreState)
+          if (storeState !== undefined) {
+            stateToLoad.set(storeId, storeState)
+          }
+        }
+      })
+    })
+
+    this.state = this.state.merge(stateToLoad)
+    this.__notify()
   }
 
   /**
@@ -179,9 +204,9 @@ class Reactor {
    */
   reset() {
     var debug = this.debug
-    var prevState = this.__state
+    var prevState = this.state
 
-    this.__state = Immutable.Map().withMutations(state => {
+    this.state = Immutable.Map().withMutations(state => {
       this.__stores.forEach((store, id) => {
         var storeState = prevState.get(id)
         var resetStoreState = store.handleReset(storeState)
@@ -196,7 +221,67 @@ class Reactor {
     })
 
     this.__evaluator.reset()
-    this.__changeObserver.reset(this.__state)
+    this.__changeObserver.reset(this.state)
+  }
+
+  /**
+   * Notifies all change observers with the current state
+   * @private
+   */
+  __notify() {
+    this.__changeObserver.notifyObservers(this.state)
+  }
+
+
+  /**
+   * Reduces the current state to the new state given actionType / message
+   * @param {string} actionType
+   * @param {object|undefined} payload
+   * @return {Immutable.Map}
+   */
+  __handleAction(state, actionType, payload) {
+    return state.withMutations(state => {
+      if (this.debug) {
+        logging.dispatchStart(actionType, payload)
+      }
+
+      // let each core handle the message
+      this.__stores.forEach((store, id) => {
+        var currState = state.get(id)
+        var newState = store.handle(currState, actionType, payload)
+
+        if (this.debug && newState === undefined) {
+          var error = 'Store handler must return a value, did you forget a return statement'
+          logging.dispatchError(error)
+          throw new Error(error)
+        }
+
+        state.set(id, newState)
+
+        if (this.debug) {
+          logging.storeHandled(id, currState, newState)
+        }
+      })
+
+      if (this.debug) {
+        logging.dispatchEnd(state)
+      }
+    })
+  }
+
+  __batchStart() {
+    this.__batchDepth++
+  }
+
+  __batchEnd() {
+    this.__batchDepth--
+
+    if (this.__batchDepth <= 0) {
+      if (this.__batchDispatchCount > 0) {
+        this.__notify()
+      }
+      this.__batchDispatchCount = 0
+    }
   }
 }
 

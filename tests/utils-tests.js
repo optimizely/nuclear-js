@@ -291,6 +291,21 @@ describe('Utils', () => {
       it('does not iterate over the inherited properites', () => {
         expect(values).not.toContain(3)
       })
+
+      it('breaks out of iteration when `false` is returned', () => {
+        var spy = jasmine.createSpy('eachSpy')
+
+        Utils.each(obj, (val, i) => {
+          spy(val)
+          if (val === 1) {
+            return false
+          }
+        })
+
+        expect(spy.calls.count()).toBe(1)
+        expect(spy).toHaveBeenCalledWith(1)
+        expect(spy).not.toHaveBeenCalledWith(4)
+      })
     })
 
     it('is resiliant to collection property changes during iteration', () => {

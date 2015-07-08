@@ -135,6 +135,20 @@ describe('Evaluator', () => {
         new Error('Evaluate may not be called within a Getters computeFn')
       )
     })
+
+    it('should gracefully handle getters that throw errors without locking the evaluator', () => {
+      var errorGetter = [
+        currentProjectGetter,
+        () => {
+          throw new Error('evaluator error')
+        },
+      ]
+
+      expect(function() { evaluator.evaluate(state, errorGetter) }).toThrow()
+
+      var result = evaluator.evaluate(state, currentProjectGetter)
+      expect(Immutable.is(result, proj1)).toBe(true)
+    })
   })
 
   describe('when evaluating an invalid keypath / getter', () => {

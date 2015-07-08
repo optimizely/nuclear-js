@@ -133,6 +133,7 @@ describe('Reactor', () => {
       })
     })
 
+
     describe('when dispatching a relevant action', () => {
       var item = {
         name: 'item 1',
@@ -707,6 +708,275 @@ describe('Reactor', () => {
           reactor.reset()
         }).toThrow()
       })
+    })
+  })
+
+  describe('serialize/loadState', () => {
+    var reactor
+    var stores
+
+    beforeEach(() => {
+      reactor = new Reactor({
+        debug: true,
+      })
+
+      stores = {
+        mapStore: Store({
+          getInitialState() {
+            return Immutable.Map([
+              [1, 'one'],
+              [2, 'two'],
+            ])
+          },
+          initialize() {
+            this.on('clear', state => null)
+          },
+          serialize(state) {
+            if (!state) {
+              return state
+            }
+            return state.entrySeq().toJS()
+          },
+          deserialize(state) {
+            return Immutable.Map(state)
+          },
+        }),
+
+        stringStore: Store({
+          getInitialState() {
+            return 'foo'
+          },
+          initialize() {
+            this.on('clear', state => null)
+          },
+        }),
+
+        listStore: Store({
+          getInitialState() {
+            return toImmutable([1, 2, 'three'])
+          },
+          initialize() {
+            this.on('clear', state => null)
+          },
+        }),
+
+        booleanStore: Store({
+          getInitialState() {
+            return true
+          },
+          initialize() {
+            this.on('clear', state => null)
+          },
+        }),
+      }
+
+      reactor.registerStores(stores)
+    })
+
+    afterEach(() => {
+      reactor.reset()
+    })
+
+    it('should serialize -> loadState effectively', () => {
+      var serialized = reactor.serialize()
+      var reactor2 = new Reactor()
+      reactor2.registerStores(stores)
+      reactor2.dispatch('clear')
+
+      expect(Immutable.is(reactor.evaluate([]), reactor2.evaluate([]))).toBe(false)
+
+      reactor2.loadState(serialized)
+      expect(Immutable.is(reactor.evaluate([]), reactor2.evaluate([]))).toBe(true)
+    })
+
+    it('should allow loading of state from outside source', () => {
+      reactor.loadState({
+        stringStore: 'bar',
+        listStore: [4, 5, 6],
+      })
+
+      expect(reactor.evaluateToJS([])).toEqual({
+        mapStore: {
+          1: 'one',
+          2: 'two',
+        },
+        stringStore: 'bar',
+        listStore: [4, 5, 6],
+        booleanStore: true,
+      })
+    })
+
+    it('should notify observer', () => {
+      var mockFn = jasmine.createSpy()
+      var serialized = reactor.serialize()
+      var reactor2 = new Reactor()
+      reactor2.registerStores(stores)
+      reactor2.dispatch('clear')
+
+      reactor2.observe(['stringStore'], mockFn)
+
+      reactor2.loadState(serialized)
+
+      var firstCallArg = mockFn.calls.argsFor(0)
+
+      expect(mockFn.calls.count()).toBe(1)
+      expect(Immutable.is(firstCallArg, 'foo'))
+    })
+
+    describe('when extending Reactor#serialize and Reactor#loadState', () => {
+      var loadStateSpy = jasmine.createSpy('loadState')
+      var serializeSpy = jasmine.createSpy('serialize')
+
+      it('should respect the extended methods', () => {
+        class MyReactor extends Reactor {
+          constructor() {
+            super(arguments)
+          }
+
+          serialize(state) {
+            serializeSpy(state)
+            var serialized = super(state)
+            return JSON.stringify(serialized)
+          }
+
+          loadState(state) {
+            loadStateSpy(state)
+            super(JSON.parse(state))
+          }
+        }
+        var reactor1 = new MyReactor()
+        reactor1.registerStores(stores)
+        var reactor2 = new MyReactor()
+        reactor2.registerStores(stores)
+
+        var serialized = reactor1.serialize()
+
+        reactor2.dispatch('clear')
+
+        expect(Immutable.is(reactor1.evaluate([]), reactor2.evaluate([]))).toBe(false)
+
+        reactor2.loadState(serialized)
+        expect(Immutable.is(reactor.evaluate([]), reactor2.evaluate([]))).toBe(true)
+
+        expect(serializeSpy.calls.count()).toBe(1)
+        expect(loadStateSpy.calls.count()).toBe(1)
+      })
+    })
+
+    describe('when a store returns undefined from serialize/deserialize', () => {
+      beforeEach(() => {
+        reactor = new Reactor()
+        reactor.registerStores({
+          serializableStore: Store({
+            getInitialState() {
+              return 'real'
+            },
+          }),
+
+          ignoreStore: Store({
+            getInitialState() {
+              return 'ignore'
+            },
+            serialize() {
+              return
+            },
+            deserialize() {
+              return
+            },
+          }),
+        })
+      })
+
+      it('should not have an entry in the serialized app state', () => {
+        var serialized = reactor.serialize()
+        expect(serialized).toEqual({
+          serializableStore: 'real',
+        })
+      })
+
+      it('should not load state for a store where deserialize returns undefined', () => {
+        var serialized = {
+          serializableStore: 'changed',
+          ignoreStore: 'changed',
+        }
+        reactor.loadState(serialized)
+        expect(reactor.evaluateToJS([])).toEqual({
+          serializableStore: 'changed',
+          ignoreStore: 'ignore',
+        })
+      })
+    })
+  })
+
+  describe('#batch', () => {
+    var reactor
+
+    beforeEach(() => {
+      reactor = new Reactor({
+        debug: true,
+      })
+      reactor.registerStores({
+        listStore: Store({
+          getInitialState() {
+            return toImmutable([])
+          },
+          initialize() {
+            this.on('add', (state, item) => state.push(toImmutable(item)))
+          },
+        }),
+      })
+    })
+
+    afterEach(() => {
+      reactor.reset()
+    })
+
+    it('should execute multiple dispatches within the queue function', () => {
+      reactor.batch(() => {
+        reactor.dispatch('add', 'one')
+        reactor.dispatch('add', 'two')
+      })
+
+      expect(reactor.evaluateToJS(['listStore'])).toEqual(['one', 'two'])
+    })
+
+    it('should notify observers only once', () => {
+      var observeSpy = jasmine.createSpy()
+
+      reactor.observe(['listStore'], list => observeSpy(list.toJS()))
+
+      reactor.batch(() => {
+        reactor.dispatch('add', 'one')
+        reactor.dispatch('add', 'two')
+      })
+
+      expect(observeSpy.calls.count()).toBe(1)
+
+      var firstCallArg = observeSpy.calls.argsFor(0)[0]
+
+      expect(observeSpy.calls.count()).toBe(1)
+      expect(firstCallArg).toEqual(['one', 'two'])
+    })
+
+    it('should allow nested batches and only notify observers once', () => {
+      var observeSpy = jasmine.createSpy()
+
+      reactor.observe(['listStore'], list => observeSpy(list.toJS()))
+
+      reactor.batch(() => {
+        reactor.dispatch('add', 'one')
+        reactor.batch(() => {
+          reactor.dispatch('add', 'two')
+          reactor.dispatch('add', 'three')
+        })
+      })
+
+      expect(observeSpy.calls.count()).toBe(1)
+
+      var firstCallArg = observeSpy.calls.argsFor(0)[0]
+
+      expect(observeSpy.calls.count()).toBe(1)
+      expect(firstCallArg).toEqual(['one', 'two', 'three'])
     })
   })
 })

@@ -791,11 +791,38 @@ You can read more of the implementation here: [src/evaluator.js](./src/evaluator
 
 ### Reactor
 
+#### Constructor
+
+#### `Nuclear.Reactor`
+
+```js
+var reactor = new Nuclear.Reactor(config)
+// or
+var reactor = Nuclear.Reactor(config)
+```
+
+**Configuration Options**
+
+`config.debug` Boolean - if true it will log the entire app state for every dispatch.
+
 #### `Reactor#dispatch(messageType, messagePayload)`
 
 Dispatches a message to all registered Stores. This process is done synchronously, all registered `Store`s are passed this message and all components are re-evaluated (efficiently).  After a dispatch, a Reactor will emit the new state on the `reactor.changeEmitter`
 
 ex: `reactor.dispatch('addUser', { name: 'jordan' })`
+
+#### `Reactor#batch(fn)`
+
+Allows multiple dispatches within the `fn` function before notifying any observers.
+
+```js
+reactor.batch(function() {
+  reactor.dispatch('addUser', { name: 'jordan' })
+  reactor.dispatch('addUser', { name: 'james' })
+})
+
+// does a single notify to all observers
+```
 
 #### `Reactor#evaluate(Getter | KeyPath)`
 
@@ -836,6 +863,27 @@ reactor.observe([
     console.log('items changed');
   }
 ])
+```
+
+#### `Reactor#serialize()`
+
+Returns a plain javascript object representing the application state.  By defualt this maps over all stores and returns `toJS(storeState)`.
+
+```js
+reactor.loadState(reactor.serialize())
+```
+
+#### `Reactor#loadState( state )`
+
+Takes a plain javascript object and merges into the reactor state, using `store.deserialize`
+
+This can be useful if you need to load data already on the page.
+
+```js
+reactor.loadState({
+  stringStore: 'bar',
+  listStore: [4,5,6],
+})
 ```
 
 #### `Reactor#registerStores(stores)`
@@ -897,19 +945,9 @@ var ThreadSection = React.createClass({
 });
 ```
 
-### Constructors
+### Store
 
-#### `Nuclear.Reactor`
-
-```js
-var reactor = new Nuclear.Reactor(config)
-```
-
-**Configuration Options**
-
-`config.debug` Boolean - if true it will log the entire app state for every dispatch.
-
-#### `Nuclear.Store`
+#### Constructor
 
 ```js
 module.exports = new Nuclear.Store({
@@ -924,6 +962,49 @@ module.exports = new Nuclear.Store({
       // action handler takes state + payload and returns new state
     })
   },
+})
+```
+
+#### `Store#getInitialState`
+
+Defines the starting state for a store.  Must return an immutable value.  By default it returns an `Immutable.Map`
+
+#### `Store#initialize`
+
+Responsible for setting up action handlers for the store using `this.on(actionTypes, handlerFn)`
+
+#### `Store#serialize`
+
+Serialization method for the store's data, by default its implemented as `Nuclear.toJS' which converts ImmutableJS objects to plain javascript.
+This is overridable for your specific data needs.
+
+```js
+// serializing an Immutable map while preserving numerical keys
+Nuclear.Store({
+  // ...
+  serialize(state) {
+    if (!state) {
+      return state;
+    }
+    return state.entrySeq().toJS()
+  },
+  // ...
+})
+```
+
+#### `Store#deserialize`
+
+Serialization method for the store's data, by default its implemented as `Nuclear.toImmutable' which converts plain javascript objects to ImmutableJS data structures.
+This is overridable for your specific data needs.
+
+```js
+// deserializing an array of arrays [[1, 'one'], [2, 'two']] to an Immutable.Map
+Nuclear.Store({
+  // ...
+  deserialize(state) {
+    return Immutable.Map(state)
+  },
+  // ...
 })
 ```
 

@@ -10,6 +10,7 @@ module.exports = {
   ],
 
   'ci': [
+    'eslint',
     'clean:coverage',
     'karma:coverage',
     'coveralls',

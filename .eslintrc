@@ -112,7 +112,7 @@
     "no-catch-shadow": 0,
     "no-delete-var": 1,
     "no-label-var": 0,
-    "no-shadow": 1,
+    "no-shadow": 0,
     "no-shadow-restricted-names": 1,
     "no-undef": 2,
     "no-undef-init": 1,

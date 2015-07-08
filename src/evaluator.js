@@ -77,9 +77,15 @@ class Evaluator {
       throw new Error('Evaluate may not be called within a Getters computeFn')
     }
 
+    var evaluatedValue
     __applyingComputeFn = true
-    var evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
-    __applyingComputeFn = false
+    try {
+      evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
+      __applyingComputeFn = false
+    } catch (e) {
+      __applyingComputeFn = false
+      throw e
+    }
 
     this.__cacheValue(state, keyPathOrGetter, args, evaluatedValue)
 

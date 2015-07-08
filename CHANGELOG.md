@@ -1,3 +1,67 @@
+## 1.1.0 (proposed)
+
+- **[NEW]** added `Reactor#serialize`, `Reactor#loadState`, `Store#serialize` and `Store#deserialize` methods
+- **[NEW]** added `Reactor#batch` to allow batch dispatches before notify observers
+- **[FIXED]** fix Evaluator locking if getter evaluation errors
+
+### API Additions
+
+#### `Reactor#serialize()`
+
+Returns a plain javascript object representing the application state.  By defualt this maps over all stores and returns `toJS(storeState)`.
+
+```js
+reactor.loadState(reactor.serialize())
+```
+
+#### `Reactor#loadState( state )`
+
+Takes a plain javascript object and merges into the reactor state, using `store.deserialize`
+
+This can be useful if you need to load data already on the page.
+
+```js
+reactor.loadState({
+  stringStore: 'bar',
+  listStore: [4,5,6],
+})
+```
+
+#### `Store#serialize`
+
+Serialization method for the store's data, by default its implemented as `Nuclear.toJS' which converts ImmutableJS objects to plain javascript.
+This is overridable for your specific data needs.
+
+```js
+// serializing an Immutable map while preserving numerical keys
+Nuclear.Store({
+  // ...
+  serialize(state) {
+    if (!state) {
+      return state;
+    }
+    return state.entrySeq().toJS()
+  },
+  // ...
+})
+```
+
+#### `Store#deserialize`
+
+Serialization method for the store's data, by default its implemented as `Nuclear.toImmutable' which converts plain javascript objects to ImmutableJS data structures.
+This is overridable for your specific data needs.
+
+```js
+// deserializing an array of arrays [[1, 'one'], [2, 'two']] to an Immutable.Map
+Nuclear.Store({
+  // ...
+  deserialize(state) {
+    return Immutable.Map(state)
+  },
+  // ...
+})
+```
+
 ## 1.0.5 (June 4, 2015)
 
 - **[NEW]** Configured linting using [eslint](http://eslint.org/). Linting is now part of the [contributing process](https://github.com/optimizely/nuclear-js/blob/master/CONTRIBUTING.md). Eslint can be run using: `grunt eslint`

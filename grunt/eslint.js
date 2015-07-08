@@ -2,9 +2,14 @@ module.exports = {
   options: {
     configFile: '.eslintrc',
   },
-  target: [
+  src: [
     'src/*',
+  ],
+  tests: [
     'tests/*',
+  ],
+
+  grunt: [
     'grunt/*',
   ],
 }
