@@ -8,14 +8,15 @@ function urlize(uri) {
 export default React.createClass({
   render() {
     const logo = this.props.includeLogo
-      ? <a href={BASE_URL} className="brand-logo">NuclearJS</a>
+      ? <a href={BASE_URL} className="brand-logo hide-on-med-and-down">NuclearJS</a>
       : null
 
     return <div className="navbar-fixed">
       <nav className="nav">
         <div className="nav-wrapper">
           {logo}
-          <ul id="nav-mobile" className="right hide-on-med-and-down">
+          <ul className="right">
+            <li className="hide-on-large-only"><a href={urlize("")}>Home</a></li>
             <li><a href={urlize("docs/01-getting-started.html")}>Docs</a></li>
             <li><a href={urlize("docs/07-api.html")}>API</a></li>
             <li><a href="https://github.com/optimizely/nuclear-js">Github</a></li>
