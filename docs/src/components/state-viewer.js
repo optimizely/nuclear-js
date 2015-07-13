@@ -29,13 +29,14 @@ export default React.createClass({
   },
 
   render() {
-    let title
+    let codeString = ''
     if (this.props.title) {
-      title = <strong>{this.props.title} </strong>
+      codeString += this.props.title + ' '
     }
+    codeString += this.state.appState
 
     return <Code lang="javascript">
-      {title}{this.state.appState}
+      {codeString}
     </Code>
   }
 })

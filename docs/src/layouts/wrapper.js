@@ -1,6 +1,7 @@
 import React from 'react'
 import { BASE_URL } from '../globals'
 
+const PRISM_PATH = BASE_URL + 'assets/js/prism.js'
 const CSS_PATH = BASE_URL + 'assets/css/output.css'
 const JS_PATH = BASE_URL + 'app.js'
 
@@ -31,6 +32,7 @@ export default React.createClass({
         </head>
         <body>
           {this.props.children}
+          <script src={PRISM_PATH}></script>
           <script src={JS_PATH}></script>
         </body>
       </html>

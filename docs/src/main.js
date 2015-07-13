@@ -1,9 +1,6 @@
 import React from 'react'
 import ItemFilterExample from './components/item-filter-example'
 import addScrollClass from './utils/scroll-class'
-import './prism'
-
-Prism.highlightAll()
 
 addScrollClass("scrolled")
 

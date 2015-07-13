@@ -80,7 +80,6 @@ export default React.createClass({
                     <th data-field="price">Price</th>
                 </tr>
               </thead>
-
               <tbody>
                 {this.state.items.map(item => {
                   return <tr>

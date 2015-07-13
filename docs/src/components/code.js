@@ -1,5 +1,5 @@
 import React from 'react'
-import Highlight from 'react-highlight'
+import { PrismCode } from 'react-prism'
 
 export default React.createClass({
   render() {
@@ -7,9 +7,9 @@ export default React.createClass({
     return (
       <div className="highlighted-code">
         <pre className={languageClass}>
-          <code className={languageClass}>
+          <PrismCode className={languageClass} async={false}>
             {this.props.children}
-          </code>
+          </PrismCode>
         </pre>
       </div>
     )

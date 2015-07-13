@@ -147,6 +147,6 @@ have to explicitly call `this.setState` to re-render a component.
 
 In the next section we will cover hooking up actions to our react components.
 
-#### [Next: Async Actions and Optimistic Updates](./04-async-actions-and-optimistic-updates.html)
+#### [Next: Async Actions and Optimistic Updates](./06-async-actions-and-optimistic-updates.html)
 
 
