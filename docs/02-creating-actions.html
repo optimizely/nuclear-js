@@ -1,0 +1,56 @@
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"><title>NuclearJS | Creating Actions</title><link href="https://optimizely.github.io/nuclear-js/assets/css/output.css" type="text/css" rel="stylesheet" media="screen,projection"><script src="//cdn.optimizely.com/js/3006700484.js"></script><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-64060472-1', 'auto');
+ga('send', 'pageview');</script></head><body><div class="navbar-fixed"><nav class="nav"><div class="nav-wrapper"><a href="https://optimizely.github.io/nuclear-js/" class="brand-logo">NuclearJS</a><ul id="nav-mobile" class="right hide-on-med-and-down"><li><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Docs</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/07-api.html">API</a></li><li><a href="https://github.com/optimizely/nuclear-js">Github</a></li></ul></div></nav></div><div class="container"><div class="docs-page row"><div class="docs-page--sidebar col l2"><h3>Docs</h3><ul class="sidebar-links"><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Getting Started</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/02-creating-actions.html">Creating Actions</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/03-creating-stores.html">Creating Stores</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/04-getters.html">Getters</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/05-hooking-up-to-react.html">Hooking up to React</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/06-async-actions-and-optimistic-updates.html">Async Actions and Optimistic Updates</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/07-api.html">API</a></li></ul></div><div class="docs-page--contents col l8"><h1 id="creating-actions">Creating Actions</h1>
+<p>Actions (sometimes called action creators) are functions that you call to send data into the system. In Nuclear, any function that calls
+<code>reactor.dispatch(actionType: string, payload: any)</code> is categorized as an action.</p>
+<p>For our example, we&#39;ll start by creating an action to fetch products from a server and another action to add a product to the user&#39;s shopping cart.</p>
+<p>In order to correctly reference actions throughout the system, we&#39;ll create an <code>actionTypes.js</code> file, which is simply a collection of constants.
+We&#39;re using React&#39;s keyMirror utility to create the constants, but that&#39;s just a convenience — you can create action types in any way you&#39;d like.
+They&#39;re not even required to be in a separate file, though that&#39;s certainly recommended.</p>
+<h4 id="-actiontypes-js-"><code>actionTypes.js</code></h4>
+<pre><code class="lang-javascript">import keyMirror from &#39;react/lib/keyMirror&#39;
+
+export default keyMirror({
+    RECEIVE_PRODUCTS: null,
+    ADD_TO_CART: null,
+    CHECKOUT_START: null,
+    CHECKOUT_SUCCESS: null,
+    CHECKOUT_FAILED: null,
+})
+</code></pre>
+<h4 id="-actions-js-"><code>actions.js</code></h4>
+<pre><code class="lang-javascript">import shop from &#39;../../common/api/shop&#39;
+import reactor from &#39;./reactor&#39;
+import {
+    RECEIVE_PRODUCTS,
+    ADD_TO_CART,
+    CHECKOUT_START,
+    CHECKOUT_SUCCESS,
+    CHECKOUT_FAILED,
+} from &#39;./actionTypes&#39;
+
+export default {
+  fetchProducts() {
+    shop.getProducts(products =&gt; {
+      reactor.dispatch(RECEIVE_PRODUCTS, { products })
+    });
+  },
+
+  addToCart(product) {
+    reactor.dispatch(ADD_TO_CART, { product })
+  },
+}
+</code></pre>
+<p>We&#39;ve now created two actions that we can use to send data into the system.</p>
+<p><code>addToCart</code> is a simple, synchronous action that takes in a product and dispatches <code>&quot;ADD_TO_CART&quot;</code> with the product in the payload.</p>
+<p>While synchronous actions are great, often you&#39;ll need to perform an asynchronous operation before dispatching an action. Nuclear
+fully supports creating actions asynchronously, as we&#39;re doing in <code>fetchProducts</code>.  This is a common pattern you&#39;ll use as your application grows,
+and Nuclear has no opinion on how you perform your operations: callbacks, Promises, Generators, ES7 async functions — they&#39;ll all work just fine!</p>
+<p>If you&#39;d like to jump ahead, you can read more about <a href="./04-async-actions-and-optimistic-updates.html">async actions</a>.</p>
+<p>Now let&#39;s build a few stores.</p>
+<h4 id="-next-creating-stores-03-creating-stores-html-"><a href="./03-creating-stores.html">Next: Creating Stores</a></h4>
+</div></div></div><script src="https://optimizely.github.io/nuclear-js/app.js"></script></body></html>

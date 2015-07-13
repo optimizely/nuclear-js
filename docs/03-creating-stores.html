@@ -1,0 +1,205 @@
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"><title>NuclearJS | Creating Stores</title><link href="https://optimizely.github.io/nuclear-js/assets/css/output.css" type="text/css" rel="stylesheet" media="screen,projection"><script src="//cdn.optimizely.com/js/3006700484.js"></script><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-64060472-1', 'auto');
+ga('send', 'pageview');</script></head><body><div class="navbar-fixed"><nav class="nav"><div class="nav-wrapper"><a href="https://optimizely.github.io/nuclear-js/" class="brand-logo">NuclearJS</a><ul id="nav-mobile" class="right hide-on-med-and-down"><li><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Docs</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/07-api.html">API</a></li><li><a href="https://github.com/optimizely/nuclear-js">Github</a></li></ul></div></nav></div><div class="container"><div class="docs-page row"><div class="docs-page--sidebar col l2"><h3>Docs</h3><ul class="sidebar-links"><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Getting Started</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/02-creating-actions.html">Creating Actions</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/03-creating-stores.html">Creating Stores</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/04-getters.html">Getters</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/05-hooking-up-to-react.html">Hooking up to React</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/06-async-actions-and-optimistic-updates.html">Async Actions and Optimistic Updates</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/07-api.html">API</a></li></ul></div><div class="docs-page--contents col l8"><h2 id="creating-stores">Creating Stores</h2>
+<p>In Flux, stores are used for managing application state, but they don&#39;t represent a single record of data like resource models do.</p>
+<p>More than simply managing ORM-style objects, <strong>stores manage the state for a particular domain within the application</strong>.</p>
+<p>Unlike many other Flux libraries, Nuclear stores hold no state. Instead, they provide a collection of functions that transform current state into new state.</p>
+<p>Stores provide a <code>getInitialState</code> method, which returns the initial state value that a store will manage, and an <code>initialize</code> hook, which is used to define what
+actions a store will respond to by attaching handlers.</p>
+<p>Each attached handler takes in current state, transforms it according to the action and its payload,
+then returns new state. Handlers have the following signature:</p>
+<pre><code class="lang-javascript">handler(currentState: any, payload: any)
+</code></pre>
+<p>In Nucler, state can only be an ImmutableJS data type, such as an <code>Immutable.Map</code> or an <code>Immutable.List</code>, or a JavaScript primitive.</p>
+<p>Because stores in Nuclear don&#39;t hold state — they simply receive state, transform it, and return new state — there is no need to worry about stores knowing
+about other stores. That means no confusing <code>store.waitsFor</code> and no cross-pollution of data.  In Nuclear, the sole responsibility of a store is to return a portion
+of existing or transformed application state.  The responsibility of reading application state falls on <strong>Getters</strong>, which we&#39;ll cover later.</p>
+<p>Let&#39;s continue by creating stores for managing products and the user&#39;s shopping cart. Create a <code>stores/ProductStore.js</code> file and a <code>stores/CartStore.js</code> file.</p>
+<h4 id="-stores-productstore-js-"><code>stores/ProductStore.js</code></h4>
+<pre><code class="lang-javascript">import { Store, toImmutable } from &#39;nuclear-js&#39;
+import { RECEIVE_PRODUCTS, ADD_TO_CART } from &#39;../actionTypes&#39;
+
+// example product:
+// {&quot;id&quot;: 1, &quot;title&quot;: &quot;iPad 4 Mini&quot;, &quot;price&quot;: 500.01, &quot;inventory&quot;: 2, &quot;image&quot;: &quot;../common/assets/ipad-mini.png&quot;}
+
+export default Store({
+  getInitialState() {
+    return toImmutable({})
+  },
+
+  initialize() {
+    this.on(RECEIVE_PRODUCTS, receiveProducts)
+    this.on(ADD_TO_CART, decrementInventory)
+  }
+})
+
+// All store handlers transform `(currentState, payload) =&gt; (newState)`
+
+/**
+ * Transforms an array of products to a map keyed by product.id, and merges it
+ * with the current state.
+ */
+function receiveProducts(state, { products }) {
+  let newProducts = toImmutable(products)
+    .toMap()
+    .mapKeys((k, v) =&gt; v.get(&#39;id&#39;))
+  return state.merge(newProducts)
+}
+
+/**
+ * Decrements the inventory for a product by 1, unless that product has no more
+ * inventory.
+ */
+function decrementInventory(state, { product }) {
+  return state.update(product.id, product =&gt; {
+    let currentInventory = product.get(&#39;inventory&#39;)
+    let newInventory = currentInventory &gt; 0 ? currentInventory - 1 : 0;
+    return product.set(&#39;inventory&#39;, newInventory)
+  })
+}
+</code></pre>
+<h4 id="-stores-cartstore-js-"><code>stores/CartStore.js</code></h4>
+<pre><code class="lang-javascript">import { Store, toImmutable } from &#39;nuclear-js&#39;
+import { ADD_TO_CART } from &#39;../actionTypes&#39;
+
+/**
+ * CartStores holds the mapping of productId =&gt; quantity within itemQty
+ * and also maintains rollback information for the checkout process
+ */
+export default Store({
+  getInitialState() {
+    return toImmutable({ itemQty: {} })
+  },
+
+  initialize() {
+    this.on(ADD_TO_CART, addToCart)
+  }
+})
+
+/**
+ * Increments the quantity for an existing item by 1, or sets the quantity for
+ * a new item to 1.
+ */
+function addToCart(state, { product }) {
+  let id = product.id
+  return (state.hasIn([&#39;itemQty&#39;, id]))
+    ? state.updateIn([&#39;itemQty&#39;, id], quantity =&gt; quantity + 1)
+    : state.setIn([&#39;itemQty&#39;, id], 1)
+}
+</code></pre>
+<h3 id="registering-our-stores">Registering our stores</h3>
+<p>Finally, we&#39;ll need to register our stores with the reactor we created at the very beginning.</p>
+<p>Registering a store with a reactor does two things:</p>
+<ol>
+<li>Passes every dispatched action to the store</li>
+<li>Binds the state the store manages to the application state by the key used for registration</li>
+</ol>
+<p>Let&#39;s register our stores inside of <code>main.js</code>.</p>
+<h4 id="-main-js-"><code>main.js</code></h4>
+<pre><code class="lang-javascript">import reactor from &#39;./reactor&#39;
+import ProductStore from &#39;./stores/ProductStore&#39;
+import CartStore from &#39;./stores/CartStore&#39;
+
+reactor.registerStores({
+  &#39;products&#39;: ProductStore,
+  &#39;cart&#39;: CartStore,
+})
+</code></pre>
+<p>The above stores can be now be accessed with the following KeyPath: <code>[&#39;products&#39;]</code> and <code>[&#39;cart&#39;]</code>. We&#39;ll cover KeyPaths in the Getters section.</p>
+<p>But first, a recap:</p>
+<h2 id="recap">Recap</h2>
+<p>At this point we&#39;ve created actions for fetching products and adding an item to the cart.  We also have the <code>ProductStore</code> and <code>CartStore</code> registered on the reactor.</p>
+<p>Let&#39;s see what our application state looks like by using the <code>reactor.evaluate</code> function:</p>
+<pre><code class="lang-javascript">// providing an empty array to `evaluate` will return a snapshot of the entire app state
+reactor.evaluate([])
+// result
+Map {
+  cart: Map {
+    itemQty: Map {}
+  },
+  products: Map {}
+}
+
+// by passing a keypath, `evaluate` will return a more granular piece of app state
+reactor.evaluate([&#39;cart&#39;])
+// result
+Map {
+  itemQty: Map {}
+}
+</code></pre>
+<p>The application state is rather empty; each top level key is currently populated by its store&#39;s <code>getInitialState()</code> method.</p>
+<p>Let&#39;s see what our application state looks like after we fetch some products.</p>
+<pre><code class="lang-javascript">actions.fetchProducts()
+</code></pre>
+<p>After the products have been fetched, our app state looks like this:</p>
+<pre><code class="lang-javascript">Map {
+  cart: Map {
+    itemQty: Map {}
+  },
+  products: Map {
+    1: Map { id: 1, title: &quot;iPad 4 Mini&quot;, price: 500.01, inventory: 2, image: &quot;../common/assets/ipad-mini.png&quot; },
+    2: Map { id: 2, title: &quot;H&amp;M T-Shirt White&quot;, price: 10.99, inventory: 10, image: &quot;../common/assets/t-shirt.png&quot; },
+    3: Map { id: 3, title: &quot;Charli XCX - Sucker CD&quot;, price: 19.99, inventory: 5, image: &quot;../common/assets/sucker.png&quot; }
+  }
+}
+</code></pre>
+<p>Now let&#39;s add a product to our shopping cart using the <code>addToCart</code> action we created earlier:</p>
+<pre><code class="lang-javascript">actions.addToCart({ id: 3 })
+</code></pre>
+<p>Notice that two things occurred:</p>
+<ol>
+<li>There is an entry in the <code>itemQty</code> map</li>
+<li>The inventory for <strong>Charli XCX - Sucker CD</strong> went from 5 to 4</li>
+</ol>
+<pre><code class="lang-javascript">Map {
+  cart: Map {
+    itemQty: Map {
+      3: 1
+    }
+  },
+  products: Map {
+    1: Map { id: 1, title: &quot;iPad 4 Mini&quot;, price: 500.01, inventory: 2, image: &quot;../common/assets/ipad-mini.png&quot; },
+    2: Map { id: 2, title: &quot;H&amp;M T-Shirt White&quot;, price: 10.99, inventory: 10, image: &quot;../common/assets/t-shirt.png&quot; },
+    3: Map { id: 3, title: &quot;Charli XCX - Sucker CD&quot;, price: 19.99, inventory: 4, image: &quot;../common/assets/sucker.png&quot; }
+  }
+}
+</code></pre>
+<p>Those two things happened, because our store handlers responded to the <code>addToCart</code> action and transformed the app state.</p>
+<p>You might think that the information associated with our stores is pretty minimal. For example, the <code>CartStore</code> doesn&#39;t actually know anything about the product,
+such as its title, price or images — all information that we&#39;d need if we were to build a cart component. It only knows that there is a mapping between 3 and 1,
+which refers to <code>&lt;id&gt; =&gt; &lt;qty&gt;</code>.</p>
+<p>Minimal data management within our stores is in fact a good practice, because it helps encapsulate and minimize the scope of data management for a particular store.
+Remember, each store is supposed to manages only a single particular domain. In the case of the <code>CartStore</code>, it only cares about item quantities, so it doesn&#39;t need
+anything more than an item&#39;s id and its quantity count.</p>
+<p>However, if stores are limited in scope, how can you read substantive data from the app state?</p>
+<p>It&#39;s actually quite simple: <strong>composition</strong>.</p>
+<p>Nuclear allows you to combine data from stores in a non-destructive manner, check it out:</p>
+<pre><code class="lang-javascript">reactor.evaluate([
+  [&#39;cart&#39;, &#39;itemQty&#39;],
+  [&#39;products&#39;],
+  (itemQty, products) =&gt; {
+    return itemQty.map((qty, itemId) =&gt; {
+      return toImmutable({
+        product: products.get(itemId),
+        quantity: qty
+      })
+    }).toList()
+  }
+])
+
+// result
+List [
+  Map {
+    product: Map { id: 3, title: &quot;Charli XCX - Sucker CD&quot;, price: 19.99, inventory: 4, image: &quot;../common/assets/sucker.png&quot; },
+    quantity: 1
+  }
+}
+</code></pre>
+<p>If you completely understand the above, that&#39;s great! If not, don&#39;t worry, this is probably the first <strong>Getter</strong> you&#39;ve ever seen,
+and just in time too!  The next section is all about getters, one of the most powerful abstractions in Nuclear.</p>
+<h4 id="-next-getters-04-getters-html-"><a href="./04-getters.html">Next: Getters</a></h4>
+</div></div></div><script src="https://optimizely.github.io/nuclear-js/app.js"></script></body></html>
