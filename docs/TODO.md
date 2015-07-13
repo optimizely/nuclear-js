@@ -1,7 +1,9 @@
 # Documentation site todo
 
-- [ ] sticky navbar, links to docs, examples, API, github
-- [ ] build pipeline for docs from MD files
+- [x] links to docs, API, github
+- [x] build pipeline for docs from MD files
+- [ ] navbar working in mobile
+- [ ] async actions doc page
 - [ ] api documentation generation using code source
+- [ ] scaffold design patterns/examples area
 - [ ] build pipeline for examples, create example component, possibly with code editing
-- [ ] design patterns from MD files
