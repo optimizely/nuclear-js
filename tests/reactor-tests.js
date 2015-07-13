@@ -979,4 +979,63 @@ describe('Reactor', () => {
       expect(firstCallArg).toEqual(['one', 'two', 'three'])
     })
   })
+
+  describe('registering stores in between dispatches', () => {
+    var reactor
+
+    beforeEach(() => {
+      reactor = new Reactor()
+
+      reactor.registerStores({
+        key: Store({
+          getInitialState() {
+            return null
+          },
+          initialize() {
+            this.on('setKey', (state, key) => key)
+          },
+        }),
+      })
+    })
+
+    afterEach(() => {
+      reactor.reset()
+    })
+
+    it('should allow nested batches and only notify observers once', (done) => {
+      reactor.dispatch('setKey', 'foo')
+
+      // trigger an evaluate so the evaluator caches the prevState
+      expect(reactor.evaluate(['key'])).toBe('foo')
+
+      reactor.registerStores({
+        map: Store({
+          getInitialState() {
+            return toImmutable({})
+          },
+          initialize() {
+            this.on('setValue', (state, payload) => {
+              return state.set(payload.key, payload.value)
+            })
+          },
+        }),
+      })
+
+      var keyValueGetter = [
+        ['key'],
+        ['map'],
+        (key, map) => map.get(key)
+      ]
+
+      reactor.observe(keyValueGetter, value => {
+        expect(value).toBe('bar')
+        done()
+      })
+
+      reactor.dispatch('setValue', {
+        key: 'foo',
+        value: 'bar',
+      })
+    })
+  })
 })
