@@ -65,7 +65,7 @@ Nuclear.Store({
 ## 1.0.5 (June 4, 2015)
 
 - **[NEW]** Configured linting using [eslint](http://eslint.org/). Linting is now part of the [contributing process](https://github.com/optimizely/nuclear-js/blob/master/CONTRIBUTING.md). Eslint can be run using: `grunt eslint`
-- **[NEW]** Implemented new developer docs landing page. This website is still in beta. You can view it here: http://optimizely.github.io/nuclear-js/
+- **[NEW]** Implemented new developer docs landing page. This website is still in beta. You can view it here: https://optimizely.github.io/nuclear-js/
 - **[FIXED]** Removed accidentally checked in node_modules directory.
 - **[FIXED]** Addressed all the lint warnings and errors in the codebase using the new rules in `.eslintrc`
 - **[FIXED]** Updated documentation.

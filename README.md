@@ -10,7 +10,7 @@ Traditional Flux architecture built with ImmutableJS data structures.
 
 ## Documentation
 
-[http://optimizely.github.io/nuclear-js/](http://optimizely.github.io/nuclear-js/)
+[https://optimizely.github.io/nuclear-js/](https://optimizely.github.io/nuclear-js/)
 
 ## Design Philosophy
 
