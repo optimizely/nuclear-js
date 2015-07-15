@@ -5196,14 +5196,14 @@ h3 {
   margin: 0.82rem 0 0.656rem 0; }
 
 h4 {
-  font-size: 1rem;
-  line-height: 1.1rem;
-  margin: 0.5rem 0 0.4rem 0; }
+  font-size: 1.32rem;
+  line-height: 1.452rem;
+  margin: 0.66rem 0 0.528rem 0; }
 
 h5 {
-  font-size: 1rem;
-  line-height: 1.1rem;
-  margin: 0.5rem 0 0.4rem 0; }
+  font-size: 1.1rem;
+  line-height: 1.21rem;
+  margin: 0.55rem 0 0.44rem 0; }
 
 h6 {
   font-size: 1rem;
@@ -5212,9 +5212,6 @@ h6 {
 
 em {
   font-style: italic; }
-
-strong {
-  font-weight: 500; }
 
 small {
   font-size: 75%; }
@@ -7450,7 +7447,7 @@ pre code.hljs {
     margin-top: 2.1812rem; }
   .docs-page h4 {
     font-weight: 600;
-    margin-top: 1.33rem; }
+    margin-top: 1.7556rem; }
   .docs-page--sidebar {
     padding-top: 26px !important; }
 

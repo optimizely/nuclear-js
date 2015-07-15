@@ -5,5 +5,150 @@ m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 
 ga('create', 'UA-64060472-1', 'auto');
 ga('send', 'pageview');</script></head><body><div class="navbar-fixed"><nav class="nav"><div class="hide-on-large-only"><ul class="right"><li class="hide-on-large-only"><a href="https://optimizely.github.io/nuclear-js/">Home</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Docs</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/07-api.html">API</a></li><li><a href="https://github.com/optimizely/nuclear-js">Github</a></li></ul></div><div class="nav-wrapper hide-on-med-and-down"><a href="https://optimizely.github.io/nuclear-js/" class="brand-logo">NuclearJS</a><ul class="right"><li><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Docs</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/07-api.html">API</a></li><li><a href="https://github.com/optimizely/nuclear-js">Github</a></li></ul></div></nav></div><div class="container"><div class="docs-page row"><div class="docs-page--sidebar col l2"><h3>Docs</h3><ul class="sidebar-links"><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Getting Started</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/02-creating-actions.html">Creating Actions</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/03-creating-stores.html">Creating Stores</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/04-getters.html">Getters</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/05-hooking-up-to-react.html">Hooking up to React</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/06-async-actions-and-optimistic-updates.html">Async Actions and Optimistic Updates</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/07-api.html">API</a></li></ul></div><div class="docs-page--contents col l8"><h1 id="async-actions-and-optimistic-updates">Async Actions and Optimistic Updates</h1>
-<p>coming soon.</p>
+<p>When creating async actions there are generally three action types that we need</p>
+<ol>
+<li><p><strong><code>&lt;ACTION&gt;_STARTED</code></strong> represents the action happening client side but has not been verified by the server.  When doing optimistic updates
+stores can respond to this action type as if the transaction will be successful, while maintaining enough state to rollback if it eventually fails.</p>
+</li>
+<li><p><strong><code>&lt;ACTION&gt;_SUCCESS</code></strong> happens after the server has verified that the optimistic update is valid, at this point stores can discard rollback information without worry.</p>
+</li>
+<li><p><strong><code>&lt;ACTION&gt;_FAILED</code></strong> the server has rejected the update and stores need to rollback.</p>
+</li>
+</ol>
+<h3 id="implementing-an-optimistic-cartcheckout-action">Implementing an optimistic <code>cartCheckout()</code> action</h3>
+<p>The first step is to track checkout rollback information in the <strong>CartStore</strong></p>
+<h4 id="-stores-cartstore-js-"><code>stores/CartStore.js</code></h4>
+<pre><code class="lang-javascript">import { Store, toImmutable } from &#39;nuclear-js&#39;
+import {
+  CHECKOUT_START,
+  CHECKOUT_SUCCESS,
+  CHECKOUT_FAILED,
+  ADD_TO_CART,
+} from &#39;../action-types&#39;
+
+const initialState = toImmutable({
+  itemQty: {},
+  pendingCheckout: {},
+})
+
+/**
+ * CartStore holds the mapping of productId =&gt; quantity
+ * and also maintains rollback information for the checkout process
+ */
+export default Store({
+  getInitialState() {
+    return initialState
+  },
+
+  initialize() {
+    this.on(CHECKOUT_START, beginCheckout)
+    this.on(CHECKOUT_SUCCESS, finishCheckout)
+    this.on(CHECKOUT_FAILED, rollback)
+    this.on(ADD_TO_CART, addToCart)
+  }
+})
+
+function addToCart(state, { product }) {
+  return (state.hasIn([&#39;itemQty&#39;, product.id]))
+    ? state.updateIn([&#39;itemQty&#39;, product.id], quantity =&gt; quantity + 1)
+    : state.setIn([&#39;itemQty&#39;, product.id], 1)
+}
+
+function beginCheckout(state) {
+  // snapshot the current itemQty map for a potential rollback
+  const currentItems = state.get(&#39;itemQty&#39;)
+
+  return state
+    .set(&#39;itemQty&#39;, toImmutable({}))
+    .set(&#39;pendingCheckout&#39;, currentItems)
+}
+
+function finishCheckout(state) {
+  // on success revert CartStore to its initial state
+  // discarding now unneeded rollback state
+  return initialState
+}
+
+function rollback(state) {
+  // in the case of rollback restore the cart contents
+  // and discard rollback information
+  return state
+    .set(&#39;itemQty&#39;, state.get(&#39;pendingCheckout&#39;))
+    .set(&#39;pendingCheckout&#39;, toImmutable({}))
+}
+</code></pre>
+<h3 id="now-lets-create-the-cartcheckout-action">Now lets create the <code>cartCheckout</code> action</h3>
+<h4 id="-actions-js-"><code>actions.js</code></h4>
+<pre><code class="lang-javascript">import shop from &#39;../../common/api/shop&#39;
+import reactor from &#39;./reactor&#39;
+import getters from &#39;./getters&#39;
+import {
+  RECEIVE_PRODUCTS,
+  ADD_TO_CART,
+  CHECKOUT_START,
+  CHECKOUT_SUCCESS,
+  CHECKOUT_FAILED,
+} from &#39;./action-types&#39;
+
+export default {
+  fetchProducts() {
+    shop.getProducts(products =&gt; {
+      reactor.dispatch(RECEIVE_PRODUCTS, { products })
+    });
+  },
+
+  addToCart(product) {
+    reactor.dispatch(ADD_TO_CART, { product })
+  },
+
+  cartCheckout() {
+    let productsInCart = reactor.evaluateToJS(getters.cartProducts)
+
+    reactor.dispatch(CHECKOUT_START)
+
+    shop.buyProducts(productsInCart, () =&gt; {
+      console.log(&quot;YOU BOUGHT: &quot;, productsInCart)
+
+      reactor.dispatch(CHECKOUT_SUCCESS)
+    });
+  },
+}
+</code></pre>
+<h3 id="hooking-it-up-to-the-cartcontainer-component">Hooking it up to the CartContainer component</h3>
+<h4 id="-components-cartcontainer-jsx-"><code>components/CartContainer.jsx</code></h4>
+<pre><code class="lang-javascript">import React from &#39;react&#39;
+
+import Cart from &#39;../../common/components/Cart&#39;
+import reactor from &#39;../reactor&#39;
+import getters from &#39;../getters&#39;
+import actions from &#39;../actions&#39;
+
+export default React.createClass({
+  mixins: [reactor.ReactMixin],
+
+  getDataBindings() {
+    return {
+      products: getters.cartProducts,
+      total: getters.cartTotal,
+    }
+  },
+
+  onCheckoutClicked: function () {
+    actions.cartCheckout()
+  },
+
+  render: function () {
+    return (
+      &lt;Cart products={this.state.products.toJS()} total={this.state.total} onCheckoutClicked={this.onCheckoutClicked} /&gt;
+    )
+  },
+})
+</code></pre>
+<h2 id="further-reading">Further Reading</h2>
+<p>This ends our getting started example, for further reading checkout the following:</p>
+<ul>
+<li><a href="./07-api.md">API Documentation</a></li>
+<li><a href="https://github.com/optimizely/nuclear-js/tree/master/examples/shopping-cart">Shopping Cart Example Code</a></li>
+<li><a href="https://github.com/optimizely/nuclear-js/tree/master/examples/flux-chat">Flux Chat Example Code</a></li>
+</ul>
 </div></div></div><script src="https://optimizely.github.io/nuclear-js/assets/js/prism.js"></script><script src="https://optimizely.github.io/nuclear-js/app.js"></script></body></html>

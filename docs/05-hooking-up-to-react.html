@@ -91,7 +91,7 @@ import actions from &#39;../actions&#39;
 
 const ProductItemContainer = React.createClass({
   onAddToCartClicked() {
-    // we will implement this in the next section
+    actions.addToCart(this.props.product)
   },
 
   render() {
