@@ -160,7 +160,7 @@ export default React.createClass({
 
 This ends our getting started example, for further reading checkout the following:
 
-- [API Documentation](./07-api.md)
+- [API Documentation](./07-api.html)
 - [Shopping Cart Example Code](https://github.com/optimizely/nuclear-js/tree/master/examples/shopping-cart)
 - [Flux Chat Example Code](https://github.com/optimizely/nuclear-js/tree/master/examples/flux-chat)
 
