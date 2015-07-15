@@ -247,11 +247,16 @@ class Reactor {
 
       // let each core handle the message
       this.__stores.forEach((store, id) => {
-        var currState = state.get(id)
-        var newState = store.handle(currState, actionType, payload)
-
-        if (this.debug && newState === undefined) {
-          var error = 'Store handler must return a value, did you forget a return statement'
+        var currState = state.get(id), newState, dispatchError
+         
+        try {
+          newState = store.handle(currState, actionType, payload)
+        } catch(e) {
+          dispatchError = e
+        }
+ 
+        if (this.debug &&  (newState === undefined || dispatchError)) {
+          var error = dispatchError || 'Store handler must return a value, did you forget a return statement'
           logging.dispatchError(error)
           throw new Error(error)
         }
