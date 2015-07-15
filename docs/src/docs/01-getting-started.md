@@ -34,8 +34,8 @@ In this tutorial we'll create a Nuclear flux system to show a list of products a
 1. Although the example code is written using ES6, this is totally optional.  NuclearJS fully supports ES5 out of the box.
 
 2. Nuclear stores work best when using ImmutableJS data structures.  You will see `toImmutable` quite often, this is simply sugar
-to convert plain JavaScript arrays into [`Immutable.List`](http://facebook.github.io/immutable-js/docs/#/List) and objects to
-[`Immutable.Map`](http://facebook.github.io/immutable-js/docs/#/Map).  The use of `toImmutable` is optional, you are free to use
+to convert plain JavaScript arrays into [`Immutable.List`](https://facebook.github.io/immutable-js/docs/#/List) and objects to
+[`Immutable.Map`](https://facebook.github.io/immutable-js/docs/#/Map).  The use of `toImmutable` is optional, you are free to use
 any ImmutableJS data structure with no penalty.
 
 

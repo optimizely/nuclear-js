@@ -82,7 +82,7 @@ var totalGetter = [
 
 Notice that you can use getters as dependencies to other getters.  This is an extremely powerful abstraction, and one that you'll undoubtedly want to become familiar with in your nuclear journey.
 
-But you need to know one thing about getter transform functions - they MUST be pure functions (that is, a given set input values results in a [deterministic](http://en.wikipedia.org/wiki/Deterministic_algorithm) output). By making the transform functions pure, you can test Getters easier, compose them easier, and nuclear can [memoize](http://en.wikipedia.org/wiki/Memoization) calls to them, making Getter dependency resolution very performant.
+But you need to know one thing about getter transform functions - they MUST be pure functions (that is, a given set input values results in a [deterministic](https://en.wikipedia.org/wiki/Deterministic_algorithm) output). By making the transform functions pure, you can test Getters easier, compose them easier, and nuclear can [memoize](https://en.wikipedia.org/wiki/Memoization) calls to them, making Getter dependency resolution very performant.
 
 __For the astute reader__ - You probably already noticed if you have experience in functional languages, but because Getters
 are simply arrays full of strings and pure functions, they are serializable. Since JS can stringify pure functions, your getters are nothing more than data that could be stored, sent over the wire, etc.
