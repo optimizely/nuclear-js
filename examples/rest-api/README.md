@@ -2,6 +2,16 @@
 
 This example shows how to build a generic Rest API module for NuclearJS's flux architecture.
 
+## Running the example
+
+The built files are already checked in, simply open `index.html` to see the example.  Make sure you open the console to see the actions being dispatched.
+
+**To watch/rebuild**
+
+```sh
+npm run watch
+```
+
 ## Architecture
 
 #### A client-side source of truth

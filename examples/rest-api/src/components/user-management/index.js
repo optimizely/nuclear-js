@@ -4,9 +4,8 @@
 var React = require('react')
 var Flux = require('../../flux')
 var User = require('../../modules/user')
-const UserManagement = require('../../modules/user-management')
+var UserManagement = require('../../modules/user-management')
 
-var UserListComponent = require('./user-list')
 var UserEditorComponent = require('./user-editor')
 
 module.exports = React.createClass({
@@ -19,8 +18,17 @@ module.exports = React.createClass({
     }
   },
 
+  getInitialState() {
+    return {
+      fetchingUsers: false,
+    }
+  },
+
   componentWillMount() {
-    User.actions.fetchAll();
+    this.setState({ fetchingUsers: true })
+    User.actions.fetchAll().then(() => {
+      this.setState({ fetchingUsers: false })
+    });
   },
 
   _clickUser(user) {
@@ -28,12 +36,12 @@ module.exports = React.createClass({
   },
 
   render() {
-    var userEditor = null
+    let userEditor = null
     if (this.state.editingUser) {
       userEditor = <UserEditorComponent user={this.state.editingUser} />
     }
 
-    const userItems = this.state.users.map(user => {
+    let userItems = this.state.users.map(user => {
       var classes = 'menu-item'
       if (user === this.state.editingUser) {
         classes += ' selected'
@@ -45,12 +53,19 @@ module.exports = React.createClass({
       )
     })
 
+    let userList = this.state.fetchingUsers
+      ? null
+      : <nav className="menu">{userItems}</nav>
+
+    let title = this.state.fetchingUsers
+      ? <h3>Loading...</h3>
+      : <h3>Select a user to edit</h3>
+
     return <div className="container">
       <div className="columns">
         <div className="one-third column">
-          <nav className="menu">
-            {userItems}
-          </nav>
+          {title}
+          {userList}
         </div>
         <div className="two-thirds column">
           {userEditor}

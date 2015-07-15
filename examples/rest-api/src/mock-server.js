@@ -41,7 +41,7 @@ exports.create = function(entity, instance) {
   entityMap[savedInstance.id] = savedInstance
 
   return new Promise(function(resolve, reject) {
-    resolve(savedInstance)
+    setTimeout(() => resolve(savedInstance), 2000)
   })
 }
 
@@ -54,7 +54,7 @@ exports.update = function(entity, instance) {
     }
 
     entityMap[instance.id] = instance
-    resolve(instance)
+    setTimeout(() => resolve(instance), 2000)
   })
 }
 
@@ -78,7 +78,7 @@ exports.fetchAll = function(entity, params) {
       .toArray()
       .value()
 
-    resolve(results)
+    setTimeout(() => resolve(results), 2000)
   })
 }
 
@@ -91,6 +91,7 @@ exports.delete = function(entity, instance) {
     }
 
     delete entityMap[instance.id]
-    return resolve(instance)
+
+    setTimeout(() => resolve(instance), 2000)
   })
 }

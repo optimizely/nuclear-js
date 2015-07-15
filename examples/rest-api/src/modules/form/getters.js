@@ -29,7 +29,6 @@ exports.dirtyFields = function(formId) {
     exports.initialValues(formId),
     exports.currentValues(formId),
     (initial, current) => {
-      debugger;
       if (!initial || !current) {
         return Immutable.Map()
       }

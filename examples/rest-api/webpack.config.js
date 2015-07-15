@@ -3,11 +3,11 @@ var webpack = require("webpack");
 
 module.exports = {
   entry: {
-    'app': './src/app/main.js',
+    'app': './src/main.js',
   },
 
   output: {
-    path: './dist/',
+    path: './',
     filename: "[name].js",
   },
 
@@ -21,10 +21,7 @@ module.exports = {
 
   module: {
     loaders: [
-      { test: /\.js$/, exclude: /node_modules/, loader: 'babel-loader'},
-      // required for react jsx
-      { test: /\.js$/, loader: "jsx-loader" },
-      { test: /\.jsx$/, loader: "jsx-loader?insertPragma=React.DOM" },
+      { test: /\.js|\.jsx$/, exclude: /node_modules/, loader: 'babel-loader'},
     ]
   },
 
