@@ -60,7 +60,7 @@ You can read more of the implementation here: [src/evaluator.js](./src/evaluator
 
 ## API Documentation
 
-[https://optimizely.github.io/nuclear-js/docs/07-api.html](API Documentation)
+[API Documentation](https://optimizely.github.io/nuclear-js/docs/07-api.html)
 
 ## For Smaller Applications
 
