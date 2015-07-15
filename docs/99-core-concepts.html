@@ -1,0 +1,327 @@
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"><title>NuclearJS | Core Concepts (old)</title><link href="https://optimizely.github.io/nuclear-js/assets/css/output.css" type="text/css" rel="stylesheet" media="screen,projection"><script src="//cdn.optimizely.com/js/3006700484.js"></script><script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-64060472-1', 'auto');
+ga('send', 'pageview');</script></head><body><div class="navbar-fixed"><nav class="nav"><div class="hide-on-large-only"><ul class="right"><li class="hide-on-large-only"><a href="https://optimizely.github.io/nuclear-js/">Home</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Docs</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/07-api.html">API</a></li><li><a href="https://github.com/optimizely/nuclear-js">Github</a></li></ul></div><div class="nav-wrapper hide-on-med-and-down"><a href="https://optimizely.github.io/nuclear-js/" class="brand-logo">NuclearJS</a><ul class="right"><li><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Docs</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/07-api.html">API</a></li><li><a href="https://github.com/optimizely/nuclear-js">Github</a></li></ul></div></nav></div><div class="container"><div class="docs-page row"><div class="docs-page--sidebar col l2"><h3>Docs</h3><ul class="sidebar-links"><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Getting Started</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/02-creating-actions.html">Creating Actions</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/03-creating-stores.html">Creating Stores</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/04-getters.html">Getters</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/05-hooking-up-to-react.html">Hooking up to React</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/06-async-actions-and-optimistic-updates.html">Async Actions and Optimistic Updates</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/07-api.html">API</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/99-core-concepts.html">Core Concepts (old)</a></li></ul></div><div class="docs-page--contents col l8"><h2 id="core-concepts">Core Concepts</h2>
+<p>The easiest way to think about how NuclearJS is modelling the state of your system is to imagine it all as a single map (or JavaScript object).  If you are familiar with Om then the concept of a singular App State is very familiar already.</p>
+<p>Each entry in this top level map contains a portion of the entire app state for a specific domain and are managed by <strong>stores</strong>.</p>
+<p>Imagine modelling a shopping cart.  Our app state would look like:</p>
+<pre><code class="lang-javascript">{
+  items: [
+    { name: &#39;Soap&#39;, price: 5, quantity: 2 },
+    { name: &#39;The Adventures of Pluto Nash DVD&#39;, price: 10, quantity: 1 },
+    { name: &#39;Fig Bar&#39;, price: 3, quantity: 10 },
+  ],
+
+  taxPercent: 5
+}
+</code></pre>
+<p>In this example we would have an <code>itemStore</code> and a <code>taxPercentStore</code> to model this state.  Notice a few important things
+are left out in this model of our application state, such as the subtotal, the amount of tax and the total.  This doesn&#39;t
+live in our app state because those are all examples of <strong>computable state</strong>, and we have a very elegant solution for calculating them that we will touch on momentarily.</p>
+<h3 id="but-first-let-s-go-over-some-nuclearjs-vocabulary">But first let&#39;s go over some NuclearJS Vocabulary</h3>
+<h4 id="reactor">Reactor</h4>
+<p>In Nuclear a Reactor is the container that holds your app state, it&#39;s where you register stores, dispatch actions and read the current state of your system.  Reactor&#39;s are the only stateful part of Nuclear and have only 3 API methods you REALLY need to know: <code>dispatch</code>, <code>get</code>, and <code>observe</code>. Don&#39;t worry, extensive API docs will be provided for all of these methods.</p>
+<h4 id="stores">Stores</h4>
+<p>Stores define how a portion of the application state will behave over time, they also provide the initial state. Once a store has been attached to a Reactor you will never reference it directly.  Calling <code>reactor.dispatch(actionType, payload)</code> will ensure that all stores receive the action and get a chance to update themselves.  Stores are a self-managing state, providing a single canonical place to define the behavior a domain of your application over time.</p>
+<h4 id="keypaths">KeyPaths</h4>
+<p>KeyPaths are a pointer to some piece of your application state.  They can be represented as a <code>Array&lt;String&gt;</code>.</p>
+<p><code>[&#39;foo&#39;, &#39;bar&#39;]</code> is an example of a valid keypath, analogous to <code>state[&#39;foo&#39;][&#39;bar&#39;]</code> in JavaScript.</p>
+<h4 id="getters">Getters</h4>
+<p>As described above, the state of a reactor is hidden away internally behind the <a href="#stores">Stores</a> abstraction. In order to get a hold of part of that state, you need to ask the <a href="#reactor">Reactor</a> for it using a simple protocol referred to, informally, as a Getter.</p>
+<p>Getters can take 2 forms:</p>
+<ol>
+<li>A <a href="#keypaths">KeyPath</a> as described above</li>
+<li>An array with the form <code>[  [keypath | getter], [keypath | getter], ..., transformFunction]</code>
+Note - Often you&#39;ll pass the Getter to <code>reactor.evaluate</code> to get its value, but we&#39;ll touch on the reactor API later.</li>
+</ol>
+<p>If you&#39;ve used <a href="https://angularjs.org/">AngularJS</a>, the 2nd form will seem familiar.  It&#39;s essentially a way of specifying
+which app values get injected into the transform function at the end.  Here&#39;s an example of the form itself, but keep in mind that it may make more sense in the context of the examples below,</p>
+<pre><code class="lang-javascript">// Our first getter takes in the `items` portion of the app state and
+// returns (presumably) the sum of `item.price * item.quantity` for all the items
+var subtotalGetter = [
+  // a KeyPath
+  [&#39;items&#39;],
+  // and a transform function
+  function(items) { ... }
+]
+
+// This getter requests 2 values be passed into its transform function - the result
+// of the subtotalGetter and the `taxPercent` value from the app state.
+var totalGetter = [
+  // A Getter
+  subtotalGetter,
+  // A KeyPath
+  [&#39;taxPercent&#39;],
+  // Composition Function
+  function(subtotal, taxPercent) {
+    return (subtotal * taxPercent) + subtotal
+  }
+]
+</code></pre>
+<p>Notice that you can use getters as dependencies to other getters.  This is an extremely powerful abstraction, and one that you&#39;ll undoubtedly want to become familiar with in your nuclear journey.</p>
+<p>But you need to know one thing about getter transform functions - they MUST be pure functions (that is, a given set input values results in a <a href="http://en.wikipedia.org/wiki/Deterministic_algorithm">deterministic</a> output). By making the transform functions pure, you can test Getters easier, compose them easier, and nuclear can <a href="http://en.wikipedia.org/wiki/Memoization">memoize</a> calls to them, making Getter dependency resolution very performant.</p>
+<p><strong>For the astute reader</strong> - You probably already noticed if you have experience in functional languages, but because Getters
+are simply arrays full of strings and pure functions, they are serializable. Since JS can stringify pure functions, your getters are nothing more than data that could be stored, sent over the wire, etc.</p>
+<h2 id="back-to-our-example">Back To Our Example</h2>
+<p>First lets create the <code>itemStore</code> and <code>taxPercentStore</code> and hook it up to our reactor.</p>
+<pre><code class="lang-javascript">var Map = require(&#39;immutable&#39;).Map
+var List = require(&#39;immutable&#39;).List
+var Nuclear = require(&#39;nuclear-js&#39;)
+
+var itemStore = new Nuclear.Store({
+  // the parameter is optional, if not supplied will default to an `Immutable.Map({})`
+  // Store state must be an ImmutableJS data structure or an immutable JavaScript primitive
+  // like Number or String
+  getInitialState: function() {
+    return List()
+  },
+
+  initialize: function() {
+    // register a handler for `reactor.dispatch(&#39;addItem&#39;, payload)`
+    this.on(&#39;addItem&#39;, function(state, payload) {
+      // a handler is passed the current state and the action payload
+      // it performs an immutable transformation of the store&#39;s underlying state
+      // in response to the action and returns the new state
+      return state.push(Map({
+        name: payload.name,
+        price: payload.price,
+        quantity: payload.quantity || 1,
+      }))
+    })
+  }
+})
+
+var taxPercentStore = new Nuclear.Store({
+  getInitialState: function() {
+    return 0
+  },
+
+  initialize: function() {
+    // this will get called via `reactor.dispatch(&#39;setTaxPercent&#39;, 10)`
+    // where the payload is a primitive value (number)
+    this.on(&#39;setTaxPercent&#39;, function(oldPercent, newPercent) {
+      return newPercent
+    })
+  }
+})
+
+var reactor = new Nuclear.Reactor()
+reactor.registerStores({
+  items: itemStore,
+  taxPercent: taxPercentStore,
+})
+
+// Let&#39;s use a Getter (the first form, a [KeyPath](#keypaths)) to retrieve parts of the app state
+console.log(reactor.evaluate([&#39;items&#39;])) // List []
+console.log(reactor.evaluate([&#39;taxPercent&#39;])) // 0
+
+reactor.dispatch(&#39;addItem&#39;, {
+  name: &#39;Soap&#39;,
+  price: 5,
+  quantity: 2,
+})
+
+console.log(reactor.evaluate([&#39;items&#39;])) // List [ Map { name: &#39;Soap&#39;, price: 5, quantity: 2 } ]
+</code></pre>
+<h3 id="computing-subtotal-tax-and-total">Computing Subtotal, Tax and Total</h3>
+<pre><code class="lang-javascript">var subtotalGetter = [
+  [&#39;items&#39;],
+  function(items) {
+    // items is of type `Immutable.List`
+    return items.reduce(function(total, item) {
+      return total + (item.get(&#39;price&#39;) * item.get(&#39;quantity&#39;))
+    }, 0)
+  }
+]
+
+var taxGetter = [
+  subtotalGetter,
+  [&#39;taxPercent&#39;],
+  function(subtotal, taxPercent) {
+    return subtotal * (taxPercent / 100)
+  }
+]
+
+var totalGetter = [
+  subtotalGetter,
+  taxGetter,
+  function(subtotal, tax) {
+    return subtotal + tax
+  }
+]
+
+console.log(reactor.evaluate(subtotalGetter)) // 10
+console.log(reactor.evaluate(taxGetter)) // 0
+console.log(reactor.evaluate(totalGetter)) // 10
+
+reactor.dispatch(&#39;setTaxPercent&#39;, 10)
+
+console.log(reactor.evaluate(subtotalGetter)) // 11
+console.log(reactor.evaluate(taxGetter)) // 1
+console.log(reactor.evaluate(totalGetter)) // 12
+</code></pre>
+<h3 id="let-s-do-something-more-interesting-">Let&#39;s do something more interesting...</h3>
+<p>Imagine we want to know any time the total is over 100.  Let&#39;s use <code>reactor.observe</code>.</p>
+<pre><code class="lang-javascript">var over100Getter = [
+  totalGetter,
+  function(total) {
+    return total &gt; 100
+  }
+]
+
+reactor.observe(over100Getter, function(isOver100) {
+  if (isOver100) {
+    alert(&#39;Shopping cart over 100!&#39;)
+  }
+})
+</code></pre>
+<p>Actually that wasn&#39;t that interesting... let&#39;s make the threshold dynamic.</p>
+<pre><code class="lang-javascript">var budgetStore = Nuclear.Store({
+  getInitialState: function() {
+    return Infinity
+  },
+  initialize: function() {
+    this.on(&#39;setBudget&#39;, function(currentBudget, newBudget) {
+      return newBudget
+    }
+  }
+})
+
+// stores can be attached at any time
+reactor.registerStores({
+  budget: budgetStore,
+})
+
+var isOverBudget = [
+  totalGetter,
+  [&#39;budget&#39;],
+  function(total, budget) {
+    return total &gt; budget
+  }
+]
+
+reactor.observe(isOverBudget, function(isOver) {
+  // this will be automatically re-evaluated only when the total or budget changes
+  if (isOver) {
+    var budget = reactor.evaluate([&#39;budget&#39;])
+    alert(&#39;Is over budget of &#39; + budget)
+  }
+})
+</code></pre>
+<p><strong>By using this pattern of composing Getters together, the majority of your system becomes purely functional transforms.</strong></p>
+<h3 id="hooking-up-a-ui-react">Hooking up a UI: React</h3>
+<p>Syncing reactor stores and React component state is effortless using <code>reactor.ReactMixin</code>.</p>
+<pre><code class="lang-javascript">var React = require(&#39;react&#39;)
+
+var ShoppingCart = React.createClass({
+  mixins: [reactor.ReactMixin],
+
+  // simply implement this function to keep a component&#39;s state
+  // in sync with a Nuclear Reactor
+  getDataBindings() {
+    return {
+      // can reference a reactor KeyPath
+      items: [&#39;items&#39;],
+      taxPercent: [&#39;taxPercent&#39;],
+      // or reference a Getter
+      subtotal: getSubtotal,
+      tax: getTax,
+      total: getTotal,
+      // or inline a getter
+      expensiveItems: [&#39;items&#39;, items =&gt; {
+        return items.filter(item =&gt; item &gt; 100)
+      }]
+    }
+  },
+
+  render() {
+    var itemRows = this.state.items.map(function(item) {
+      return (
+        &lt;tr&gt;
+          &lt;td&gt;{item.get(&#39;quantity&#39;)}&lt;/td&gt;
+          &lt;td&gt;{item.get(&#39;name&#39;)}&lt;/td&gt;
+          &lt;td&gt;{item.get(&#39;price&#39;)}&lt;/td&gt;
+        &lt;/tr&gt;
+      )
+    })
+    return (
+      &lt;div&gt;
+        &lt;table&gt;
+          &lt;tr&gt;
+            &lt;td&gt;Quantity:&lt;/td&gt;
+            &lt;td&gt;Name:&lt;/td&gt;
+            &lt;td&gt;Price:&lt;/td&gt;
+          &lt;/tr&gt;
+          {itemRows}
+          &lt;tr&gt;
+            &lt;td colspan=2&gt;subtotal:&lt;/td&gt;
+            &lt;td&gt;{this.state.subtotal}&lt;/td&gt;
+          &lt;/tr&gt;
+          &lt;tr&gt;
+            &lt;td colspan=2&gt;tax @ {this.state.taxPercent}%&lt;/td&gt;
+            &lt;td&gt;{this.state.taxPercent}&lt;/td&gt;
+          &lt;/tr&gt;
+          &lt;tr&gt;
+            &lt;td colspan=2&gt;total:&lt;/td&gt;
+            &lt;td&gt;{this.state.total}&lt;/td&gt;
+          &lt;/tr&gt;
+        &lt;/table&gt;
+      &lt;/div&gt;
+    )
+  }
+})
+</code></pre>
+<p>Whenever any of the reactor values being observed from <code>getDataBindings()</code> changes then <code>setState()</code> will be called with the updated value and the component will be re-rendered. Thus your React components always stay in sync with your app state!</p>
+<h3 id="hooking-up-a-ui-vuejs">Hooking up a UI: VueJS</h3>
+<p>Syncing reactor stores to VueJS components is simple using the <a href="https://github.com/jordangarcia/nuclear-vue-mixin">NuclearVueMixin</a>.</p>
+<pre><code class="lang-javascript">var Vue = require(&#39;vue&#39;)
+var NuclearVueMixin = require(&#39;nuclear-vue-mixin&#39;)
+
+var ShoppingCart = new Vue({
+  mixins: [NuclearVueMixin(reactor)],
+
+  getDataBindings: function() {
+    return {
+      // can reference a reactor KeyPath
+      items: [&#39;items&#39;],
+      taxPercent: [&#39;taxPercent&#39;],
+      // or reference a Getter
+      subtotal: getSubtotal,
+      tax: getTax,
+      total: getTotal,
+    }
+  },
+
+  template: require(&#39;text!./shopping-cart.html&#39;),
+})
+</code></pre>
+<p>In <code>shopping-cart.html</code></p>
+<pre><code class="lang-html">&lt;table&gt;
+  &lt;tr&gt;
+    &lt;td&gt;Quantity:&lt;/td&gt;
+    &lt;td&gt;Name:&lt;/td&gt;
+    &lt;td&gt;Price:&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr v-repeat=&quot;item: items&quot;&gt;
+    &lt;td&gt;{{ item.quantity }}&lt;/td&gt;
+    &lt;td&gt;{{ item.name }}&lt;/td&gt;
+    &lt;td&gt;{{ item.price | currency }}&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td colspan=2&gt;subtotal:&lt;/td&gt;
+    &lt;td&gt;{{ subtotal }}&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td colspan=2&gt;tax @ {{ taxPercent }}%&lt;/td&gt;
+    &lt;td&gt;{{ tax }}&lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td colspan=2&gt;total:&lt;/td&gt;
+    &lt;td&gt;{{ total }}&lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/table&gt;
+</code></pre>
+</div></div></div><script src="https://optimizely.github.io/nuclear-js/assets/js/prism.js"></script><script src="https://optimizely.github.io/nuclear-js/app.js"></script></body></html>

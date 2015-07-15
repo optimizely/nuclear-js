@@ -4,12 +4,31 @@ m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
 ga('create', 'UA-64060472-1', 'auto');
-ga('send', 'pageview');</script></head><body><div class="navbar-fixed"><nav class="nav"><div class="hide-on-large-only"><ul class="right"><li class="hide-on-large-only"><a href="https://optimizely.github.io/nuclear-js/">Home</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Docs</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/07-api.html">API</a></li><li><a href="https://github.com/optimizely/nuclear-js">Github</a></li></ul></div><div class="nav-wrapper hide-on-med-and-down"><a href="https://optimizely.github.io/nuclear-js/" class="brand-logo">NuclearJS</a><ul class="right"><li><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Docs</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/07-api.html">API</a></li><li><a href="https://github.com/optimizely/nuclear-js">Github</a></li></ul></div></nav></div><div class="container"><div class="docs-page row"><div class="docs-page--sidebar col l2"><h3>Docs</h3><ul class="sidebar-links"><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Getting Started</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/02-creating-actions.html">Creating Actions</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/03-creating-stores.html">Creating Stores</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/04-getters.html">Getters</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/05-hooking-up-to-react.html">Hooking up to React</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/06-async-actions-and-optimistic-updates.html">Async Actions and Optimistic Updates</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/07-api.html">API</a></li></ul></div><div class="docs-page--contents col l8"><h1 id="api-documentation">API Documentation</h1>
-<h2 id="reactor">Reactor</h2>
-<h3 id="-reactor-dispatch-messagetype-messagepayload-"><code>Reactor#dispatch(messageType, messagePayload)</code></h3>
+ga('send', 'pageview');</script></head><body><div class="navbar-fixed"><nav class="nav"><div class="hide-on-large-only"><ul class="right"><li class="hide-on-large-only"><a href="https://optimizely.github.io/nuclear-js/">Home</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Docs</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/07-api.html">API</a></li><li><a href="https://github.com/optimizely/nuclear-js">Github</a></li></ul></div><div class="nav-wrapper hide-on-med-and-down"><a href="https://optimizely.github.io/nuclear-js/" class="brand-logo">NuclearJS</a><ul class="right"><li><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Docs</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/07-api.html">API</a></li><li><a href="https://github.com/optimizely/nuclear-js">Github</a></li></ul></div></nav></div><div class="container"><div class="docs-page row"><div class="docs-page--sidebar col l2"><h3>Docs</h3><ul class="sidebar-links"><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Getting Started</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/02-creating-actions.html">Creating Actions</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/03-creating-stores.html">Creating Stores</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/04-getters.html">Getters</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/05-hooking-up-to-react.html">Hooking up to React</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/06-async-actions-and-optimistic-updates.html">Async Actions and Optimistic Updates</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/07-api.html">API</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/99-core-concepts.html">Core Concepts (old)</a></li></ul></div><div class="docs-page--contents col l8"><h1 id="api-documentation">API Documentation</h1>
+<h3 id="reactor">Reactor</h3>
+<h4 id="constructor">Constructor</h4>
+<h4 id="-nuclear-reactor-"><code>Nuclear.Reactor</code></h4>
+<pre><code class="lang-javascript">var reactor = new Nuclear.Reactor(config)
+// or
+var reactor = Nuclear.Reactor(config)
+</code></pre>
+<p><strong>Configuration Options</strong></p>
+<p><code>config.debug</code> Boolean - if true it will log the entire app state for every dispatch.</p>
+<h4 id="-reactor-dispatch-messagetype-messagepayload-"><code>Reactor#dispatch(messageType, messagePayload)</code></h4>
 <p>Dispatches a message to all registered Stores. This process is done synchronously, all registered <code>Store</code>s are passed this message and all components are re-evaluated (efficiently).  After a dispatch, a Reactor will emit the new state on the <code>reactor.changeEmitter</code></p>
-<p>ex: <code>reactor.dispatch(&#39;addUser&#39;, { name: &#39;jordan&#39; })</code></p>
-<h3 id="-reactor-evaluate-getter-keypath-"><code>Reactor#evaluate(Getter | KeyPath)</code></h3>
+<pre><code class="lang-javascript">reactor.dispatch(&#39;addUser&#39;, { name: &#39;jordan&#39; })
+</code></pre>
+<h4 id="-reactor-batch-fn-"><code>Reactor#batch(fn)</code></h4>
+<p><em>added in 1.1</em></p>
+<p>Allows multiple dispatches within the <code>fn</code> function before notifying any observers.</p>
+<pre><code class="lang-javascript">reactor.batch(function() {
+  reactor.dispatch(&#39;addUser&#39;, { name: &#39;jordan&#39; })
+  reactor.dispatch(&#39;addUser&#39;, { name: &#39;james&#39; })
+})
+
+// does a single notify to all observers
+</code></pre>
+<h4 id="-reactor-evaluate-getter-keypath-"><code>Reactor#evaluate(Getter | KeyPath)</code></h4>
 <p>Returns the immutable value for some KeyPath or Getter in the reactor state. Returns <code>undefined</code> if a keyPath doesn&#39;t have a value.</p>
 <pre><code class="lang-javascript">reactor.evaluate([&#39;users&#39;, &#39;active&#39;])
 reactor.evaluate([
@@ -27,9 +46,9 @@ reactor.evaluate([
   },
 ])
 </code></pre>
-<h3 id="-reactor-evaluatetojs-keypath-transformfn-"><code>Reactor#evaluateToJS(...keyPath, [transformFn])</code></h3>
-<p>Same as <code>evaluate</code> but coerces the value to a plain JS before returning</p>
-<h3 id="-reactor-observe-keypathorgetter-handlerfn-"><code>Reactor#observe(keyPathOrGetter, handlerFn)</code></h3>
+<h4 id="-reactor-evaluatetojs-keypath-transformfn-"><code>Reactor#evaluateToJS(...keyPath, [transformFn])</code></h4>
+<p>Same as <code>evaluate</code> but coerces the value to a plain JS before returning.</p>
+<h4 id="-reactor-observe-keypathorgetter-handlerfn-"><code>Reactor#observe(keyPathOrGetter, handlerFn)</code></h4>
 <p>Takes a getter or keyPath and calls the handlerFn with the evaluated value whenever the getter or keyPath changes.</p>
 <p><strong>Note</strong>:  You cannot call <code>flux.dispatch</code> within the handle function of a <code>flux.observe</code>.  This violates one of the fundamental design patterns in Flux architecture, which forbids cascading dispatches on the system which cause highly unpredictive systems.</p>
 <pre><code class="lang-javascript">reactor.observe([
@@ -39,16 +58,30 @@ reactor.evaluate([
   }
 ])
 </code></pre>
-<h3 id="-reactor-registerstores-stores-"><code>Reactor#registerStores(stores)</code></h3>
+<h4 id="-reactor-serialize-"><code>Reactor#serialize()</code></h4>
+<p><em>added in 1.1</em></p>
+<p>Returns a plain javascript object representing the application state.  By defualt this maps over all stores and returns <code>toJS(storeState)</code>.</p>
+<pre><code class="lang-javascript">reactor.loadState(reactor.serialize())
+</code></pre>
+<h4 id="-reactor-loadstate-state-"><code>Reactor#loadState( state )</code></h4>
+<p><em>added in 1.1</em></p>
+<p>Takes a plain javascript object and merges into the reactor state, using <code>store.deserialize</code></p>
+<p>This can be useful if you need to load data already on the page.</p>
+<pre><code class="lang-javascript">reactor.loadState({
+  stringStore: &#39;bar&#39;,
+  listStore: [4,5,6],
+})
+</code></pre>
+<h4 id="-reactor-registerstores-stores-"><code>Reactor#registerStores(stores)</code></h4>
 <p><code>stores</code> - an object of storeId =&gt; store instance</p>
 <pre><code class="lang-javascript">reactor.registerStores({
   &#39;threads&#39;: require(&#39;./stores/thread-store&#39;),
   &#39;currentThreadID&#39;: require(&#39;./stores/current-thread-id-store&#39;),
 })
 </code></pre>
-<h3 id="-reactor-reset-"><code>Reactor#reset()</code></h3>
+<h4 id="-reactor-reset-"><code>Reactor#reset()</code></h4>
 <p>Causes all stores to be reset to their initial state.  Extremely useful for testing, just put a <code>reactor.reset()</code> call in your <code>afterEach</code> blocks.</p>
-<h3 id="-reactor-reactmixin-"><code>Reactor#ReactMixin</code></h3>
+<h4 id="-reactor-reactmixin-"><code>Reactor#ReactMixin</code></h4>
 <p>Exposes the ReactMixin to do automatic data binding.</p>
 <pre><code class="lang-javascript">var ThreadSection = React.createClass({
   mixins: [flux.ReactMixin],
@@ -82,19 +115,14 @@ reactor.evaluate([
         &lt;/div&gt;
         &lt;ul className=&quot;thread-list&quot;&gt;
           {threadListItems}
-          &lt;/ul&gt;
+        &lt;/ul&gt;
       &lt;/div&gt;
     );
   },
 });
 </code></pre>
-<h2 id="constructors">Constructors</h2>
-<h3 id="-nuclear-reactor-"><code>Nuclear.Reactor</code></h3>
-<pre><code class="lang-javascript">var reactor = new Nuclear.Reactor(config)
-</code></pre>
-<p><strong>Configuration Options</strong></p>
-<p><code>config.debug</code> Boolean - if true it will log the entire app state for every dispatch.</p>
-<h3 id="-nuclear-store-"><code>Nuclear.Store</code></h3>
+<h3 id="store">Store</h3>
+<h4 id="constructor">Constructor</h4>
 <pre><code class="lang-javascript">module.exports = new Nuclear.Store({
   getInitialState: function() {
     // method must return an immutable value for NuclearJS to take advantage of efficient equality checks
@@ -109,18 +137,51 @@ reactor.evaluate([
   },
 })
 </code></pre>
-<h2 id="utilities">Utilities</h2>
+<h4 id="-store-getinitialstate-"><code>Store#getInitialState</code></h4>
+<p>Defines the starting state for a store.  Must return an immutable value.  By default it returns an <code>Immutable.Map</code></p>
+<h4 id="-store-initialize-"><code>Store#initialize</code></h4>
+<p>Responsible for setting up action handlers for the store using <code>this.on(actionTypes, handlerFn)</code></p>
+<h4 id="-store-serialize-"><code>Store#serialize</code></h4>
+<p><em>added in 1.1</em></p>
+<p>Serialization method for the store&#39;s data, by default its implemented as `Nuclear.toJS&#39; which converts ImmutableJS objects to plain javascript.
+This is overridable for your specific data needs.</p>
+<pre><code class="lang-javascript">// serializing an Immutable map while preserving numerical keys
+Nuclear.Store({
+  // ...
+  serialize(state) {
+    if (!state) {
+      return state;
+    }
+    return state.entrySeq().toJS()
+  },
+  // ...
+})
+</code></pre>
+<h4 id="-store-deserialize-"><code>Store#deserialize</code></h4>
+<p><em>added in 1.1</em></p>
+<p>Serialization method for the store&#39;s data, by default its implemented as `Nuclear.toImmutable&#39; which converts plain javascript objects to ImmutableJS data structures.
+This is overridable for your specific data needs.</p>
+<pre><code class="lang-javascript">// deserializing an array of arrays [[1, &#39;one&#39;], [2, &#39;two&#39;]] to an Immutable.Map
+Nuclear.Store({
+  // ...
+  deserialize(state) {
+    return Immutable.Map(state)
+  },
+  // ...
+})
+</code></pre>
+<h3 id="utilities">Utilities</h3>
 <p>NuclearJS comes with several utility functions that are exposed on the <code>Nuclear</code> variable.</p>
-<h3 id="-nuclear-immutable-"><code>Nuclear.Immutable</code></h3>
+<h4 id="-nuclear-immutable-"><code>Nuclear.Immutable</code></h4>
 <p>Provides access to the ImmutableJS <code>Immutable</code> object.</p>
-<h3 id="-nuclear-toimmutable-value-"><code>Nuclear.toImmutable(value)</code></h3>
-<p>Coerces a value to its immutable counterpart, can be called on any type safely.  It will convert Objects to <code>Immutable.Map</code> and Arrays to <code>Immutable.List</code></p>
-<h3 id="-nuclear-tojs-value-"><code>Nuclear.toJS(value)</code></h3>
+<h4 id="-nuclear-toimmutable-value-"><code>Nuclear.toImmutable(value)</code></h4>
+<p>Coerces a value to its immutable counterpart, can be called on any type safely.  It will convert Objects to <code>Immutable.Map</code> and Arrays to <code>Immutable.List</code>.</p>
+<h4 id="-nuclear-tojs-value-"><code>Nuclear.toJS(value)</code></h4>
 <p>Will coerce an Immutable value to its mutable counterpart.  Can be called on non-immutable values safely.</p>
-<h3 id="-nuclear-isimmutable-value-boolean"><code>Nuclear.isImmutable(value)</code> : Boolean</h3>
+<h4 id="-nuclear-isimmutable-value-boolean"><code>Nuclear.isImmutable(value)</code> : Boolean</h4>
 <p>Returns true if the value is an ImmutableJS data structure.</p>
-<h3 id="-nuclear-iskeypath-value-boolean"><code>Nuclear.isKeyPath(value)</code> : Boolean</h3>
-<p>Returns true if the value is the format of a valid keyPath</p>
-<h3 id="-nuclear-isgetter-value-boolean"><code>Nuclear.isGetter(value)</code> : Boolean</h3>
-<p>Returns true if the value is the format of a valid getter</p>
+<h4 id="-nuclear-iskeypath-value-boolean"><code>Nuclear.isKeyPath(value)</code> : Boolean</h4>
+<p>Returns true if the value is the format of a valid keyPath.</p>
+<h4 id="-nuclear-isgetter-value-boolean"><code>Nuclear.isGetter(value)</code> : Boolean</h4>
+<p>Returns true if the value is the format of a valid getter.</p>
 </div></div></div><script src="https://optimizely.github.io/nuclear-js/assets/js/prism.js"></script><script src="https://optimizely.github.io/nuclear-js/app.js"></script></body></html>
