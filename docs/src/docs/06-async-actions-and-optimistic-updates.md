@@ -158,9 +158,12 @@ export default React.createClass({
 
 ## Further Reading
 
-This ends our getting started example, for further reading checkout the following:
+This ends our getting started example, for a more in depth look all of the above example code lives [here](https://github.com/optimizely/nuclear-js/tree/master/examples/shopping-cart).
+
+For additional documentation and resources checkout the following:
 
 - [API Documentation](./07-api.html)
-- [Shopping Cart Example Code](https://github.com/optimizely/nuclear-js/tree/master/examples/shopping-cart)
-- [Flux Chat Example Code](https://github.com/optimizely/nuclear-js/tree/master/examples/flux-chat)
+- [Flux Chat Example](https://github.com/optimizely/nuclear-js/tree/master/examples/flux-chat) - classic facebook flux chat example written in NuclearJS
+- [Rest API Example](https://github.com/optimizely/nuclear-js/tree/master/examples/rest-api) - shows how to deal with fetching data from an API using NuclearJS conventions
 
+More coming soon...

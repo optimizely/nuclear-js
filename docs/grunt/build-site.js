@@ -4,8 +4,6 @@ var glob = require('glob')
 var async = require('async')
 var fm = require('front-matter')
 var fs = require('fs')
-//var Remarkable = require('remarkable');
-//var md = new Remarkable();
 var marked = require('marked')
 
 require('babel/register')({
