@@ -34,9 +34,9 @@ npm install nuclear-js
 
 ## Examples
 
-- [Shopping Cart Example](./examples/shopping-cart) - General overview of NuclearJS concepts: actions, stores and getters with ReactJS
-- [Flux Chat Example](./examples/flux-chat) - classic facebook flux chat example written in NuclearJS
-- [Rest API Example](./examples/rest-api) - shows how to deal with fetching data from an API using NuclearJS conventions
+- [Shopping Cart Example](./examples/shopping-cart) general overview of NuclearJS concepts: actions, stores and getters with ReactJS.
+- [Flux Chat Example](./examples/flux-chat) classic facebook flux chat example written in NuclearJS.
+- [Rest API Example](./examples/rest-api) shows how to deal with fetching data from an API using NuclearJS conventions.
 
 ## How NuclearJS differs from other Flux implementations
 
@@ -64,8 +64,8 @@ You can read more of the implementation here: [src/evaluator.js](./src/evaluator
 
 ## For Smaller Applications
 
-NuclearJS was designed first and foremore for large scale production codebases.  For a much more lightweight Flux implementation that shares many of the same ideas and design principles of NuclearJS check out [Microcosm](https://github.com/vigetlabs/microcosm)
+NuclearJS was designed first and foremore for large scale production codebases.  For a much more lightweight Flux implementation that shares many of the same ideas and design principles check out [Microcosm](https://github.com/vigetlabs/microcosm).
 
 ## Contributing
 
-Contributions are welcome, especially with the documentation website and examples.  See [CONTRIBUTING.md](./CONTRIBUTING.md) for more details.
+Contributions are welcome, especially with the documentation website and examples.  See [CONTRIBUTING.md](./CONTRIBUTING.md).
