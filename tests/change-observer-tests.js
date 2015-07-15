@@ -15,8 +15,8 @@ describe('ChangeObserver', () => {
 
     initialState = Immutable.fromJS({
       'foo': {
-        'bar': 1
-      }
+        'bar': 1,
+      },
     })
     observer = new ChangeObserver(initialState, evaluator)
   })
@@ -26,16 +26,16 @@ describe('ChangeObserver', () => {
   })
 
   describe('registering change handlers', () => {
-    it("should allow registration of ['foo', identity]", () => {
+    it('should allow registration of [\'foo\', identity]', () => {
       var mockFn = jasmine.createSpy()
       observer.onChange([['foo'], identity], mockFn)
 
       observer.notifyObservers(initialState.updateIn(['foo', 'bar'], x => 2))
 
-      var mockCallArg = mockFn.calls.argsFor(0)[1]
+      var mockCallArg = mockFn.calls.argsFor(0)[0]
       var expected = Map({'bar': 2})
 
-      expect(Immutable.is(mockCallArg, expected))
+      expect(Immutable.is(mockCallArg, expected)).toBe(true)
     })
 
     it('should allow registration of a deep string key', () => {
@@ -43,15 +43,15 @@ describe('ChangeObserver', () => {
       observer.onChange([['foo', 'bar'], identity], mockFn)
 
       observer.notifyObservers(initialState.updateIn(['foo', 'bar'], x => {
-        return {
-          'baz': 2
-        }
+        return Map({
+          'baz': 2,
+        })
       }))
 
-      var mockCallArg = mockFn.calls.argsFor(0)[1]
+      var mockCallArg = mockFn.calls.argsFor(0)[0]
       var expected = Map({'baz': 2})
 
-      expect(Immutable.is(mockCallArg, expected))
+      expect(Immutable.is(mockCallArg, expected)).toBe(true)
     })
 
     it('should not call the handler if another part of the map changes', () => {
@@ -64,9 +64,9 @@ describe('ChangeObserver', () => {
       expect(mockFn.calls.count()).toBe(0)
     })
 
-    describe("when two of the same getter are registered", () => {
-      it("should call the handler functions of both", () => {
-        var getter = [['foo'], identity];
+    describe('when two of the same getter are registered', () => {
+      it('should call the handler functions of both', () => {
+        var getter = [['foo'], identity]
         var mockFn1 = jasmine.createSpy()
         var mockFn2 = jasmine.createSpy()
         observer.onChange(getter, mockFn1)
@@ -79,5 +79,5 @@ describe('ChangeObserver', () => {
       })
     })
   })
-  // TODO test the prevValues and registering an observable
+  // TODO: test the prevValues and registering an observable
 })

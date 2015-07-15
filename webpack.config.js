@@ -1,14 +1,14 @@
-var webpack = require('webpack');
+var webpack = require('webpack')
 
 var genFilename = function(isMin) {
   return [
     './dist/nuclear',
     (isMin ? '.min' : ''),
-    '.js'
-  ].join('');
-};
+    '.js',
+  ].join('')
+}
 
-var uglifyJsPlugin = new webpack.optimize.UglifyJsPlugin();
+var uglifyJsPlugin = new webpack.optimize.UglifyJsPlugin()
 
 module.exports = [
   {
@@ -20,8 +20,8 @@ module.exports = [
     },
     module: {
       loaders: [
-        { test: /\.js$/, loader: 'jstransform-loader' }
-      ]
+        { test: /\.js$/, loader: 'jstransform-loader' },
+      ],
     },
   },
   {
@@ -33,9 +33,9 @@ module.exports = [
     },
     module: {
       loaders: [
-        { test: /\.js$/, loader: 'jstransform-loader' }
-      ]
+        { test: /\.js$/, loader: 'jstransform-loader' },
+      ],
     },
     plugins: [uglifyJsPlugin],
-  }
-];
+  },
+]

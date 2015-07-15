@@ -8,16 +8,17 @@ var createReactMixin = require('./create-react-mixin')
 
 // helper fns
 var toJS = require('./immutable-helpers').toJS
+var toImmutable = require('./immutable-helpers').toImmutable
 var isImmutableValue = require('./immutable-helpers').isImmutableValue
 var each = require('./utils').each
 
 
 /**
  * In Nuclear Reactors are where state is stored.  Reactors
- * contain a "state" object which is an Immutable.Map
+ * contain a 'state' object which is an Immutable.Map
  *
  * The only way Reactors can change state is by reacting to
- * messages.  To update staet, Reactor's dispatch messages to
+ * messages.  To update state, Reactor's dispatch messages to
  * all registered cores, and the core returns it's new
  * state based on the message
  */
@@ -34,9 +35,9 @@ class Reactor {
     /**
      * The state for the whole cluster
      */
-    this.__state = Immutable.Map({})
+    this.state = Immutable.Map({})
     /**
-     * Holds a map of id => reactor instance
+     * Holds a map of id => store instance
      */
     this.__stores = Immutable.Map({})
 
@@ -45,7 +46,12 @@ class Reactor {
      * Change observer interface to observe certain keypaths
      * Created after __initialize so it starts with initialState
      */
-    this.__changeObserver = new ChangeObserver(this.__state, this.__evaluator)
+    this.__changeObserver = new ChangeObserver(this.state, this.__evaluator)
+
+    // keep track of the depth of batch nesting
+    this.__batchDepth = 0
+    // number of dispatches in the top most batch cycle
+    this.__batchDispatchCount = 0
   }
 
   /**
@@ -54,7 +60,7 @@ class Reactor {
    * @return {*}
    */
   evaluate(keyPathOrGetter) {
-    return this.__evaluator.evaluate(this.__state, keyPathOrGetter)
+    return this.__evaluator.evaluate(this.state, keyPathOrGetter)
   }
 
   /**
@@ -99,10 +105,142 @@ class Reactor {
    * @param {object|undefined} payload
    */
   dispatch(actionType, payload) {
-    var debug = this.debug
-    var prevState = this.__state
+    var prevState = this.state
+    this.state = this.__handleAction(prevState, actionType, payload)
 
-    this.__state = this.__state.withMutations(state => {
+    if (this.__batchDepth > 0) {
+      this.__batchDispatchCount++
+    } else if (this.state !== prevState) {
+      this.__notify()
+    }
+  }
+
+  /**
+   * Allows batching of dispatches before notifying change observers
+   * @param {Function} fn
+   */
+  batch(fn) {
+    this.__batchStart()
+    fn()
+    this.__batchEnd()
+  }
+
+  /**
+   * @deprecated
+   * @param {String} id
+   * @param {Store} store
+   */
+  registerStore(id, store) {
+    /* eslint-disable no-console */
+    console.warn('Deprecation warning: `registerStore` will no longer be supported in 1.1, use `registerStores` instead')
+    /* eslint-enable no-console */
+    var stores = {}
+    stores[id] = store
+    this.registerStores(stores)
+  }
+
+  /**
+   * @param {Store[]} stores
+   */
+  registerStores(stores) {
+    each(stores, (store, id) => {
+      if (this.__stores.get(id)) {
+        /* eslint-disable no-console */
+        console.warn('Store already defined for id = ' + id)
+        /* eslint-enable no-console */
+      }
+
+      var initialState = store.getInitialState()
+
+      if (this.debug && !isImmutableValue(initialState)) {
+        throw new Error('Store getInitialState() must return an immutable value, did you forget to call toImmutable')
+      }
+
+      this.__stores = this.__stores.set(id, store)
+      this.state = this.state.set(id, initialState)
+    })
+
+    this.__notify()
+  }
+
+  /**
+   * Returns a plain object representing the application state
+   * @return {Object}
+   */
+  serialize() {
+    var serialized = {}
+    this.__stores.forEach((store, id) => {
+      var storeState = this.state.get(id)
+      var serializedState = store.serialize(storeState)
+      if (serializedState !== undefined) {
+        serialized[id] = serializedState
+      }
+    })
+    return serialized
+  }
+
+  /**
+   * @param {Object} state
+   */
+  loadState(state) {
+    var stateToLoad = toImmutable({}).withMutations(stateToLoad => {
+      each(state, (serializedStoreState, storeId) => {
+        var store = this.__stores.get(storeId)
+        if (store) {
+          var storeState = store.deserialize(serializedStoreState)
+          if (storeState !== undefined) {
+            stateToLoad.set(storeId, storeState)
+          }
+        }
+      })
+    })
+
+    this.state = this.state.merge(stateToLoad)
+    this.__notify()
+  }
+
+  /**
+   * Resets the state of a reactor and returns back to initial state
+   */
+  reset() {
+    var debug = this.debug
+    var prevState = this.state
+
+    this.state = Immutable.Map().withMutations(state => {
+      this.__stores.forEach((store, id) => {
+        var storeState = prevState.get(id)
+        var resetStoreState = store.handleReset(storeState)
+        if (debug && resetStoreState === undefined) {
+          throw new Error('Store handleReset() must return a value, did you forget a return statement')
+        }
+        if (debug && !isImmutableValue(resetStoreState)) {
+          throw new Error('Store reset state must be an immutable value, did you forget to call toImmutable')
+        }
+        state.set(id, resetStoreState)
+      })
+    })
+
+    this.__evaluator.reset()
+    this.__changeObserver.reset(this.state)
+  }
+
+  /**
+   * Notifies all change observers with the current state
+   * @private
+   */
+  __notify() {
+    this.__changeObserver.notifyObservers(this.state)
+  }
+
+
+  /**
+   * Reduces the current state to the new state given actionType / message
+   * @param {string} actionType
+   * @param {object|undefined} payload
+   * @return {Immutable.Map}
+   */
+  __handleAction(state, actionType, payload) {
+    return state.withMutations(state => {
       if (this.debug) {
         logging.dispatchStart(actionType, payload)
       }
@@ -112,8 +250,8 @@ class Reactor {
         var currState = state.get(id)
         var newState = store.handle(currState, actionType, payload)
 
-        if (debug && newState === undefined) {
-          var error = "Store handler must return a value, did you forget a return statement"
+        if (this.debug && newState === undefined) {
+          var error = 'Store handler must return a value, did you forget a return statement'
           logging.dispatchError(error)
           throw new Error(error)
         }
@@ -129,70 +267,21 @@ class Reactor {
         logging.dispatchEnd(state)
       }
     })
+  }
 
-    // write the new state to the output stream if changed
-    if (this.__state !== prevState) {
-      this.__changeObserver.notifyObservers(this.__state)
+  __batchStart() {
+    this.__batchDepth++
+  }
+
+  __batchEnd() {
+    this.__batchDepth--
+
+    if (this.__batchDepth <= 0) {
+      if (this.__batchDispatchCount > 0) {
+        this.__notify()
+      }
+      this.__batchDispatchCount = 0
     }
-  }
-
-  /**
-   * @deprecated
-   * @param {String} id
-   * @param {Store} store
-   */
-  registerStore(id, store) {
-    console.warn('Deprecation warning: `registerStore` will no longer be supported in 1.1, use `registerStores` instead')
-    var stores = {}
-    stores[id] = store
-    this.registerStores(stores)
-  }
-
-  /**
-   * @param {Store[]} stores
-   */
-  registerStores(stores) {
-    each(stores, (store, id) => {
-      if (this.__stores.get(id)) {
-        console.warn("Store already defined for id=" + id)
-      }
-
-      var initialState = store.getInitialState()
-
-      if (this.debug && !isImmutableValue(initialState)) {
-        throw new Error("Store getInitialState() must return an immutable value, did you forget to call toImmutable")
-      }
-
-      this.__stores = this.__stores.set(id, store)
-      this.__state = this.__state.set(id, initialState)
-    })
-
-    this.__changeObserver.notifyObservers(this.__state)
-  }
-
-  /**
-   * Resets the state of a reactor and returns back to initial state
-   */
-  reset() {
-    var debug = this.debug
-    var prevState = this.__state
-
-    this.__state = Immutable.Map().withMutations(state => {
-      this.__stores.forEach((store, id) => {
-        var storeState = prevState.get(id)
-        var resetStoreState = store.handleReset(storeState)
-        if (debug && resetStoreState === undefined) {
-          throw new Error("Store handleReset() must return a value, did you forget a return statement")
-        }
-        if (debug && !isImmutableValue(resetStoreState)) {
-          throw new Error("Store reset state must be an immutable value, did you forget to call toImmutable")
-        }
-        state.set(id, resetStoreState)
-      })
-    })
-
-    this.__evaluator.reset()
-    this.__changeObserver.reset(this.__state)
   }
 }
 

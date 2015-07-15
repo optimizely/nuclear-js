@@ -1,0 +1,261 @@
+@charset "utf-8";
+
+// Mixins
+@import "components/prefixer";
+@import "components/mixins";
+@import "components/color";
+
+// Variables;
+@import "components/variables";
+
+// Reset
+@import "components/normalize";
+
+// components
+@import "components/global";
+@import "components/icons-material-design";
+@import "components/grid";
+@import "components/navbar";
+@import "components/roboto";
+@import "components/typography";
+@import "components/cards";
+@import "components/toast";
+@import "components/tabs";
+@import "components/tooltip";
+@import "components/buttons";
+@import "components/dropdown";
+@import "components/waves";
+@import "components/modal";
+@import "components/collapsible";
+@import "components/materialbox";
+/*@import "components/form";*/
+@import "components/table_of_contents";
+@import "components/sideNav";
+@import "components/preloader";
+@import "components/slider";
+@import "components/date_picker/default.scss";
+@import "components/date_picker/default.date.scss";
+@import "components/date_picker/default.time.scss";
+
+@import "prism.scss";
+
+
+$img-path: "../img/" !default;
+
+.hero {
+  &--bg {
+    @extend .red.darken-2;
+    padding: 3em 0;
+  }
+
+  h1 {
+    $hero-fontsize: 4.2rem;
+    font-size: $hero-fontsize;
+    line-height: 1.1*$hero-fontsize;
+    margin: ($hero-fontsize / 2) 0 ($hero-fontsize / 2.5) 0;
+  }
+}
+
+.tour-section {
+  padding: 3em 0 !important;
+  position: relative;
+  overflow: hidden;
+
+  &--example {
+    padding: 7em 0 0 !important;
+  }
+
+  &--bg {
+    @extend .grey.lighten-3
+  }
+
+  &--title {
+      margin-bottom: 1em;
+  }
+
+  &--bullet-title {
+    margin-top: 1.5em;
+  }
+
+  &--bullet-item {
+      /*margin-bottom: 2em;*/
+  }
+}
+
+.example-select-wrapper {
+  font-size: 14px;
+  text-align: center;
+  margin: 1em 0;
+}
+
+.example-shadow {
+  box-shadow: 0 0 3px rgba(0,0,0,.2);
+}
+
+.example-box {
+  margin: 0 auto 10px;
+}
+
+.example-step {
+  min-height: 150px;
+  margin: 1em 0;
+
+  &--title {
+    line-height: 1.5em;
+    font-weight: 300;
+    /*margin-left: 1em;*/
+  }
+}
+
+.browser-component {
+  @extend .example-shadow;
+  @extend .example-box;
+
+  background: white;
+
+  &__small {
+    width: 200px;
+  }
+
+  &--top {
+    width: 100%;
+    height: 34px;
+    display: -webkit-flex;
+    -webkit-flex-direction: "row";
+
+    display: flex;
+    flex-direction: "row";
+  }
+
+  &--top-left {
+    width: 50px;
+    height: 34px;
+    background-image: url("#{$img-path}/browser_top_left.png")
+  }
+
+  &--top-middle {
+    height: 34px;
+    -webkit-flex: 1;
+    flex: 1;
+    background-image: url("#{$img-path}/browser_top_middle.png")
+  }
+
+  &--top-right {
+    height: 34px;
+    width: 50px;
+    background-image: url("#{$img-path}/browser_top_right.png")
+  }
+
+  &--content {
+    padding: 5px 10px;
+    width: 100%;
+    min-height: 60px;
+    border: 1px solid #ebebeb;
+    border-top: none;
+  }
+
+  .collection-item {
+    padding: 3px 7px;
+    font-size: 12px;
+  }
+
+  th, td {
+    padding: 3px;
+    transition: fade 1s;
+  }
+
+  table {
+    margin-bottom: 2em;
+  }
+}
+
+.state-viewer {
+  @extend .example-box;
+  overflow: auto;
+
+  &.active {
+    background-color: #f8f8f8;
+    border: 1px solid #eee;
+  }
+
+  text-align: left;
+  padding: 0 10px;
+
+  &--contents {
+    font-size: 11px;
+    font-family: Consolas, "Courier New", monospace;
+    strong {
+      font-weight: 800;
+    }
+  }
+
+  &--title {
+    font-size: 1.5em;
+    padding: 3px 5px;
+    font-weight: 300;
+  }
+}
+
+pre code.hljs {
+  font-size: 12px;
+}
+
+.code-explanation {
+  margin-left: 50px;
+
+  &--row {
+    padding-bottom: 0;
+    margin-bottom: 0;
+  }
+}
+
+.nav {
+  @extend .red.darken-2;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+  box-shadow: none;
+}
+
+
+.nav-wrapper {
+  @extend .container;
+}
+
+.scrolled .nav {
+  @extend .z-depth-1;
+}
+
+.docs-page {
+  padding-bottom: 3em;
+
+  h2 {
+    margin-top: $h2-fontsize * 1.33;
+  }
+
+  h3 {
+    margin-top: $h3-fontsize * 1.33;
+  }
+
+  h4 {
+    font-weight: 600;
+    margin-top: $h4-fontsize * 1.33;
+  }
+
+  &--sidebar {
+    padding-top: 26px !important;
+  }
+}
+
+.docs-page--sidebar {
+  h3 {
+    margin-top: 0;
+  }
+}
+
+.sidebar-links {
+  &--item {
+    line-height: 1.2em;
+    margin-bottom: 1em;
+  }
+}
+

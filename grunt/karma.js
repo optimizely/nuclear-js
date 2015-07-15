@@ -1,5 +1,5 @@
 var sauce = require('./sauce')
-var path = require('path');
+var path = require('path')
 
 module.exports = {
   options: {
@@ -40,7 +40,6 @@ module.exports = {
   },
 
   phantom: {
-    configFile: 'grunt/karma-configs/phantom.karma.js',
     frameworks: ['jasmine', 'es5-shim'],
     browsers: ['PhantomJS'],
   },
@@ -58,10 +57,10 @@ module.exports = {
     browsers: ['PhantomJS'],
     coverageReporter: {
       reporters: [
-        { type: "html", dir: "coverage/" },
-        { type: "lcov", dir: "coverage/" },
-        { type: "text-summary" },
-      ]
+        { type: 'html', dir: 'coverage/' },
+        { type: 'lcov', dir: 'coverage/' },
+        { type: 'text-summary' },
+      ],
     },
 
     webpack: {
@@ -73,9 +72,9 @@ module.exports = {
           {
             test: /\.js$/,
             exclude: /(node_modules\/|-tests\.js$)/,
-            loader: 'istanbul-instrumenter'
-          }
-        ]
+            loader: 'istanbul-instrumenter',
+          },
+        ],
       },
     },
   },
@@ -91,4 +90,4 @@ module.exports = {
   sauce_mobile: {
     options: sauce.mobile,
   },
-};
+}

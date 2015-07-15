@@ -8,7 +8,7 @@ var isKeyPath = require('./key-path').isKeyPath
 var isGetter = require('./getter').isGetter
 
 // Keep track of whether we are currently executing a Getter's computeFn
-var __applyingComputeFn = false;
+var __applyingComputeFn = false
 
 class Evaluator {
   constructor() {
@@ -42,7 +42,7 @@ class Evaluator {
       // if its a keyPath simply return
       return state.getIn(keyPathOrGetter)
     } else if (!isGetter(keyPathOrGetter)) {
-      throw new Error("evaluate must be passed a keyPath or Getter")
+      throw new Error('evaluate must be passed a keyPath or Getter')
     }
 
     // Must be a Getter
@@ -74,12 +74,18 @@ class Evaluator {
     // Throw an error as this will lead to inconsistent caching
     if (__applyingComputeFn === true) {
       __applyingComputeFn = false
-      throw new Error("Evaluate may not be called within a Getters computeFn")
+      throw new Error('Evaluate may not be called within a Getters computeFn')
     }
 
+    var evaluatedValue
     __applyingComputeFn = true
-    var evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
-    __applyingComputeFn = false
+    try {
+      evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
+      __applyingComputeFn = false
+    } catch (e) {
+      __applyingComputeFn = false
+      throw e
+    }
 
     this.__cacheValue(state, keyPathOrGetter, args, evaluatedValue)
 
@@ -134,7 +140,7 @@ class Evaluator {
    * @param {Getter}
    */
   untrack(getter) {
-    // TODO untrack all depedencies
+    // TODO: untrack all depedencies
   }
 
   reset() {

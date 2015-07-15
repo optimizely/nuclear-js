@@ -1,4 +1,3 @@
-var Immutable = require('immutable')
 var isFunction = require('./utils').isFunction
 var isArray = require('./utils').isArray
 var isKeyPath = require('./key-path').isKeyPath
@@ -43,7 +42,7 @@ function getDeps(getter) {
  */
 function fromKeyPath(keyPath) {
   if (!isKeyPath(keyPath)) {
-    throw new Error("Cannot create Getter from KeyPath: " + keyPath)
+    throw new Error('Cannot create Getter from KeyPath: ' + keyPath)
   }
 
   return [keyPath, identity]

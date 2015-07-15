@@ -1,0 +1,26 @@
+{
+  "main": "js/app.js",
+  "scripts": {
+    "start": "../node_modules/watchify/bin/cmd.js js/app.js -o build/bundle.js -v -d",
+    "build": "browserify js/app.js > build/bundle.js"
+  },
+  "browserify": {
+    "transform": [
+      "babelify",
+      "envify"
+    ]
+  },
+  "dependencies": {
+    "nuclear-js": "^1.0.5",
+    "react": "^0.13.3",
+    "node-libs-browser": "^0.5.2",
+    "webpack": "^1.9.11",
+    "babel-core": "^5.6.1",
+    "babel-loader": "^5.1.4"
+  },
+  "name": "shopping-cart-example",
+  "version": "0.0.1",
+  "description": "Shopping cart example for NuclearJS",
+  "author": "Jordan Garcia",
+  "license": "MIT"
+}

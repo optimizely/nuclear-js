@@ -1,5 +1,4 @@
-var path = require('path');
-// stolen from https://github.com/yyx990803/vue/blob/master/grunt/sauce.js
+var each = require('../src/utils').each
 var sauceConfig = {
   username: 'nuclearjs',
   accessKey: process.env.SAUCE_ACCESS_KEY,
@@ -13,7 +12,6 @@ var sauceConfig = {
  * causes timeouts and errors, so we have to run them in
  * smaller batches.
  */
-
 var batches = {
   // the cool kids
   modern: {
@@ -21,40 +19,40 @@ var batches = {
       base: 'SauceLabs',
       browserName: 'chrome',
       platform: 'Windows 7',
-      version: '39'
+      version: '39',
     },
     sl_firefox: {
       base: 'SauceLabs',
       browserName: 'firefox',
-      version: '33'
+      version: '33',
     },
     sl_mac_safari: {
       base: 'SauceLabs',
-      browserName: "safari",
-      platform: "OS X 10.10",
-      version: "8"
-    }
+      browserName: 'safari',
+      platform: 'OS X 10.10',
+      version: '8',
+    },
   },
   // ie family
   ie: {
     sl_ie_9: {
       base: 'SauceLabs',
-      browserName: "internet explorer",
-      platform: "Windows 7",
-      version: "9"
+      browserName: 'internet explorer',
+      platform: 'Windows 7',
+      version: '9',
     },
     sl_ie_10: {
       base: 'SauceLabs',
-      browserName: "internet explorer",
-      platform: "Windows 8",
-      version: "10"
+      browserName: 'internet explorer',
+      platform: 'Windows 8',
+      version: '10',
     },
     sl_ie_11: {
       base: 'SauceLabs',
       browserName: 'internet explorer',
       platform: 'Windows 8.1',
-      version: '11'
-    }
+      version: '11',
+    },
   },
   // mobile
   mobile: {
@@ -62,25 +60,25 @@ var batches = {
       base: 'SauceLabs',
       browserName: 'iphone',
       platform: 'OS X 10.9',
-      version: '8.1'
+      version: '8.1',
     },
     sl_android: {
       base: 'SauceLabs',
       browserName: 'android',
       platform: 'Linux',
-      version: '4.2'
-    }
-  }
+      version: '4.2',
+    },
+  },
 }
 
-for (var key in batches) {
+each(batches, function(value, key) {
   exports[key] = {
     sauceLabs: sauceConfig,
     // mobile emulators are really slow
     captureTimeout: 300000,
     browserNoActivityTimeout: 300000,
-    customLaunchers: batches[key],
-    browsers: Object.keys(batches[key]),
-    reporters: ['progress', 'saucelabs']
+    customLaunchers: value,
+    browsers: Object.keys(value),
+    reporters: ['progress', 'saucelabs'],
   }
-}
+})

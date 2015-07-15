@@ -1,21 +1,23 @@
 var Immutable = require('immutable')
 var Map = require('immutable').Map
 var List = require('immutable').List
-var Nuclear = require('../src/main')
 var Reactor = require('../src/main').Reactor
 var Store = require('../src/main').Store
-var Getter = require('../src/main').Getter
 var toImmutable = require('../src/immutable-helpers').toImmutable
 
 
 describe('Reactor', () => {
-  it("should construct without 'new'", () => {
+  it('should construct without \'new\'', () => {
     var reactor = Reactor()
     expect(reactor instanceof Reactor).toBe(true)
   })
 
   describe('Reactor with no initial state', () => {
-    var checkoutActions, reactor, taxPercentGetter, subtotalGetter, taxGetter, totalGetter
+    var checkoutActions
+    var reactor
+    var subtotalGetter
+    var taxGetter
+    var totalGetter
 
     beforeEach(() => {
       var itemStore = Store({
@@ -46,11 +48,11 @@ describe('Reactor', () => {
           this.on('setTax', (state, payload) => {
             return payload
           })
-        }
+        },
       })
 
       reactor = new Reactor({
-        debug: true
+        debug: true,
       })
       reactor.registerStores({
         'items': itemStore,
@@ -63,7 +65,7 @@ describe('Reactor', () => {
           return items.reduce((total, item) => {
             return total + item.get('price')
           }, 0)
-        }
+        },
       ]
 
       taxGetter = [
@@ -71,7 +73,7 @@ describe('Reactor', () => {
         ['taxPercent'],
         (subtotal, taxPercent) => {
           return (subtotal * (taxPercent / 100))
-        }
+        },
       ]
 
       totalGetter = [
@@ -79,20 +81,20 @@ describe('Reactor', () => {
         taxGetter,
         (subtotal, tax) => {
           return Math.round(subtotal + tax, 2)
-        }
+        },
       ]
 
       checkoutActions = {
         addItem(name, price) {
           reactor.dispatch('addItem', {
             name: name,
-            price: price
+            price: price,
           })
         },
 
         setTaxPercent(percent) {
           reactor.dispatch('setTax', percent)
-        }
+        },
       }
     })
     afterEach(() => {
@@ -131,6 +133,7 @@ describe('Reactor', () => {
       })
     })
 
+
     describe('when dispatching a relevant action', () => {
       var item = {
         name: 'item 1',
@@ -146,7 +149,7 @@ describe('Reactor', () => {
         expect(reactor.evaluate(totalGetter)).toEqual(10)
       })
 
-      it("should emit the state of the reactor to a handler registered with observe()", () => {
+      it('should emit the state of the reactor to a handler registered with observe()', () => {
         var mockFn = jasmine.createSpy()
         reactor.observe(mockFn)
 
@@ -155,19 +158,19 @@ describe('Reactor', () => {
         var expected = Immutable.fromJS({
           items: {
             all: [
-              item
+              item,
             ],
           },
           taxPercent: 0,
         })
 
-        var firstCallArg = mockFn.calls.argsFor(0)
+        var firstCallArg = mockFn.calls.argsFor(0)[0]
 
         expect(mockFn.calls.count()).toBe(1)
-        expect(Immutable.is(firstCallArg, expected))
+        expect(Immutable.is(firstCallArg, expected)).toBe(true)
       })
 
-      it("should not emit to the outputStream if state does not change after a dispatch", () => {
+      it('should not emit to the outputStream if state does not change after a dispatch', () => {
         var mockFn = jasmine.createSpy()
         reactor.observe(mockFn)
 
@@ -231,7 +234,7 @@ describe('Reactor', () => {
     })
   }) // Reactor with no initial state
 
-  describe("reactor#reset", () => {
+  describe('reactor#reset', () => {
     var reactor
 
     beforeEach(() => {
@@ -260,11 +263,11 @@ describe('Reactor', () => {
 
         handleReset(state) {
           return state
-        }
+        },
       })
 
       reactor = new Reactor({
-        debug: true
+        debug: true,
       })
       reactor.registerStores({
         standard: standardStore,
@@ -276,7 +279,7 @@ describe('Reactor', () => {
       reactor.reset()
     })
 
-    it("should go back to initial state for normal stores", () => {
+    it('should go back to initial state for normal stores', () => {
       var item = { foo: 'bar' }
       reactor.dispatch('addItem', item)
 
@@ -287,7 +290,7 @@ describe('Reactor', () => {
       expect(reactor.evaluateToJS(['standard'])).toEqual([])
     })
 
-    it("should respect the handleReset method for stores that override it", () => {
+    it('should respect the handleReset method for stores that override it', () => {
       var item = { foo: 'bar' }
       reactor.dispatch('addItem', item)
 
@@ -299,7 +302,7 @@ describe('Reactor', () => {
     })
   })
 
-  describe("when a reactor is observing mutable values", () => {
+  describe('when a reactor is observing mutable values', () => {
     var reactor
     var observeSpy
 
@@ -331,7 +334,7 @@ describe('Reactor', () => {
       })
 
       reactor = new Reactor({
-        debug: true
+        debug: true,
       })
       reactor.registerStores({
         mapStore: mapStore,
@@ -343,7 +346,7 @@ describe('Reactor', () => {
       reactor.reset()
     })
 
-    it("should go back to initial state for normal stores", () => {
+    it('should go back to initial state for normal stores', () => {
       function Foo(val) {
         this.val = val
       }
@@ -356,10 +359,10 @@ describe('Reactor', () => {
         ['keyStore'],
         (map, key) => {
           return map.get(key)
-        }
+        },
       ]
 
-      var value = reactor.evaluate(getter)
+      reactor.evaluate(getter)
 
       reactor.observe(getter, (fooValue) => {
         observeSpy(fooValue)
@@ -380,21 +383,21 @@ describe('Reactor', () => {
     })
   })
 
-  describe("a reactor with a store that has `null` as its initial state", () => {
+  describe('a reactor with a store that has `null` as its initial state', () => {
     var reactor
 
     beforeEach(() => {
       var nullStateStore = new Store({
         getInitialState() {
-          return null;
+          return null
         },
         initialize() {
-          this.on('set', (_, val) => val);
-        }
+          this.on('set', (_, val) => val)
+        },
       })
 
       reactor = new Reactor({
-        debug: true
+        debug: true,
       })
       reactor.registerStores({
         test: nullStateStore,
@@ -405,32 +408,32 @@ describe('Reactor', () => {
       reactor.reset()
     })
 
-    it("the store should respond to a registered action", () => {
+    it('the store should respond to a registered action', () => {
       reactor.dispatch('set', 'foo')
       expect(reactor.evaluate(['test'])).toBe('foo')
     })
 
-    it("the store should have the same initial state for an action it doesnt handle", () => {
+    it('the store should have the same initial state for an action it doesnt handle', () => {
       reactor.dispatch('unknown', 'foo')
       expect(reactor.evaluate(['test'])).toBe(null)
     })
   })
 
-  describe("when debug is true and a store has a handler for an action but returns undefined", () => {
+  describe('when debug is true and a store has a handler for an action but returns undefined', () => {
     var reactor
 
     beforeEach(() => {
       var undefinedStore = new Store({
         getInitialState() {
-          return 1;
+          return 1
         },
         initialize() {
-          this.on('set', (_, val) => undefined);
-        }
+          this.on('set', (_, val) => undefined)
+        },
       })
 
       reactor = new Reactor({
-        debug: true
+        debug: true,
       })
       reactor.registerStores({
         test: undefinedStore,
@@ -441,22 +444,23 @@ describe('Reactor', () => {
       reactor.reset()
     })
 
-    it("should throw an error", function() {
+    it('should throw an error', function() {
       expect(function() {
         reactor.dispatch('set', 'foo')
       }).toThrow()
     })
   })
 
-  describe("#registerStores", () => {
+  describe('#registerStores', () => {
     var reactor
 
     afterEach(() => {
       reactor.reset()
     })
 
-    describe("when another store is already registered for the same id", () => {
-      var store1, store2
+    describe('when another store is already registered for the same id', () => {
+      var store1
+      var store2
 
       beforeEach(() => {
         spyOn(console, 'warn')
@@ -468,28 +472,30 @@ describe('Reactor', () => {
           debug: true,
         })
         reactor.registerStores({
-          store1: store1
+          store1: store1,
         })
       })
 
-      it("should warn", function() {
+      it('should warn', function() {
         reactor.registerStores({
-          store1: store2
+          store1: store2,
         })
+        /* eslint-disable no-console */
         expect(console.warn).toHaveBeenCalled()
+        /* eslint-enable no-console */
       })
     })
 
-    describe("when the stores getInitialState method returns a non immutable object", () => {
+    describe('when the stores getInitialState method returns a non immutable object', () => {
       var store1
 
       beforeEach(() => {
         store1 = new Store({
           getInitialState() {
             return {
-              foo: 'bar'
+              foo: 'bar',
             }
-          }
+          },
         })
 
         reactor = new Reactor({
@@ -497,16 +503,16 @@ describe('Reactor', () => {
         })
       })
 
-      it("should throw an error", function() {
+      it('should throw an error', function() {
         expect(function() {
           reactor.registerStores({
-            store1: store1
+            store1: store1,
           })
         }).toThrow()
       })
     })
 
-    describe("when calling registerStores with an observer", () => {
+    describe('when calling registerStores with an observer', () => {
       var store1
       var observeSpy
 
@@ -529,10 +535,10 @@ describe('Reactor', () => {
         reactor.observe(['test'], observeSpy)
       })
 
-      it("should notify observers immediately", function() {
+      it('should notify observers immediately', function() {
         var notify = true
         reactor.registerStores({
-          test: store1
+          test: store1,
         }, notify)
 
         expect(observeSpy.calls.count()).toEqual(1)
@@ -541,14 +547,15 @@ describe('Reactor', () => {
     })
   })
 
-  describe("#registerStore", () => {
-    var reactor, store1
+  describe('#registerStore', () => {
+    var reactor
+    var store1
 
     beforeEach(() => {
       store1 = new Store({
         getInitialState() {
           return 'foo'
-        }
+        },
       })
 
       reactor = new Reactor({
@@ -560,16 +567,16 @@ describe('Reactor', () => {
       reactor.reset()
     })
 
-    it("it should register a store by id", () => {
+    it('it should register a store by id', () => {
       reactor.registerStore('test', store1)
       expect(reactor.evaluate(['test'])).toBe('foo')
     })
   })
 
-  describe("#reset", () => {
+  describe('#reset', () => {
     var reactor
 
-    describe("when a store doesnt define a handleReset method", () => {
+    describe('when a store doesnt define a handleReset method', () => {
       var store1
 
       beforeEach(() => {
@@ -587,11 +594,11 @@ describe('Reactor', () => {
         })
 
         reactor.registerStores({
-          test: store1
+          test: store1,
         })
       })
 
-      it("should fallback to the getInitialState", () => {
+      it('should fallback to the getInitialState', () => {
         reactor.dispatch('set', 'bar')
 
         expect(reactor.evaluate(['test'])).toBe('bar')
@@ -602,7 +609,7 @@ describe('Reactor', () => {
       })
     })
 
-    describe("when a store defines a handleReset method", () => {
+    describe('when a store defines a handleReset method', () => {
       var store1
 
       beforeEach(() => {
@@ -623,11 +630,11 @@ describe('Reactor', () => {
         })
 
         reactor.registerStores({
-          test: store1
+          test: store1,
         })
       })
 
-      it("should fallback to the getInitialState", () => {
+      it('should fallback to the getInitialState', () => {
         reactor.dispatch('set', 'bar')
 
         expect(reactor.evaluate(['test'])).toBe('bar')
@@ -638,7 +645,7 @@ describe('Reactor', () => {
       })
     })
 
-    describe("when the handleReset method returns undefined", () => {
+    describe('when the handleReset method returns undefined', () => {
       var store1
 
       beforeEach(() => {
@@ -658,18 +665,18 @@ describe('Reactor', () => {
         })
 
         reactor.registerStores({
-          test: store1
+          test: store1,
         })
       })
 
-      it("should throw an error", () => {
+      it('should throw an error', () => {
         expect(function() {
           reactor.reset()
         }).toThrow()
       })
     })
 
-    describe("when the handleReset method returns a non immutable object", () => {
+    describe('when the handleReset method returns a non immutable object', () => {
       var store1
 
       beforeEach(() => {
@@ -682,7 +689,7 @@ describe('Reactor', () => {
           },
           handleReset() {
             return {
-              foo: 'bar'
+              foo: 'bar',
             }
           },
         })
@@ -692,15 +699,284 @@ describe('Reactor', () => {
         })
 
         reactor.registerStores({
-          test: store1
+          test: store1,
         })
       })
 
-      it("should throw an error", () => {
+      it('should throw an error', () => {
         expect(function() {
           reactor.reset()
         }).toThrow()
       })
+    })
+  })
+
+  describe('serialize/loadState', () => {
+    var reactor
+    var stores
+
+    beforeEach(() => {
+      reactor = new Reactor({
+        debug: true,
+      })
+
+      stores = {
+        mapStore: Store({
+          getInitialState() {
+            return Immutable.Map([
+              [1, 'one'],
+              [2, 'two'],
+            ])
+          },
+          initialize() {
+            this.on('clear', state => null)
+          },
+          serialize(state) {
+            if (!state) {
+              return state
+            }
+            return state.entrySeq().toJS()
+          },
+          deserialize(state) {
+            return Immutable.Map(state)
+          },
+        }),
+
+        stringStore: Store({
+          getInitialState() {
+            return 'foo'
+          },
+          initialize() {
+            this.on('clear', state => null)
+          },
+        }),
+
+        listStore: Store({
+          getInitialState() {
+            return toImmutable([1, 2, 'three'])
+          },
+          initialize() {
+            this.on('clear', state => null)
+          },
+        }),
+
+        booleanStore: Store({
+          getInitialState() {
+            return true
+          },
+          initialize() {
+            this.on('clear', state => null)
+          },
+        }),
+      }
+
+      reactor.registerStores(stores)
+    })
+
+    afterEach(() => {
+      reactor.reset()
+    })
+
+    it('should serialize -> loadState effectively', () => {
+      var serialized = reactor.serialize()
+      var reactor2 = new Reactor()
+      reactor2.registerStores(stores)
+      reactor2.dispatch('clear')
+
+      expect(Immutable.is(reactor.evaluate([]), reactor2.evaluate([]))).toBe(false)
+
+      reactor2.loadState(serialized)
+      expect(Immutable.is(reactor.evaluate([]), reactor2.evaluate([]))).toBe(true)
+    })
+
+    it('should allow loading of state from outside source', () => {
+      reactor.loadState({
+        stringStore: 'bar',
+        listStore: [4, 5, 6],
+      })
+
+      expect(reactor.evaluateToJS([])).toEqual({
+        mapStore: {
+          1: 'one',
+          2: 'two',
+        },
+        stringStore: 'bar',
+        listStore: [4, 5, 6],
+        booleanStore: true,
+      })
+    })
+
+    it('should notify observer', () => {
+      var mockFn = jasmine.createSpy()
+      var serialized = reactor.serialize()
+      var reactor2 = new Reactor()
+      reactor2.registerStores(stores)
+      reactor2.dispatch('clear')
+
+      reactor2.observe(['stringStore'], mockFn)
+
+      reactor2.loadState(serialized)
+
+      var firstCallArg = mockFn.calls.argsFor(0)
+
+      expect(mockFn.calls.count()).toBe(1)
+      expect(Immutable.is(firstCallArg, 'foo'))
+    })
+
+    describe('when extending Reactor#serialize and Reactor#loadState', () => {
+      var loadStateSpy = jasmine.createSpy('loadState')
+      var serializeSpy = jasmine.createSpy('serialize')
+
+      it('should respect the extended methods', () => {
+        class MyReactor extends Reactor {
+          constructor() {
+            super(arguments)
+          }
+
+          serialize(state) {
+            serializeSpy(state)
+            var serialized = super(state)
+            return JSON.stringify(serialized)
+          }
+
+          loadState(state) {
+            loadStateSpy(state)
+            super(JSON.parse(state))
+          }
+        }
+        var reactor1 = new MyReactor()
+        reactor1.registerStores(stores)
+        var reactor2 = new MyReactor()
+        reactor2.registerStores(stores)
+
+        var serialized = reactor1.serialize()
+
+        reactor2.dispatch('clear')
+
+        expect(Immutable.is(reactor1.evaluate([]), reactor2.evaluate([]))).toBe(false)
+
+        reactor2.loadState(serialized)
+        expect(Immutable.is(reactor.evaluate([]), reactor2.evaluate([]))).toBe(true)
+
+        expect(serializeSpy.calls.count()).toBe(1)
+        expect(loadStateSpy.calls.count()).toBe(1)
+      })
+    })
+
+    describe('when a store returns undefined from serialize/deserialize', () => {
+      beforeEach(() => {
+        reactor = new Reactor()
+        reactor.registerStores({
+          serializableStore: Store({
+            getInitialState() {
+              return 'real'
+            },
+          }),
+
+          ignoreStore: Store({
+            getInitialState() {
+              return 'ignore'
+            },
+            serialize() {
+              return
+            },
+            deserialize() {
+              return
+            },
+          }),
+        })
+      })
+
+      it('should not have an entry in the serialized app state', () => {
+        var serialized = reactor.serialize()
+        expect(serialized).toEqual({
+          serializableStore: 'real',
+        })
+      })
+
+      it('should not load state for a store where deserialize returns undefined', () => {
+        var serialized = {
+          serializableStore: 'changed',
+          ignoreStore: 'changed',
+        }
+        reactor.loadState(serialized)
+        expect(reactor.evaluateToJS([])).toEqual({
+          serializableStore: 'changed',
+          ignoreStore: 'ignore',
+        })
+      })
+    })
+  })
+
+  describe('#batch', () => {
+    var reactor
+
+    beforeEach(() => {
+      reactor = new Reactor({
+        debug: true,
+      })
+      reactor.registerStores({
+        listStore: Store({
+          getInitialState() {
+            return toImmutable([])
+          },
+          initialize() {
+            this.on('add', (state, item) => state.push(toImmutable(item)))
+          },
+        }),
+      })
+    })
+
+    afterEach(() => {
+      reactor.reset()
+    })
+
+    it('should execute multiple dispatches within the queue function', () => {
+      reactor.batch(() => {
+        reactor.dispatch('add', 'one')
+        reactor.dispatch('add', 'two')
+      })
+
+      expect(reactor.evaluateToJS(['listStore'])).toEqual(['one', 'two'])
+    })
+
+    it('should notify observers only once', () => {
+      var observeSpy = jasmine.createSpy()
+
+      reactor.observe(['listStore'], list => observeSpy(list.toJS()))
+
+      reactor.batch(() => {
+        reactor.dispatch('add', 'one')
+        reactor.dispatch('add', 'two')
+      })
+
+      expect(observeSpy.calls.count()).toBe(1)
+
+      var firstCallArg = observeSpy.calls.argsFor(0)[0]
+
+      expect(observeSpy.calls.count()).toBe(1)
+      expect(firstCallArg).toEqual(['one', 'two'])
+    })
+
+    it('should allow nested batches and only notify observers once', () => {
+      var observeSpy = jasmine.createSpy()
+
+      reactor.observe(['listStore'], list => observeSpy(list.toJS()))
+
+      reactor.batch(() => {
+        reactor.dispatch('add', 'one')
+        reactor.batch(() => {
+          reactor.dispatch('add', 'two')
+          reactor.dispatch('add', 'three')
+        })
+      })
+
+      expect(observeSpy.calls.count()).toBe(1)
+
+      var firstCallArg = observeSpy.calls.argsFor(0)[0]
+
+      expect(observeSpy.calls.count()).toBe(1)
+      expect(firstCallArg).toEqual(['one', 'two', 'three'])
     })
   })
 })

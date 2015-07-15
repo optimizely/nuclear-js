@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Wraps a Reactor.react invocation in a console.group
 */
@@ -20,7 +21,7 @@ exports.dispatchError = function(error) {
 exports.storeHandled = function(id, before, after) {
   if (console.group) {
     if (before !== after) {
-      console.debug('Core changed: ' + id)
+      console.debug('Store ' + id + ' handled action')
     }
   }
 }
@@ -31,3 +32,4 @@ exports.dispatchEnd = function(state) {
     console.groupEnd()
   }
 }
+/* eslint-enable no-console */

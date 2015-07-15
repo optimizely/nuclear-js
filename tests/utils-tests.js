@@ -25,11 +25,11 @@ describe('Utils', () => {
     })
 
     it('correctly identifies an array instance as an array', () => {
-      var result = Utils.isArray(new Array())
+      var result = Utils.isArray([])
       expect(result).toBe(true)
     })
 
-    describe("when isArray is not defined", function() {
+    describe('when isArray is not defined', function() {
       var originalIsArray
 
       beforeEach(() => {
@@ -52,7 +52,7 @@ describe('Utils', () => {
       })
 
       it('correctly identifies an array instance as an array', () => {
-        var result = Utils.isArray(new Array())
+        var result = Utils.isArray([])
         expect(result).toBe(true)
       })
     })
@@ -70,7 +70,7 @@ describe('Utils', () => {
     })
 
     it('correctly identifies a function decleration as a function', () => {
-      var result = Utils.isFunction(()=>{})
+      var result = Utils.isFunction(() => {})
       expect(result).toBe(true)
     })
 
@@ -100,7 +100,7 @@ describe('Utils', () => {
     })
 
     it('identifies a function as an Object type', () => {
-      expect(Utils.isObject(()=>{})).toBe(true)
+      expect(Utils.isObject(() => {})).toBe(true)
     })
 
     it('identifies a regex as an Object type', () => {
@@ -111,14 +111,16 @@ describe('Utils', () => {
       expect(Utils.isObject(1)).not.toBe(true)
       expect(Utils.isObject('something')).not.toBe(true)
       expect(Utils.isObject(false)).not.toBe(true)
-      expect(Utils.isObject(void 0)).not.toBe(true)
+      expect(Utils.isObject(undefined)).not.toBe(true)
       expect(Utils.isObject(null)).not.toBe(true)
     })
 
     it('identifies instances as Object types', () => {
+      /* eslint-disable no-new-wrappers */
       expect(Utils.isObject(new Number(0))).toBe(true)
       expect(Utils.isObject(new String(''))).toBe(true)
       expect(Utils.isObject(new Boolean(''))).toBe(true)
+      /* eslint-enable no-new-wrappers */
     })
   })
 
@@ -169,8 +171,7 @@ describe('Utils', () => {
     it('does not extend inherited properties', () => {
       var F = function() {}
       F.prototype = { a: 1 }
-      var obj = new F()
-      expect(Utils.extend({ a: 10 }).a).toEqual(10)
+      expect(Utils.extend({ a: 10 }, F).a).toEqual(10)
     })
   })
 
@@ -182,7 +183,7 @@ describe('Utils', () => {
     })
 
     it('clones object literals', () => {
-      var obj = { a: 1, b: 2, c: 3  }
+      var obj = { a: 1, b: 2, c: 3 }
       var result = Utils.clone(obj)
       expect(result).toEqual(obj)
     })
@@ -203,7 +204,7 @@ describe('Utils', () => {
 
     it('does not clone non objects', () => {
       expect(Utils.clone(1)).toBe(1)
-      expect(Utils.clone(undefined)).toBe(void 0)
+      expect(Utils.clone(undefined)).toBe(undefined)
       expect(Utils.clone('some string')).toBe('some string')
       expect(Utils.clone(null)).toBe(null)
       expect(Utils.clone(true)).toBe(true)
@@ -259,9 +260,9 @@ describe('Utils', () => {
         })
 
         expect(spy.calls.count()).toBe(2)
-        expect(spy).toHaveBeenCalledWith(1);
-        expect(spy).toHaveBeenCalledWith(2);
-        expect(spy).not.toHaveBeenCalledWith(3);
+        expect(spy).toHaveBeenCalledWith(1)
+        expect(spy).toHaveBeenCalledWith(2)
+        expect(spy).not.toHaveBeenCalledWith(3)
       })
     })
 
@@ -290,13 +291,30 @@ describe('Utils', () => {
       it('does not iterate over the inherited properites', () => {
         expect(values).not.toContain(3)
       })
+
+      it('breaks out of iteration when `false` is returned', () => {
+        var spy = jasmine.createSpy('eachSpy')
+
+        Utils.each(obj, (val, i) => {
+          spy(val)
+          if (val === 1) {
+            return false
+          }
+        })
+
+        expect(spy.calls.count()).toBe(1)
+        expect(spy).toHaveBeenCalledWith(1)
+        expect(spy).not.toHaveBeenCalledWith(4)
+      })
     })
 
     it('is resiliant to collection property changes during iteration', () => {
       var changingObj = { 0: 0, 1: 1 }
       var count = 0
       Utils.each(changingObj, (v, k, collection) => {
-        if (count < 10) changingObj[++count] = v + 1
+        if (count < 10) {
+          changingObj[++count] = v + 1
+        }
       })
       expect(count).toBe(2)
       expect(changingObj).toEqual({ 0: 0, 1: 1, 2: 2 })
@@ -306,7 +324,9 @@ describe('Utils', () => {
       var result = []
       var count = 0
       Utils.each(once, (v, i) => {
-       if (count < 10) result.push(++count)
+        if (count < 10) {
+          result.push(++count)
+        }
       })
       expect(count).toBe(1)
       expect(result).toEqual([1])
@@ -315,14 +335,16 @@ describe('Utils', () => {
     it('exits iteration when false is explicitly returned', () => {
       var result = 0
       Utils.each([1, 2], (v, i) => {
-        if (i > 0) return false
+        if (i > 0) {
+          return false
+        }
         result += v
       })
       expect(result).toBe(1)
     })
 
     it('returns the collection', () => {
-      expect(Utils.each(once, ()=>{})).toBe(once)
+      expect(Utils.each(once, () => {})).toBe(once)
     })
   })
 

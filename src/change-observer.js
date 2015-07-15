@@ -61,7 +61,7 @@ class ChangeObserver {
    * @return {function} unwatch function
    */
   onChange(getter, handler) {
-    // TODO make observers a map of <Getter> => { handlers }
+    // TODO: make observers a map of <Getter> => { handlers }
     var entry = {
       getter: getter,
       handler: handler,
@@ -69,8 +69,8 @@ class ChangeObserver {
     this.__observers.push(entry)
     // return unwatch function
     return () => {
-      // TODO untrack from change emitter
-      var ind  = this.__observers.indexOf(entry)
+      // TODO: untrack from change emitter
+      var ind = this.__observers.indexOf(entry)
       if (ind > -1) {
         this.__observers.splice(ind, 1)
       }

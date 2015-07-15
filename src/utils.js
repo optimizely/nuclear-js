@@ -4,7 +4,7 @@
  * @return {boolean}
  */
 exports.isString = function(val) {
-  return typeof val == 'string' || objectToString(val) === '[object String]'
+  return typeof val === 'string' || objectToString(val) === '[object String]'
 }
 
 /**
@@ -18,14 +18,14 @@ exports.isArray = Array.isArray /* istanbul ignore next */|| function(val) {
 
 // taken from underscore source to account for browser descrepency
 /* istanbul ignore if  */
-if (typeof /./ != 'function' && typeof Int8Array != 'object') {
+if (typeof /./ !== 'function' && typeof Int8Array !== 'object') {
   /**
    * Checks if the passed in value is a function
    * @param {*} val
    * @return {boolean}
    */
   exports.isFunction = function(obj) {
-    return typeof obj == 'function' || false
+    return typeof obj === 'function' || false
   }
 } else {
   /**
@@ -57,7 +57,9 @@ exports.isObject = function(obj) {
 exports.extend = function(obj) {
   var length = arguments.length
 
-  if (!obj || length < 2) return obj || {}
+  if (!obj || length < 2) {
+    return obj || {}
+  }
 
   for (var index = 1; index < length; index++) {
     var source = arguments[index]
@@ -79,7 +81,9 @@ exports.extend = function(obj) {
  * @return {object}
  */
 exports.clone = function(obj) {
-  if (!exports.isObject(obj)) return obj
+  if (!exports.isObject(obj)) {
+    return obj
+  }
   return exports.isArray(obj) ? obj.slice() : exports.extend({}, obj)
 }
 
@@ -96,24 +100,29 @@ exports.clone = function(obj) {
 exports.each = function(collection, iteratee, context) {
   var length = collection ? collection.length : 0
   var i = -1
-  var keys, origIteratee
+  var keys
+  var origIteratee
 
   if (context) {
     origIteratee = iteratee
-    iteratee = function(value, index, collection) {
-      return origIteratee.call(context, value, index, collection)
+    iteratee = function(value, index, innerCollection) {
+      return origIteratee.call(context, value, index, innerCollection)
     }
   }
 
   if (isLength(length)) {
     while (++i < length) {
-      if (iteratee(collection[i], i, collection) === false) break
+      if (iteratee(collection[i], i, collection) === false) {
+        break
+      }
     }
   } else {
     keys = Object.keys(collection)
     length = keys.length
     while (++i < length) {
-      if (iteratee(collection[keys[i]], keys[i], collection) === false) break
+      if (iteratee(collection[keys[i]], keys[i], collection) === false) {
+        break
+      }
     }
   }
 
@@ -144,7 +153,7 @@ exports.partial = function(func) {
  * @return {string}
  */
 function objectToString(obj) {
-  return obj && typeof obj == 'object' && toString.call(obj)
+  return obj && typeof obj === 'object' && toString.call(obj)
 }
 
 /**
@@ -154,8 +163,8 @@ function objectToString(obj) {
  * @return {bool}
  */
 function isLength(val) {
-  return typeof val == 'number'
+  return typeof val === 'number'
     && val > -1
-    && val % 1 == 0
+    && val % 1 === 0
     && val <= Number.MAX_VALUE
 }

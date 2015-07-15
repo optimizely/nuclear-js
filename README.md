@@ -8,6 +8,8 @@
 
 Traditional Flux architecture built with ImmutableJS data structures.
 
+[Why you should use NuclearJS](http://optimizely.github.io/nuclear-js/).
+
 ## How NuclearJS differs from other Flux implementations
 
 1.  All app state is in a singular immutable map, think Om.  In development you can see your entire application state at every point in time thanks to awesome debugging tools built into NuclearJS.
@@ -18,7 +20,7 @@ Traditional Flux architecture built with ImmutableJS data structures.
 
 4.  NuclearJS is insanely efficient - change detection granularity is infinitesimal, you can even observe computed state where several pieces of the state map are combined together and run through a transform function.  Nuclear is smart enough to know when the value of any computed changes and only call its observer if and only if its value changed in a way that is orders of magnitude more efficient than traditional dirty checking.  It does this by leveraging ImmutableJS data structure and using a `state1 !== state2` reference comparison which runs in constant time.
 
-5.  Automatic data observation / rendering -- automatic re-rendering is built in for React in the form a very lightweight mixin.  It is also easily possible to build the same functionality for any UI framework such as VueJS, AngularJS and even Backbone.
+5.  Automatic data observation / rendering -- automatic re-rendering is built in for React in the form of a very lightweight mixin.  It is also easily possible to build the same functionality for any UI framework such as VueJS, AngularJS and even Backbone.
 
 6.  NuclearJS is not a side-project, it's used as the default Flux implementation that powers all of Optimizely.  It is well tested and will continue to be maintained for the foreseeable future. Our current codebase has over dozens of stores, actions and getters, we even share our prescribed method of large scale code organization and testing strategies.
 
@@ -42,10 +44,372 @@ NuclearJS can be downloaded from npm.
 npm install nuclear-js
 ```
 
-## Examples
+## Let's see some examples
 
-- **[Flux Chat Example](./examples/flux-chat)** - classic facebook flux chat example written in NuclearJS
-- **[Rest API Example](./examples/rest-api)** - shows how to deal with fetching data from an API using NuclearJS conventions
+Let's see what the original [Flux Chat Example](https://github.com/facebook/flux/tree/master/examples/flux-chat) looks like in NuclearJS.
+
+All of the above code lives in [examples/flux-chat](./examples/flux-chat)
+
+##### `flux.js`
+
+```js
+// create the Nuclear reactor instance, this will act as our dispatcher and interface for data fetching
+var Nuclear = require('nuclear-js')
+
+module.exports = new Nuclear.Reactor({
+  debug: true,
+})
+```
+
+### Modules
+
+The prescribed way of code organization in NuclearJS is to group all stores, actions and getters of the same domain in a module.
+
+##### Example Module File Structure
+
+For the flux-chat example we will create a chat module that holds all of the domain logic for the chat aspect.  For smaller projects there may only need to be one module, but for larger projects using many modules can decouple your codebase and make it much easier to manage.
+
+```js
+modules/chat
+├── stores/
+    └── thread-store.js
+    └── current-thread-id-store.js
+├── actions.js // exports functions that call flux.dispatch
+├── action-types.js // constants for the flux action types
+├── getters.js // getters exposed by the module providing read access to module's stores
+├── index.js // MAIN ENTRY POINT - facade that exposes a public api for the module
+└── tests.js // module unit tests that test the modules stores, getters, and actions
+```
+
+##### `modules/chat/index.js`
+
+```js
+var flux = require('../../flux')
+
+flux.registerStores({
+  currentThreadID: require('./stores/current-thread-id-store'),
+  threads: require('./stores/thread-store'),
+})
+
+module.exports = {
+  actions: require('./actions'),
+
+  getters: require('./getters'),
+}
+```
+
+- Modules expose a single public API, the `index.js` file.  It is improper for an outside piece of code to require any file within the module except the `index.js` file.
+
+- Stores are registered lazily through the module's index.js.  This may seem weird at first, but in NuclearJS stores are more of an implementation detail and not ever directly referenceable.
+
+- Data access to the module's store values is done entirely through the getters it exposes.  This provides a decoupling between the store implementation and how the outside world references the state that a module manages.  A getter is a contract between the outside world and the module that a particular piece of information is accessible.  The evaluator of a getter does not care about the underlying store representation.
+
+### Stores
+
+##### `modules/chat/stores/thread-store.js`
+
+```js
+var Nuclear = require('nuclear-js')
+var toImmutable = Nuclear.toImmutable
+var actionTypes = require('../action-types')
+
+module.exports = new Nuclear.Store({
+  getInitialState() {
+    // for Nuclear to be so efficient all state must be immutable data
+    // mapping of threadID => Thread
+    return toImmutable({})
+  },
+
+  initialize() {
+    // all action handlers are pure functions that take the current state and payload
+    this.on(actionTypes.ADD_MESSAGE, addMessage)
+    this.on(actionTypes.CLICK_THREAD, setMessagesRead)
+  }
+})
+
+/**
+ * @type Message
+ * id {GUID}
+ * threadID {GUID}
+ * threadName {GUID}
+ * authorName {String}
+ * text {String}
+ * isRead {Boolean}
+ * timestamp {Timestamp}
+ */
+
+/**
+ * @param {Immutable.Map}
+ * @param {Object} payload
+ * @param {Message} payload.message
+ */
+function addMessage(state, { message }) {
+  var msg = toImmutable(message)
+  var threadID = msg.get('threadID')
+
+  return state.withMutations(threads => {
+    // use standard ImmutableJS methods to transform state when handling an action
+    if (!threads.has(threadID)) {
+      threads.set(threadID, toImmutable({
+        threadID: threadID,
+        threadName: msg.get('threadName'),
+        messages: toImmutable([]),
+      }))
+    }
+
+    // push new message into thread and sort by message timestamp
+    threads.update(threadID, thread => {
+      var sortedMessages = thread.get('messages')
+        .push(msg)
+        .sortBy(msg => msg.get('timestamp'))
+
+      return thread.set('messages', sortedMessages)
+    })
+  })
+}
+
+/**
+ * Mark all messages for a thread as "read"
+ * @param {Immutable.Map}
+ * @param {Object} payload
+ * @param {GUID} payload.threadID
+ */
+function setMessagesRead(state, { threadID }) {
+  return state.updateIn([threadID, 'messages'], messages => {
+    return messages.map(msg => msg.set('isRead', true))
+  })
+}
+```
+
+##### `modules/message/stores/current-thread-id-store.js`
+
+```js
+var Nuclear = require('nuclear-js')
+var toImmutable = Nuclear.toImmutable
+var actionTypes = require('../action-types')
+
+module.exports = new Nuclear.Store({
+  getInitialState() {
+    // only keeps track of the current threadID
+    return null
+  },
+
+  initialize() {
+    // all action handlers are pure functions that take the current state and payload
+    this.on(actionTypes.CLICK_THREAD, setCurrentThreadID)
+  }
+})
+
+function setCurrentThreadID(state, { threadID }) {
+  // return the new value of the store's state
+  return threadID
+}
+```
+
+At this point defined how our application manages state over time by creating and registering the thread store and currentThreadID store. When defining stores there is no need to worry about computable state like the most recent message in each thread, this is all handled through getters.
+
+### Getters
+
+Getters can take 2 forms:
+
+  1. A KeyPath such as `['messages']` which equates to a `state.getIn(['messages'])` on the app state `Immutable.Map`.
+  2. An array with the form `[  [keypath | getter], [keypath | getter], ..., tranformFunction]`
+
+##### `modules/chat/getters.js`
+
+```js
+// it is idiomatic to facade all data access through getters, that way a component only has to subscribe to a getter making it agnostic
+// to the underlying stores / data transformation that is taking place
+exports.threadsMap = ['threads']
+
+exports.threads = [
+  exports.threadsMap,
+  threadsMap => threadsMap.toList()
+]
+
+exports.currentThread = [
+  ['currentThreadID'],
+  exports.threadsMap,
+  (currentThreadID, threadsMap) => threadsMap.get(currentThreadID)
+]
+
+exports.latestThread = [
+  exports.threads,
+  threads => {
+    return threads
+      .sortBy(thread => {
+        thread.get('messages').last().get('timestamp')
+      })
+      .last()
+  }
+]
+
+exports.currentThreadID = [
+  exports.currentThread,
+  thread => thread ? thread.get('threadID') : null
+]
+
+exports.unreadCount = [
+  exports.threads,
+  threads => {
+    return threads.reduce((accum, thread) => {
+      if (!thread.get('messages').last().get('isRead')) {
+        accum++
+      }
+      return accum
+    }, 0)
+  }
+]
+```
+
+Since stores are registered on the Nuclear Reactor by the module's index file, then a module is the only part of the system that knows the store ids. If this information needs to be made public, the module will export a getter of the form `[<storeId>]`.
+
+### Actions
+
+##### `module/chat/actions.js`
+
+```js
+var flux = require('../../flux')
+var actionTypes = require('./action-types')
+var getters = require('./getters')
+
+/**
+ * Handles the receiving of messages into the flux system
+ * @param {Message[]} messages
+ */
+exports.receiveAll = function(messages) {
+  messages.forEach(message => {
+    flux.dispatch(actionTypes.ADD_MESSAGE, { message })
+  })
+}
+
+/**
+ * Creates a message
+ * @param {String} text
+ * @param {GUID} threadName
+ */
+exports.createMessage = function(text, threadID) {
+  var timestamp = Date.now()
+  var id = 'm_' + timestamp
+  var threadName = flux.evaluate([
+    getters.threadsMap,
+    threadsMap => threadsMap.getIn([threadID, 'threadName'])
+  ])
+  var authorName = 'Jordan'
+
+  flux.dispatch(actionTypes.ADD_MESSAGE, {
+    message: { id, threadID, threadName, authorName, timestamp, text }
+  })
+}
+
+exports.clickThread = function(threadID) {
+  flux.dispatch(actionTypes.CLICK_THREAD, { threadID })
+}
+```
+
+### Hooking it up to a component
+
+###### `components/ThreadSection.react.js`
+
+```js
+var React = require('react');
+var flux = require('../flux');
+var Chat = require('../modules/chat');
+
+var ThreadListItem = require('./ThreadListItem.react');
+
+var ThreadSection = React.createClass({
+  mixins: [flux.ReactMixin],
+
+  getDataBindings() {
+    return {
+      threads: Chat.getters.threads,
+      unreadCount: Chat.getters.unreadCount,
+      currentThreadID: Chat.getters.currentThreadID,
+    }
+  },
+
+  render: function() {
+    var threadListItems = this.state.threads.map(thread => {
+      return (
+        <ThreadListItem
+          key={thread.get('threadID')}
+          thread={thread}
+          currentThreadID={this.state.currentThreadID}
+        />
+      );
+    }, this);
+    var unread =
+      this.state.unreadCount === 0 ?
+      null :
+      <span>Unread threads: {this.state.unreadCount}</span>;
+    return (
+      <div className="thread-section">
+        <div className="thread-count">
+          {unread}
+        </div>
+        <ul className="thread-list">
+          {threadListItems}
+        </ul>
+      </div>
+    );
+  },
+});
+
+module.exports = ThreadSection;
+```
+
+`flux.ReactMixin` handles all of the pub/sub between the flux system and component and will only render the component via a `setState` call whenever any of the subscribed getters' value changes.  The mixin will also automatically unsubscribe from observation when the component is unmounted.
+
+##### `ThreadListItem.react.js`
+
+```js
+var React = require('react');
+var Chat = require('../modules/chat');
+var cx = require('react/lib/cx');
+
+var ReactPropTypes = React.PropTypes;
+
+var ThreadListItem = React.createClass({
+
+  propTypes: {
+    thread: ReactPropTypes.object,
+    currentThreadID: ReactPropTypes.string
+  },
+
+  render: function() {
+    var thread = this.props.thread;
+    var lastMessage = thread.get('messages').last();
+    var dateString = (new Date(lastMessage.get('timestamp'))).toLocaleTimeString()
+    return (
+      <li
+        className={cx({
+          'thread-list-item': true,
+          'active': thread.get('threadID') === this.props.currentThreadID
+        })}
+        onClick={this._onClick}>
+        <h5 className="thread-name">{thread.get('threadName')}</h5>
+        <div className="thread-time">
+          {dateString}
+        </div>
+        <div className="thread-last-message">
+          {lastMessage.get('text')}
+        </div>
+      </li>
+    );
+  },
+
+  _onClick: function() {
+    var threadID = this.props.thread.get('threadID')
+    if (this.props.currentThreadID !== threadID) {
+      Chat.actions.clickThread(threadID);
+    }
+  }
+
+});
+
+module.exports = ThreadListItem;
+```
 
 ## Core Concepts
 
@@ -75,7 +439,7 @@ live in our app state because those are all examples of **computable state**, an
 
 #### Reactor
 
-In Nuclear a Reactor is the container that holds your app state, it's where you register stores, dispatch actions and read the current state of your system.  Reactor's are the only stateful part of Nuclear and have only 3 API methods you REALLY need to know: `dispatch`, `get`, and `observe`. Don't worry extensive API docs will be provided for all of these methods.
+In Nuclear a Reactor is the container that holds your app state, it's where you register stores, dispatch actions and read the current state of your system.  Reactor's are the only stateful part of Nuclear and have only 3 API methods you REALLY need to know: `dispatch`, `get`, and `observe`. Don't worry, extensive API docs will be provided for all of these methods.
 
 #### Stores
 
@@ -83,7 +447,7 @@ Stores define how a portion of the application state will behave over time, they
 
 #### KeyPaths
 
-KeyPaths are a pointer to some piece of your application state.  They can be represented as a `Array<String>`
+KeyPaths are a pointer to some piece of your application state.  They can be represented as a `Array<String>`.
 
 `['foo', 'bar']` is an example of a valid keypath, analogous to `state['foo']['bar']` in JavaScript.
 
@@ -94,7 +458,7 @@ As described above, the state of a reactor is hidden away internally behind the 
 Getters can take 2 forms:
 
   1. A [KeyPath](#keypaths) as described above
-  2. An array with the form `[  [keypath | getter], [keypath | getter], ..., tranformFunction]`
+  2. An array with the form `[  [keypath | getter], [keypath | getter], ..., transformFunction]`
   Note - Often you'll pass the Getter to `reactor.evaluate` to get its value, but we'll touch on the reactor API later.
 
 If you've used [AngularJS](https://angularjs.org/), the 2nd form will seem familiar.  It's essentially a way of specifying
@@ -193,7 +557,7 @@ reactor.dispatch('addItem', {
   quantity: 2,
 })
 
-console.log(reactor.evaluate(['items'])) // List [ Map { name: 'Soap', price:5, quantity: 2 } ]
+console.log(reactor.evaluate(['items'])) // List [ Map { name: 'Soap', price: 5, quantity: 2 } ]
 ```
 
 ### Computing Subtotal, Tax and Total
@@ -233,12 +597,12 @@ reactor.dispatch('setTaxPercent', 10)
 
 console.log(reactor.evaluate(subtotalGetter)) // 11
 console.log(reactor.evaluate(taxGetter)) // 1
-console.log(reactor.evaluate(totalGetter)) // 11
+console.log(reactor.evaluate(totalGetter)) // 12
 ```
 
-### Lets do something more interesting...
+### Let's do something more interesting...
 
-Imagine we want to know any time the total is over 100.  Let's use `reactor.observe`
+Imagine we want to know any time the total is over 100.  Let's use `reactor.observe`.
 
 ```js
 var over100Getter = [
@@ -255,7 +619,7 @@ reactor.observe(over100Getter, function(isOver100) {
 })
 ```
 
-Actually that wasn't that interesting... lets make the threshold dynamic
+Actually that wasn't that interesting... let's make the threshold dynamic.
 
 ```js
 var budgetStore = Nuclear.Store({
@@ -286,7 +650,7 @@ reactor.observe(isOverBudget, function(isOver) {
   // this will be automatically re-evaluated only when the total or budget changes
   if (isOver) {
     var budget = reactor.evaluate(['budget'])
-    alert("Is over budget of " + budget)
+    alert('Is over budget of ' + budget)
   }
 })
 ```
@@ -295,7 +659,7 @@ reactor.observe(isOverBudget, function(isOver) {
 
 ### Hooking up a UI: React
 
-Syncing reactor stores and React component state is effortless using `reactor.ReactMixin`
+Syncing reactor stores and React component state is effortless using `reactor.ReactMixin`.
 
 ```js
 var React = require('react')
@@ -303,13 +667,13 @@ var React = require('react')
 var ShoppingCart = React.createClass({
   mixins: [reactor.ReactMixin],
 
-  // simply implement this function to keep a components state
+  // simply implement this function to keep a component's state
   // in sync with a Nuclear Reactor
   getDataBindings() {
     return {
       // can reference a reactor KeyPath
-      items: 'items',
-      taxPercent: 'taxPercent',
+      items: ['items'],
+      taxPercent: ['taxPercent'],
       // or reference a Getter
       subtotal: getSubtotal,
       tax: getTax,
@@ -375,8 +739,8 @@ var ShoppingCart = new Vue({
   getDataBindings: function() {
     return {
       // can reference a reactor KeyPath
-      items: 'items',
-      taxPercent: 'taxPercent',
+      items: ['items'],
+      taxPercent: ['taxPercent'],
       // or reference a Getter
       subtotal: getSubtotal,
       tax: getTax,
@@ -419,7 +783,7 @@ In `shopping-cart.html`
 
 ## Performance
 
-Getters are only calculated whenever their dependencies change. So if the dependency is a keypath then it will only recalculate when that path in the app state map has changed (which can be done as a simple `state.getIn(keyPath) !== oldState.getIn(keyPath)` which is an `O(log32(n))` operation. The other case is when a getter is dependent on other getters. Since every getter is a pure function, Nuclear will only recompute the getter if the values of its dependencies change.
+Getters are only calculated whenever their dependencies change. So if the dependency is a keypath then it will only recalculate when that path in the app state map has changed (which can be done as a simple `state.getIn(keyPath) !== oldState.getIn(keyPath)` which is an `O(log32(n))` operation. The other case is when a getter is dependent on other getters. Since every getter is a pure function, Nuclear will only recompute the getter if the values if its dependencies change.
 
 You can read more of the implementation here: [src/evaluator.js](./src/evaluator.js)
 
@@ -427,11 +791,38 @@ You can read more of the implementation here: [src/evaluator.js](./src/evaluator
 
 ### Reactor
 
+#### Constructor
+
+#### `Nuclear.Reactor`
+
+```js
+var reactor = new Nuclear.Reactor(config)
+// or
+var reactor = Nuclear.Reactor(config)
+```
+
+**Configuration Options**
+
+`config.debug` Boolean - if true it will log the entire app state for every dispatch.
+
 #### `Reactor#dispatch(messageType, messagePayload)`
 
 Dispatches a message to all registered Stores. This process is done synchronously, all registered `Store`s are passed this message and all components are re-evaluated (efficiently).  After a dispatch, a Reactor will emit the new state on the `reactor.changeEmitter`
 
 ex: `reactor.dispatch('addUser', { name: 'jordan' })`
+
+#### `Reactor#batch(fn)`
+
+Allows multiple dispatches within the `fn` function before notifying any observers.
+
+```js
+reactor.batch(function() {
+  reactor.dispatch('addUser', { name: 'jordan' })
+  reactor.dispatch('addUser', { name: 'james' })
+})
+
+// does a single notify to all observers
+```
 
 #### `Reactor#evaluate(Getter | KeyPath)`
 
@@ -457,7 +848,7 @@ reactor.evaluate([
 
 #### `Reactor#evaluateToJS(...keyPath, [transformFn])`
 
-Same as `evaluate` but coerces the value to a plain JS before returning
+Same as `evaluate` but coerces the value to a plain JS before returning.
 
 #### `Reactor#observe(keyPathOrGetter, handlerFn)`
 
@@ -472,6 +863,27 @@ reactor.observe([
     console.log('items changed');
   }
 ])
+```
+
+#### `Reactor#serialize()`
+
+Returns a plain javascript object representing the application state.  By defualt this maps over all stores and returns `toJS(storeState)`.
+
+```js
+reactor.loadState(reactor.serialize())
+```
+
+#### `Reactor#loadState( state )`
+
+Takes a plain javascript object and merges into the reactor state, using `store.deserialize`
+
+This can be useful if you need to load data already on the page.
+
+```js
+reactor.loadState({
+  stringStore: 'bar',
+  listStore: [4,5,6],
+})
 ```
 
 #### `Reactor#registerStores(stores)`
@@ -526,26 +938,16 @@ var ThreadSection = React.createClass({
         </div>
         <ul className="thread-list">
           {threadListItems}
-          </ul>
+        </ul>
       </div>
     );
   },
 });
 ```
 
-### Constructors
+### Store
 
-#### `Nuclear.Reactor`
-
-```js
-var reactor = new Nuclear.Reactor(config)
-```
-
-**Configuration Options**
-
-`config.debug` Boolean - if true it will log the entire app state for every dispatch.
-
-#### `Nuclear.Store`
+#### Constructor
 
 ```js
 module.exports = new Nuclear.Store({
@@ -563,6 +965,49 @@ module.exports = new Nuclear.Store({
 })
 ```
 
+#### `Store#getInitialState`
+
+Defines the starting state for a store.  Must return an immutable value.  By default it returns an `Immutable.Map`
+
+#### `Store#initialize`
+
+Responsible for setting up action handlers for the store using `this.on(actionTypes, handlerFn)`
+
+#### `Store#serialize`
+
+Serialization method for the store's data, by default its implemented as `Nuclear.toJS' which converts ImmutableJS objects to plain javascript.
+This is overridable for your specific data needs.
+
+```js
+// serializing an Immutable map while preserving numerical keys
+Nuclear.Store({
+  // ...
+  serialize(state) {
+    if (!state) {
+      return state;
+    }
+    return state.entrySeq().toJS()
+  },
+  // ...
+})
+```
+
+#### `Store#deserialize`
+
+Serialization method for the store's data, by default its implemented as `Nuclear.toImmutable' which converts plain javascript objects to ImmutableJS data structures.
+This is overridable for your specific data needs.
+
+```js
+// deserializing an array of arrays [[1, 'one'], [2, 'two']] to an Immutable.Map
+Nuclear.Store({
+  // ...
+  deserialize(state) {
+    return Immutable.Map(state)
+  },
+  // ...
+})
+```
+
 ### Utilities
 
 NuclearJS comes with several utility functions that are exposed on the `Nuclear` variable.
@@ -573,7 +1018,7 @@ Provides access to the ImmutableJS `Immutable` object.
 
 #### `Nuclear.toImmutable(value)`
 
-Coerces a value to its immutable counterpart, can be called on any type safely.  It will convert Objects to `Immutable.Map` and Arrays to `Immutable.List`
+Coerces a value to its immutable counterpart, can be called on any type safely.  It will convert Objects to `Immutable.Map` and Arrays to `Immutable.List`.
 
 #### `Nuclear.toJS(value)`
 
@@ -585,8 +1030,8 @@ Returns true if the value is an ImmutableJS data structure.
 
 #### `Nuclear.isKeyPath(value)` : Boolean
 
-Returns true if the value is the format of a valid keyPath
+Returns true if the value is the format of a valid keyPath.
 
 #### `Nuclear.isGetter(value)` : Boolean
 
-Returns true if the value is the format of a valid getter
+Returns true if the value is the format of a valid getter.

@@ -1,5 +1,7 @@
 var Map = require('immutable').Map
 var extend = require('./utils').extend
+var toJS = require('./immutable-helpers').toJS
+var toImmutable = require('./immutable-helpers').toImmutable
 
 /**
  * Stores define how a certain domain of the application should respond to actions
@@ -69,6 +71,26 @@ class Store {
    */
   on(actionType, handler) {
     this.__handlers = this.__handlers.set(actionType, handler)
+  }
+
+  /**
+   * Serializes store state to plain JSON serializable javascript
+   * Overridable
+   * @param {*}
+   * @return {*}
+   */
+  serialize(state) {
+    return toJS(state)
+  }
+
+  /**
+   * Deserializes plain javascript to store state
+   * Overridable
+   * @param {*}
+   * @return {*}
+   */
+  deserialize(state) {
+    return toImmutable(state)
   }
 }
 
