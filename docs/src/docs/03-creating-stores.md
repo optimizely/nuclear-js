@@ -21,7 +21,7 @@ then returns new state. Handlers have the following signature:
 handler(currentState: any, payload: any)
 ```
 
-In Nucler, state can only be an ImmutableJS data type, such as an `Immutable.Map` or an `Immutable.List`, or a JavaScript primitive.
+In Nuclear, state can only be an ImmutableJS data type, such as an `Immutable.Map` or an `Immutable.List`, or a JavaScript primitive.
 
 Because stores in Nuclear don't hold state — they simply receive state, transform it, and return new state — there is no need to worry about stores knowing
 about other stores. That means no confusing `store.waitsFor` and no cross-pollution of data.  In Nuclear, the sole responsibility of a store is to return a portion
