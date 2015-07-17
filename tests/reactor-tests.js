@@ -4,6 +4,7 @@ var List = require('immutable').List
 var Reactor = require('../src/main').Reactor
 var Store = require('../src/main').Store
 var toImmutable = require('../src/immutable-helpers').toImmutable
+var logging = require('../src/logging')
 
 
 describe('Reactor', () => {
@@ -448,6 +449,40 @@ describe('Reactor', () => {
       expect(function() {
         reactor.dispatch('set', 'foo')
       }).toThrow()
+    })
+  })
+
+  describe('when debug is true and a store has a handler for an action but throws', () => {
+    var reactor
+
+    beforeEach(() => {
+      spyOn(logging, 'dispatchError')
+      var throwingStore = new Store({
+        getInitialState() {
+          return 1
+        },
+        initialize() {
+          this.on('set', (_, val) => {throw new Error('Error during action handling')})
+        },
+      })
+
+      reactor = new Reactor({
+        debug: true,
+      })
+      reactor.registerStores({
+        test: throwingStore,
+      })
+    })
+
+    afterEach(() => {
+      reactor.reset()
+    })
+
+    it('should log and throw an error', function() {
+      expect(function() {
+        reactor.dispatch('set', 'foo')
+      }).toThrow()
+      expect(logging.dispatchError).toHaveBeenCalled()
     })
   })
 
