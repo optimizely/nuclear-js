@@ -27,7 +27,9 @@
     "stateless"
   ],
   "dependencies": {
-    "immutable": "^3.7.3"
+    "hoist-non-react-statics": "^1.0.2",
+    "immutable": "^3.7.3",
+    "object-assign": "*"
   },
   "devDependencies": {
     "grunt": "^0.4.5",

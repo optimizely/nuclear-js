@@ -4,7 +4,6 @@ var ChangeObserver = require('./change-observer')
 var Getter = require('./getter')
 var KeyPath = require('./key-path')
 var Evaluator = require('./evaluator')
-var createReactMixin = require('./create-react-mixin')
 
 // helper fns
 var toJS = require('./immutable-helpers').toJS
@@ -30,8 +29,6 @@ class Reactor {
     config = config || {}
 
     this.debug = !!config.debug
-
-    this.ReactMixin = createReactMixin(this)
     /**
      * The state for the whole cluster
      */

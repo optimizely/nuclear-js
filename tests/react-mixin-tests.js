@@ -1,6 +1,8 @@
 var React = require('react')
 var Nuclear = require('../src/main')
 var toImmutable = require('../src/main').toImmutable
+var NuclearReactMixin = require('../src/addons/react-mixin')
+var provideReactor = require('../src/addons/provide-reactor')
 
 var testStore = new Nuclear.Store({
   getInitialState() {
@@ -26,7 +28,7 @@ var testStore = new Nuclear.Store({
   },
 })
 
-describe('reactor.ReactMixin', () => {
+describe('Addons', () => {
   var mountNode
   var reactor
   var countGetter = ['test', 'count']
@@ -48,14 +50,13 @@ describe('reactor.ReactMixin', () => {
   })
 
 
-  describe('when rendering a component with the flux.ReactMixin', () => {
+  describe('when rendering a component with the NuclearReactMixin', () => {
     var component
     beforeEach(() => {
       mountNode = document.createElement('div')
       document.body.appendChild(mountNode)
-      // var componentWillMountSpy = jasmine.createSpy()
       var Component = React.createClass({
-        mixins: [reactor.ReactMixin],
+        mixins: [NuclearReactMixin],
 
         getDataBindings() {
           return {
@@ -67,11 +68,13 @@ describe('reactor.ReactMixin', () => {
         },
 
         render() {
-          return React.DOM.div(null, '')
+          return React.DOM.div(null, JSON.stringify(this.state))
         },
       })
 
-      component = React.render(React.createElement(Component, null), mountNode)
+      Component = provideReactor(Component)
+
+      component = React.render(React.createElement(Component, {reactor: reactor}), mountNode)
     })
 
     afterEach(() => {
@@ -80,29 +83,33 @@ describe('reactor.ReactMixin', () => {
     })
 
     it('should set the component initialState from `getDataBindings()`', () => {
-      expect(component.state.count).toBe(0)
-      expect(component.state.multiplied).toBe(0)
-      expect(component.state.key1).toBe('value1')
-      expect(component.state.key2).toBe(undefined)
+      var state = JSON.parse(component.getDOMNode().innerHTML)
+      expect(state.count).toBe(0)
+      expect(state.multiplied).toBe(0)
+      expect(state.key1).toBe('value1')
+      expect(state.key2).toBe(undefined)
     })
 
     it('should update the state automatically when the underyling getters change', () => {
       reactor.dispatch('increment')
 
-      expect(component.state.count).toBe(1)
-      expect(component.state.multiplied).toBe(2)
-      expect(component.state.key1).toBe('value1')
-      expect(component.state.key2).toBe(undefined)
+      var state = JSON.parse(component.getDOMNode().innerHTML)
+      expect(state.count).toBe(1)
+      expect(state.multiplied).toBe(2)
+      expect(state.key1).toBe('value1')
+      expect(state.key2).toBe(undefined)
 
       reactor.dispatch('set', {
         key: 'key2',
         value: 'value2',
       })
 
-      expect(component.state.count).toBe(1)
-      expect(component.state.multiplied).toBe(2)
-      expect(component.state.key1).toBe('value1')
-      expect(component.state.key2).toBe('value2')
+      state = JSON.parse(component.getDOMNode().innerHTML)
+
+      expect(state.count).toBe(1)
+      expect(state.multiplied).toBe(2)
+      expect(state.key1).toBe('value1')
+      expect(state.key2).toBe('value2')
     })
   })
 
@@ -111,9 +118,8 @@ describe('reactor.ReactMixin', () => {
     beforeEach(() => {
       mountNode = document.createElement('div')
       document.body.appendChild(mountNode)
-      // var componentWillMountSpy = jasmine.createSpy()
       var Component = React.createClass({
-        mixins: [reactor.ReactMixin],
+        mixins: [NuclearReactMixin],
 
         getInitialState() {
           return {
@@ -131,11 +137,13 @@ describe('reactor.ReactMixin', () => {
         },
 
         render() {
-          return React.DOM.div(null, '')
+          return React.DOM.div(null, JSON.stringify(this.state))
         },
       })
 
-      component = React.render(React.createElement(Component, null), mountNode)
+      Component = provideReactor(Component)
+
+      component = React.render(React.createElement(Component, {reactor: reactor}), mountNode)
     })
 
     afterEach(() => {
@@ -144,11 +152,12 @@ describe('reactor.ReactMixin', () => {
     })
 
     it('should set the component initialState from `getDataBindings()` and getInitialState', () => {
-      expect(component.state.foo).toBe('bar')
-      expect(component.state.count).toBe(0)
-      expect(component.state.multiplied).toBe(0)
-      expect(component.state.key1).toBe('value1')
-      expect(component.state.key2).toBe(undefined)
+      var state = JSON.parse(component.getDOMNode().innerHTML)
+      expect(state.foo).toBe('bar')
+      expect(state.count).toBe(0)
+      expect(state.multiplied).toBe(0)
+      expect(state.key1).toBe('value1')
+      expect(state.key2).toBe(undefined)
     })
   })
 
@@ -156,9 +165,8 @@ describe('reactor.ReactMixin', () => {
     beforeEach(() => {
       mountNode = document.createElement('div')
       document.body.appendChild(mountNode)
-      // var componentWillMountSpy = jasmine.createSpy()
       var Component = React.createClass({
-        mixins: [reactor.ReactMixin],
+        mixins: [NuclearReactMixin],
 
         getInitialState() {
           return {
@@ -180,7 +188,9 @@ describe('reactor.ReactMixin', () => {
         },
       })
 
-      React.render(React.createElement(Component, null), mountNode)
+      Component = provideReactor(Component)
+
+      React.render(React.createElement(Component, {reactor: reactor}), mountNode)
     })
 
     afterEach(() => {
@@ -190,6 +200,57 @@ describe('reactor.ReactMixin', () => {
     it('should unobserve all getters', () => {
       React.unmountComponentAtNode(mountNode)
       expect(reactor.__changeObserver.__observers.length).toBe(0)
+    })
+  })
+
+  describe('provideReactor', () => {
+    it('should not throw if no getDataBindings', () => {
+      mountNode = document.createElement('div')
+      document.body.appendChild(mountNode)
+
+      var Component = React.createClass({
+        mixins: [NuclearReactMixin],
+
+        render() {
+          return React.DOM.div(null, '')
+        },
+      })
+
+      Component = provideReactor(Component)
+
+      React.render(React.createElement(Component, {
+        reactor: reactor,
+      }), mountNode)
+
+      document.body.removeChild(mountNode)
+    })
+
+    it('should allow passing additional context types', () => {
+      mountNode = document.createElement('div')
+      document.body.appendChild(mountNode)
+
+      var Component = React.createClass({
+        contextTypes: {
+          foo: React.PropTypes.string,
+        },
+
+        render() {
+          return React.DOM.div(null, this.context.foo)
+        },
+      })
+
+      Component = provideReactor(Component, {
+        foo: React.PropTypes.string,
+      })
+
+      var component = React.render(React.createElement(Component, {
+        reactor: reactor,
+        foo: 'bar',
+      }), mountNode)
+
+      expect(component.getDOMNode().innerHTML).toBe('bar')
+
+      document.body.removeChild(mountNode)
     })
   })
 })
