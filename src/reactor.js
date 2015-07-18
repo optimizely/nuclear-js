@@ -52,6 +52,9 @@ class Reactor {
     this.__batchDepth = 0
     // number of dispatches in the top most batch cycle
     this.__batchDispatchCount = 0
+
+    // keep track if we are currently dispatching
+    this.__isDispatching = false
   }
 
   /**
@@ -105,6 +108,14 @@ class Reactor {
    * @param {object|undefined} payload
    */
   dispatch(actionType, payload) {
+    if (this.__batchDepth === 0) {
+      if (this.__isDispatching) {
+        this.__isDispatching = false
+        throw new Error('Dispatch may not be called while a dispatch is in progress')
+      }
+      this.__isDispatching = true
+    }
+
     var prevState = this.state
     this.state = this.__handleAction(prevState, actionType, payload)
 
@@ -112,6 +123,7 @@ class Reactor {
       this.__batchDispatchCount++
     } else if (this.state !== prevState) {
       this.__notify()
+      this.__isDispatching = false
     }
   }
 
@@ -285,7 +297,10 @@ class Reactor {
 
     if (this.__batchDepth <= 0) {
       if (this.__batchDispatchCount > 0) {
+        // set to true to catch if dispatch called from observer
+        this.__isDispatching = true
         this.__notify()
+        this.__isDispatching = false
       }
       this.__batchDispatchCount = 0
     }
