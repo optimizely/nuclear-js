@@ -163,7 +163,7 @@ This ends our getting started example, for a more in depth look all of the above
 For additional documentation and resources checkout the following:
 
 - [API Documentation](./07-api.html)
-- [Flux Chat Example](https://github.com/optimizely/nuclear-js/tree/master/examples/flux-chat) - classic facebook flux chat example written in NuclearJS
-- [Rest API Example](https://github.com/optimizely/nuclear-js/tree/master/examples/rest-api) - shows how to deal with fetching data from an API using NuclearJS conventions
+- [Flux Chat Example](https://github.com/optimizely/nuclear-js/tree/master/examples/flux-chat) - A classic Facebook flux chat example written in NuclearJS.
+- [Rest API Example](https://github.com/optimizely/nuclear-js/tree/master/examples/rest-api) - Shows how to deal with fetching data from an API using NuclearJS conventions.
 
 More coming soon...

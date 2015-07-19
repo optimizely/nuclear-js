@@ -1,14 +1,14 @@
 # NuclearJS Docs
 
-Doc site statically generated using `React` + `NuclearJS`.
+Documentation site statically generated using `React` + `NuclearJS`.
 
-##### For development
+### For development
 
 ```sh
 grunt dev
 ```
 
-##### To deploy to gh-pages
+### To deploy to gh-pages
 
 ```sh
 grunt publish

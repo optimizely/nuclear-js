@@ -14,7 +14,7 @@ var each = require('./utils').each
 
 
 /**
- * In Nuclear Reactors are where state is stored.  Reactors
+ * State is stored in NuclearJS Reactors.  Reactors
  * contain a 'state' object which is an Immutable.Map
  *
  * The only way Reactors can change state is by reacting to

@@ -89,7 +89,7 @@ reactor.observe([
 
 _added in 1.1_
 
-Returns a plain javascript object representing the application state.  By defualt this maps over all stores and returns `toJS(storeState)`.
+Returns a plain JavaScript object representing the application state.  By default this maps over all stores and returns `toJS(storeState)`.
 
 ```javascript
 reactor.loadState(reactor.serialize())
@@ -99,7 +99,7 @@ reactor.loadState(reactor.serialize())
 
 _added in 1.1_
 
-Takes a plain javascript object and merges into the reactor state, using `store.deserialize`
+Takes a plain JavaScript object and merges into the reactor state, using `store.deserialize`
 
 This can be useful if you need to load data already on the page.
 
@@ -201,7 +201,7 @@ Responsible for setting up action handlers for the store using `this.on(actionTy
 
 _added in 1.1_
 
-Serialization method for the store's data, by default its implemented as `Nuclear.toJS' which converts ImmutableJS objects to plain javascript.
+Serialization method for the store's data, by default its implemented as `Nuclear.toJS' which converts ImmutableJS objects to plain JavaScript.
 This is overridable for your specific data needs.
 
 ```javascript
@@ -222,7 +222,7 @@ Nuclear.Store({
 
 _added in 1.1_
 
-Serialization method for the store's data, by default its implemented as `Nuclear.toImmutable' which converts plain javascript objects to ImmutableJS data structures.
+Serialization method for the store's data, by default its implemented as `Nuclear.toImmutable' which converts plain JavaScript objects to ImmutableJS data structures.
 This is overridable for your specific data needs.
 
 ```javascript

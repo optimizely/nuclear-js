@@ -9,7 +9,7 @@ In Flux, stores are used for managing application state, but they don't represen
 
 More than simply managing ORM-style objects, **stores manage the state for a particular domain within the application**.
 
-Unlike many other Flux libraries, Nuclear stores hold no state. Instead, they provide a collection of functions that transform current state into new state.
+Unlike many other Flux libraries, NuclearJS stores hold no state. Instead, they provide a collection of functions that transform current state into new state.
 
 Stores provide a `getInitialState` method, which returns the initial state value that a store will manage, and an `initialize` hook, which is used to define what
 actions a store will respond to by attaching handlers.
@@ -23,7 +23,7 @@ handler(currentState: any, payload: any)
 
 In Nuclear, state can only be an ImmutableJS data type, such as an `Immutable.Map` or an `Immutable.List`, or a JavaScript primitive.
 
-Because stores in Nuclear don't hold state — they simply receive state, transform it, and return new state — there is no need to worry about stores knowing
+Because stores in NuclearJS don't hold state — they simply receive state, transform it, and return new state — there is no need to worry about stores knowing
 about other stores. That means no confusing `store.waitsFor` and no cross-pollution of data.  In Nuclear, the sole responsibility of a store is to return a portion
 of existing or transformed application state.  The responsibility of reading application state falls on **Getters**, which we'll cover later.
 
@@ -224,7 +224,7 @@ However, if stores are limited in scope, how can you read substantive data from 
 
 It's actually quite simple: **composition**.
 
-Nuclear allows you to combine data from stores in a non-destructive manner, check it out:
+NuclearJS allows you to combine data from stores in a non-destructive manner, check it out:
 
 ```javascript
 reactor.evaluate([

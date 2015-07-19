@@ -25,7 +25,7 @@ class Store {
   }
 
   /**
-   * This method is overriden by extending classses to setup message handlers
+   * This method is overridden by extending classes to setup message handlers
    * via `this.on` and to set up the initial state
    *
    * Anything returned from this function will be coerced into an ImmutableJS value
@@ -58,7 +58,7 @@ class Store {
 
   /**
    * Pure function taking the current state of store and returning
-   * the new state after a Nuclear reactor has been reset
+   * the new state after a NuclearJS reactor has been reset
    *
    * Overridable
    */
@@ -74,7 +74,7 @@ class Store {
   }
 
   /**
-   * Serializes store state to plain JSON serializable javascript
+   * Serializes store state to plain JSON serializable JavaScript
    * Overridable
    * @param {*}
    * @return {*}
@@ -84,7 +84,7 @@ class Store {
   }
 
   /**
-   * Deserializes plain javascript to store state
+   * Deserializes plain JavaScript to store state
    * Overridable
    * @param {*}
    * @return {*}

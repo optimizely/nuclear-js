@@ -60,7 +60,7 @@ We've now created two actions that we can use to send data into the system.
 
 While synchronous actions are great, often you'll need to perform an asynchronous operation before dispatching an action. Nuclear
 fully supports creating actions asynchronously, as we're doing in `fetchProducts`.  This is a common pattern you'll use as your application grows,
-and Nuclear has no opinion on how you perform your operations: callbacks, Promises, Generators, ES7 async functions — they'll all work just fine!
+and NuclearJS has no opinion on how you perform your operations: callbacks, Promises, Generators, ES7 async functions — they'll all work just fine!
 
 If you'd like to jump ahead, you can read more about [async actions](./04-async-actions-and-optimistic-updates.html).
 

@@ -15,7 +15,7 @@ function isImmutable(obj) {
 
 /**
  * Returns true if the value is an ImmutableJS data structure
- * or a javascript primitive that is immutable (stirng, number, etc)
+ * or a JavaScript primitive that is immutable (string, number, etc)
  * @param {*} obj
  * @return {boolean}
  */
@@ -31,7 +31,7 @@ function isImmutableValue(obj) {
  * Can be called on any type
  */
 function toJS(arg) {
-  // arg instanceof Immutable.Sequence is unreleable
+  // arg instanceof Immutable.Sequence is unreliable
   return (isImmutable(arg))
     ? arg.toJS()
     : arg

@@ -112,9 +112,7 @@ function parseDocs(globPattern, opts, cb) {
   })
 }
 
-
 // Util Functions
-
 function filenameOnly(filepath) {
   return path.basename(filepath, path.extname(filepath))
 }

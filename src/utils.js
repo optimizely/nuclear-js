@@ -16,7 +16,7 @@ exports.isArray = Array.isArray /* istanbul ignore next */|| function(val) {
   return objectToString(val) === '[object Array]'
 }
 
-// taken from underscore source to account for browser descrepency
+// taken from underscore source to account for browser discrepancy
 /* istanbul ignore if  */
 if (typeof /./ !== 'function' && typeof Int8Array !== 'object') {
   /**
@@ -39,7 +39,7 @@ if (typeof /./ !== 'function' && typeof Int8Array !== 'object') {
 }
 
 /**
- * Checks if the passed in value is af type Object
+ * Checks if the passed in value is of type Object
  * @param {*} val
  * @return {boolean}
  */
