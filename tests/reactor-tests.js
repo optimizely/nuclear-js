@@ -179,6 +179,25 @@ describe('Reactor', () => {
 
         expect(mockFn.calls.count()).toEqual(0)
       })
+
+      it('should raise an error if already dispatching another action', () => {
+        reactor.observe([], state => reactor.dispatch('noop', {}))
+
+        expect(() => checkoutActions.setTaxPercent(5)).toThrow(
+          new Error('Dispatch may not be called while a dispatch is in progress'))
+      })
+
+      it('should keep working after it raised for dispatching while dispatching', () => {
+        var unWatchFn = reactor.observe([], state => reactor.dispatch('noop', {}))
+
+        expect(() => checkoutActions.setTaxPercent(5)).toThrow(
+          new Error('Dispatch may not be called while a dispatch is in progress'))
+
+        unWatchFn()
+
+        expect(() => checkoutActions.setTaxPercent(5)).not.toThrow(
+          new Error('Dispatch may not be called while a dispatch is in progress'))
+      })
     }) // when dispatching a relevant action
 
     describe('#observe', () => {
@@ -1012,6 +1031,40 @@ describe('Reactor', () => {
 
       expect(observeSpy.calls.count()).toBe(1)
       expect(firstCallArg).toEqual(['one', 'two', 'three'])
+    })
+
+    it('should not allow dispatch to be called from an observer', () => {
+      reactor.observe([], state => reactor.dispatch('noop', {}))
+
+      expect(() => {
+        reactor.batch(() => {
+          reactor.dispatch('add', 'one')
+          reactor.dispatch('add', 'two')
+        })
+      }).toThrow(
+        new Error('Dispatch may not be called while a dispatch is in progress'))
+    })
+
+    it('should keep working after it raised for dispatching while dispatching', () => {
+      var unWatchFn = reactor.observe([], state => reactor.dispatch('noop', {}))
+
+      expect(() => {
+        reactor.batch(() => {
+          reactor.dispatch('add', 'one')
+          reactor.dispatch('add', 'two')
+        })
+      }).toThrow(
+        new Error('Dispatch may not be called while a dispatch is in progress'))
+
+      unWatchFn()
+
+      expect(() => {
+        reactor.batch(() => {
+          reactor.dispatch('add', 'one')
+          reactor.dispatch('add', 'two')
+        })
+      }).not.toThrow(
+        new Error('Dispatch may not be called while a dispatch is in progress'))
     })
   })
 })
