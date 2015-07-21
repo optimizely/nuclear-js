@@ -42,7 +42,7 @@ export default React.createClass({
                 </p>
 
                 <h3 className="tour-section--bullet-title">
-                  Powerful functional dataflow 
+                  Powerful functional dataflow
                 </h3>
                 <p className="tour-section--bullet-item">
                   Compose and transform your data together statelessly and efficiently using a functional lens concept called <strong>Getters</strong>.
@@ -58,7 +58,7 @@ export default React.createClass({
                   Any Getter can be observed by a view to be notified whenever its derived value changes.
                 </p>
                 <p className="tour-section--bullet-item">
-                  Nuclear includes tools to integrate with libraries such as React and VueJS out of the box.
+                  NuclearJS includes tools to integrate with libraries such as React and VueJS out of the box.
                 </p>
 
                 <h3 className="tour-section--bullet-title">
@@ -68,7 +68,7 @@ export default React.createClass({
                   Thanks to immutable data, change detection can be efficiently performed at any level of granularity by a constant time reference equality <code>(===)</code> check.
                 </p>
                 <p className="tour-section--bullet-item">
-                  Since Getters use pure functions, Nuclear utilizes memoization to only recompute parts of the dataflow that might change.
+                  Since Getters use pure functions, NuclearJS utilizes memoization to only recompute parts of the dataflow that might change.
                 </p>
               </div>
             </div>

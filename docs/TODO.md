@@ -1,4 +1,4 @@
-# Documentation site todo
+# Documentation site TODO List
 
 - [x] links to docs, API, github
 - [x] build pipeline for docs from MD files
@@ -8,3 +8,4 @@
 - [ ] scaffold design patterns/examples area
 - [ ] mobile side navbar
 - [ ] build pipeline for examples, create example component, possibly with code editing
+- [ ] add active state to Docs side bar. (currently doesn't show which tab is active/selected)

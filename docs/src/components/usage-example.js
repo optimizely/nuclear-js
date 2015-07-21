@@ -102,7 +102,7 @@ var item0Price = reactor.evaluate(['items', 0, 'price'])
 // Evaluate by getter
 var filteredItems = reactor.evaluate(filteredItemsGetter)
 
-// Evaluate and coerce to plain javascript
+// Evaluate and coerce to plain JavaScript
 var itemsPOJO = reactor.evaluateToJS(filteredItemsGetter)
 
 // Observation
@@ -140,7 +140,7 @@ export default React.createClass({
             </p>
 
             <p>
-              <code>initialize()</code> - Sets up any action handlers, by specifying the action type and a function that transforms 
+              <code>initialize()</code> - Sets up any action handlers, by specifying the action type and a function that transforms
               <pre><code>(storeState, action) => (newStoreState)</code></pre>
             </p>
           </div>
@@ -213,15 +213,15 @@ export default React.createClass({
             </h3>
 
             <p>
-              Nuclear maintains a very non-magical approach to dispatching actions.  Simply call <code>reactor.dispatch</code> with the <code>actionType</code> and <code>payload</code>.
+              NuclearJS maintains a very non-magical approach to dispatching actions.  Simply call <code>reactor.dispatch</code> with the <code>actionType</code> and <code>payload</code>.
             </p>
 
             <p>
-              All action handling is done synchronously, leaving the state of the system very predicatable after every action.
+              All action handling is done synchronously, leaving the state of the system very predictable after every action.
             </p>
 
             <p>
-              Because actions are simply functions, it is very easy to compose actions together using plain javascript.
+              Because actions are simply functions, it is very easy to compose actions together using plain JavaScript.
             </p>
           </div>
         </div>
@@ -239,7 +239,7 @@ export default React.createClass({
             </h3>
 
             <p>
-              Nuclear also provides imperative mechanisms for evaluating and observing state.
+              NuclearJS also provides imperative mechanisms for evaluating and observing state.
             </p>
 
             <p>

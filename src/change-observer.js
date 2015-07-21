@@ -54,7 +54,7 @@ class ChangeObserver {
   }
 
   /**
-   * Specify an getter and a change handler fn
+   * Specify a getter and a change handler function
    * Handler function is called whenever the value of the getter changes
    * @param {Getter} getter
    * @param {function} handler

@@ -5,11 +5,11 @@ section: "Guide"
 
 ## Core Concepts
 
-The easiest way to think about how NuclearJS is modelling the state of your system is to imagine it all as a single map (or JavaScript object).  If you are familiar with Om then the concept of a singular App State is very familiar already.
+The easiest way to think about how NuclearJS is modeling the state of your system is to imagine it all as a single map (or JavaScript object).  If you are familiar with Om then the concept of a singular App State is very familiar already.
 
 Each entry in this top level map contains a portion of the entire app state for a specific domain and are managed by **stores**.
 
-Imagine modelling a shopping cart.  Our app state would look like:
+Imagine modeling a shopping cart.  Our app state would look like:
 
 ```javascript
 {
@@ -31,7 +31,7 @@ live in our app state because those are all examples of **computable state**, an
 
 #### Reactor
 
-In Nuclear a Reactor is the container that holds your app state, it's where you register stores, dispatch actions and read the current state of your system.  Reactor's are the only stateful part of Nuclear and have only 3 API methods you REALLY need to know: `dispatch`, `get`, and `observe`. Don't worry, extensive API docs will be provided for all of these methods.
+In NuclearJS a Reactor is the container that holds your app state, it's where you register stores, dispatch actions and read the current state of your system.  Reactor's are the only stateful part of NuclearJS and have only 3 API methods you REALLY need to know: `dispatch`, `get`, and `observe`. Don't worry, extensive API docs will be provided for all of these methods.
 
 #### Stores
 
@@ -80,9 +80,9 @@ var totalGetter = [
 ]
 ```
 
-Notice that you can use getters as dependencies to other getters.  This is an extremely powerful abstraction, and one that you'll undoubtedly want to become familiar with in your nuclear journey.
+Notice that you can use getters as dependencies to other getters.  This is an extremely powerful abstraction, and one that you'll undoubtedly want to become familiar with in your NuclearJS journey.
 
-But you need to know one thing about getter transform functions - they MUST be pure functions (that is, a given set input values results in a [deterministic](https://en.wikipedia.org/wiki/Deterministic_algorithm) output). By making the transform functions pure, you can test Getters easier, compose them easier, and nuclear can [memoize](https://en.wikipedia.org/wiki/Memoization) calls to them, making Getter dependency resolution very performant.
+But you need to know one thing about getter transform functions - they MUST be pure functions (that is, a given set input values results in a [deterministic](https://en.wikipedia.org/wiki/Deterministic_algorithm) output). By making the transform functions pure, you can test Getters easier, compose them easier, and NuclearJS can [memoize](https://en.wikipedia.org/wiki/Memoization) calls to them, making Getter dependency resolution very efficient.
 
 __For the astute reader__ - You probably already noticed if you have experience in functional languages, but because Getters
 are simply arrays full of strings and pure functions, they are serializable. Since JS can stringify pure functions, your getters are nothing more than data that could be stored, sent over the wire, etc.
@@ -260,7 +260,7 @@ var ShoppingCart = React.createClass({
   mixins: [reactor.ReactMixin],
 
   // simply implement this function to keep a component's state
-  // in sync with a Nuclear Reactor
+  // in sync with a NuclearJS Reactor
   getDataBindings() {
     return {
       // can reference a reactor KeyPath

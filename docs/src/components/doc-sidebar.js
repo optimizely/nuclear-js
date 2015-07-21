@@ -4,8 +4,6 @@ import { BASE_URL } from '../globals'
 export default React.createClass({
   //propTypes: {
     //navStructure: React.PropTypes.objectOf(React.PropTypes.shape({
-
-
     //}))
   //},
 

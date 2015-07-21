@@ -8,7 +8,7 @@
 
 #### `Reactor#serialize()`
 
-Returns a plain javascript object representing the application state.  By defualt this maps over all stores and returns `toJS(storeState)`.
+Returns a plain JavaScript object representing the application state.  By default this maps over all stores and returns `toJS(storeState)`.
 
 ```js
 reactor.loadState(reactor.serialize())
@@ -16,7 +16,7 @@ reactor.loadState(reactor.serialize())
 
 #### `Reactor#loadState( state )`
 
-Takes a plain javascript object and merges into the reactor state, using `store.deserialize`
+Takes a plain JavaScript object and merges into the reactor state, using `store.deserialize`
 
 This can be useful if you need to load data already on the page.
 
@@ -29,7 +29,7 @@ reactor.loadState({
 
 #### `Store#serialize`
 
-Serialization method for the store's data, by default its implemented as `Nuclear.toJS' which converts ImmutableJS objects to plain javascript.
+Serialization method for the store's data, by default its implemented as `Nuclear.toJS' which converts ImmutableJS objects to plain JavaScript.
 This is overridable for your specific data needs.
 
 ```js
@@ -48,7 +48,7 @@ Nuclear.Store({
 
 #### `Store#deserialize`
 
-Serialization method for the store's data, by default its implemented as `Nuclear.toImmutable' which converts plain javascript objects to ImmutableJS data structures.
+Serialization method for the store's data, by default its implemented as `Nuclear.toImmutable' which converts plain JavaScript objects to ImmutableJS data structures.
 This is overridable for your specific data needs.
 
 ```js
@@ -79,7 +79,7 @@ Nuclear.Store({
 
 ## 1.0.1 (April 27, 2015)
 
-- **[NEW]** Expose `createReactMixin` functionality on Nuclear singleton.
+- **[NEW]** Expose `createReactMixin` functionality on NuclearJS singleton.
 - **[FIXED]** Fix `new Store()` from throwing error when not passed a config object.
 
 ## 1.0.0 (April 25, 2015)
