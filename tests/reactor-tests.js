@@ -29,6 +29,9 @@ describe('Reactor', () => {
         },
 
         initialize() {
+          this.on('storeError', (state, payload) => {
+            throw new Error('Store Error')
+          })
           this.on('addItem', (state, payload) => {
             return state.update('all', items => {
               return items.push(Map({
@@ -197,6 +200,14 @@ describe('Reactor', () => {
 
         expect(() => checkoutActions.setTaxPercent(5)).not.toThrow(
           new Error('Dispatch may not be called while a dispatch is in progress'))
+      })
+
+      it('should allow subsequent dispatches if a store throws an error', () => {
+        try {
+          reactor.dispatch('storeError')
+        } catch (e) {} // eslint-disable-line
+
+        expect(() => reactor.dispatch('setTax', 5)).not.toThrow()
       })
     }) // when dispatching a relevant action
 
@@ -500,8 +511,8 @@ describe('Reactor', () => {
     it('should log and throw an error', function() {
       expect(function() {
         reactor.dispatch('set', 'foo')
-      }).toThrow()
-      expect(logging.dispatchError).toHaveBeenCalled()
+      }).toThrow(new Error('Error during action handling'))
+      expect(logging.dispatchError).toHaveBeenCalledWith('Error during action handling')
     })
   })
 

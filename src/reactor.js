@@ -117,7 +117,13 @@ class Reactor {
     }
 
     var prevState = this.state
-    this.state = this.__handleAction(prevState, actionType, payload)
+
+    try {
+      this.state = this.__handleAction(prevState, actionType, payload)
+    } catch (e) {
+      this.__isDispatching = false
+      throw e
+    }
 
     if (this.__batchDepth > 0) {
       this.__batchDispatchCount++
@@ -244,7 +250,6 @@ class Reactor {
     this.__changeObserver.notifyObservers(this.state)
   }
 
-
   /**
    * Reduces the current state to the new state given actionType / message
    * @param {string} actionType
@@ -257,22 +262,23 @@ class Reactor {
         logging.dispatchStart(actionType, payload)
       }
 
-      // let each core handle the message
+      // let each store handle the message
       this.__stores.forEach((store, id) => {
         var currState = state.get(id)
         var newState
-        var dispatchError
 
         try {
           newState = store.handle(currState, actionType, payload)
         } catch(e) {
-          dispatchError = e
+          // ensure console.group is properly closed
+          logging.dispatchError(e.message)
+          throw e
         }
 
-        if (this.debug && (newState === undefined || dispatchError)) {
-          var error = dispatchError || 'Store handler must return a value, did you forget a return statement'
-          logging.dispatchError(error)
-          throw new Error(error)
+        if (this.debug && newState === undefined) {
+          var errorMsg = 'Store handler must return a value, did you forget a return statement'
+          logging.dispatchError(errorMsg)
+          throw new Error(errorMsg)
         }
 
         state.set(id, newState)
