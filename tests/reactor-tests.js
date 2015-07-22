@@ -1077,5 +1077,25 @@ describe('Reactor', () => {
       }).not.toThrow(
         new Error('Dispatch may not be called while a dispatch is in progress'))
     })
+
+    it('should allow subsequent dispatches if an error is raised in an observer', () => {
+      var unWatchFn = reactor.observe([], state => {
+        throw new Error('observe error')
+      })
+
+      expect(() => {
+        reactor.batch(() => {
+          reactor.dispatch('add', 'one')
+          reactor.dispatch('add', 'two')
+        })
+      }).toThrow(
+        new Error('observe error'))
+
+      unWatchFn()
+
+      expect(() => {
+        reactor.dispatch('add', 'three')
+      }).not.toThrow()
+    })
   })
 })
