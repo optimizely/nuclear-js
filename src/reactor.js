@@ -125,10 +125,17 @@ class Reactor {
       throw e
     }
 
+
     if (this.__batchDepth > 0) {
       this.__batchDispatchCount++
     } else if (this.state !== prevState) {
-      this.__notify()
+      try {
+        this.__notify()
+      } catch (e) {
+        this.__isDispatching = false
+        throw e
+      }
+
       this.__isDispatching = false
     }
   }
@@ -305,7 +312,12 @@ class Reactor {
       if (this.__batchDispatchCount > 0) {
         // set to true to catch if dispatch called from observer
         this.__isDispatching = true
-        this.__notify()
+        try {
+          this.__notify()
+        } catch (e) {
+          this.__isDispatching = false
+          throw e
+        }
         this.__isDispatching = false
       }
       this.__batchDispatchCount = 0

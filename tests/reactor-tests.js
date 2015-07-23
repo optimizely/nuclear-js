@@ -209,6 +209,21 @@ describe('Reactor', () => {
 
         expect(() => reactor.dispatch('setTax', 5)).not.toThrow()
       })
+      it('should allow subsequent dispatches if an observer throws an error', () => {
+        var unWatchFn = reactor.observe([], state => {
+          throw new Error('observer error')
+        })
+
+        try {
+          checkoutActions.setTaxPercent(1)
+        } catch (e) {} // eslint-disable-line
+
+        unWatchFn()
+
+        expect(() => {
+          checkoutActions.setTaxPercent(2)
+        }).not.toThrow()
+      })
     }) // when dispatching a relevant action
 
     describe('#observe', () => {
@@ -987,6 +1002,9 @@ describe('Reactor', () => {
           },
           initialize() {
             this.on('add', (state, item) => state.push(toImmutable(item)))
+            this.on('error', (state, payload) => {
+              throw new Error('store error');
+            })
           },
         }),
       })
@@ -1076,6 +1094,19 @@ describe('Reactor', () => {
         })
       }).not.toThrow(
         new Error('Dispatch may not be called while a dispatch is in progress'))
+    })
+
+    it('should allow subsequent dispatches if an error is raised by a store handler', () => {
+      expect(() => {
+        reactor.batch(() => {
+          reactor.dispatch('add', 'one')
+          reactor.dispatch('error')
+        })
+      }).toThrow(new Error('store error'))
+
+      expect(() => {
+        reactor.dispatch('add', 'three')
+      }).not.toThrow()
     })
 
     it('should allow subsequent dispatches if an error is raised in an observer', () => {
