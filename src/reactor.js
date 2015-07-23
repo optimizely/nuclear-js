@@ -128,14 +128,15 @@ class Reactor {
 
     if (this.__batchDepth > 0) {
       this.__batchDispatchCount++
-    } else if (this.state !== prevState) {
-      try {
-        this.__notify()
-      } catch (e) {
-        this.__isDispatching = false
-        throw e
+    } else {
+      if (this.state !== prevState) {
+        try {
+          this.__notify()
+        } catch (e) {
+          this.__isDispatching = false
+          throw e
+        }
       }
-
       this.__isDispatching = false
     }
   }

@@ -209,6 +209,13 @@ describe('Reactor', () => {
 
         expect(() => reactor.dispatch('setTax', 5)).not.toThrow()
       })
+
+      it('should allow subsequent dispatches if a dispatched action doesnt cause state change', () => {
+        reactor.dispatch('noop')
+
+        expect(() => reactor.dispatch('setTax', 5)).not.toThrow()
+      })
+
       it('should allow subsequent dispatches if an observer throws an error', () => {
         var unWatchFn = reactor.observe([], state => {
           throw new Error('observer error')
@@ -1107,6 +1114,14 @@ describe('Reactor', () => {
       expect(() => {
         reactor.dispatch('add', 'three')
       }).not.toThrow()
+    })
+
+    it('should allow subsequent dispatches if batched action doesnt cause state change', () => {
+      reactor.batch(() => {
+        reactor.dispatch('noop')
+      })
+
+      expect(() => reactor.dispatch('add', 'one')).not.toThrow()
     })
 
     it('should allow subsequent dispatches if an error is raised in an observer', () => {
