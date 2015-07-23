@@ -29,6 +29,9 @@ describe('Reactor', () => {
         },
 
         initialize() {
+          this.on('storeError', (state, payload) => {
+            throw new Error('Store Error')
+          })
           this.on('addItem', (state, payload) => {
             return state.update('all', items => {
               return items.push(Map({
@@ -197,6 +200,36 @@ describe('Reactor', () => {
 
         expect(() => checkoutActions.setTaxPercent(5)).not.toThrow(
           new Error('Dispatch may not be called while a dispatch is in progress'))
+      })
+
+      it('should allow subsequent dispatches if a store throws an error', () => {
+        try {
+          reactor.dispatch('storeError')
+        } catch (e) {} // eslint-disable-line
+
+        expect(() => reactor.dispatch('setTax', 5)).not.toThrow()
+      })
+
+      it('should allow subsequent dispatches if a dispatched action doesnt cause state change', () => {
+        reactor.dispatch('noop')
+
+        expect(() => reactor.dispatch('setTax', 5)).not.toThrow()
+      })
+
+      it('should allow subsequent dispatches if an observer throws an error', () => {
+        var unWatchFn = reactor.observe([], state => {
+          throw new Error('observer error')
+        })
+
+        try {
+          checkoutActions.setTaxPercent(1)
+        } catch (e) {} // eslint-disable-line
+
+        unWatchFn()
+
+        expect(() => {
+          checkoutActions.setTaxPercent(2)
+        }).not.toThrow()
       })
     }) // when dispatching a relevant action
 
@@ -500,8 +533,8 @@ describe('Reactor', () => {
     it('should log and throw an error', function() {
       expect(function() {
         reactor.dispatch('set', 'foo')
-      }).toThrow()
-      expect(logging.dispatchError).toHaveBeenCalled()
+      }).toThrow(new Error('Error during action handling'))
+      expect(logging.dispatchError).toHaveBeenCalledWith('Error during action handling')
     })
   })
 
@@ -976,6 +1009,9 @@ describe('Reactor', () => {
           },
           initialize() {
             this.on('add', (state, item) => state.push(toImmutable(item)))
+            this.on('error', (state, payload) => {
+              throw new Error('store error');
+            })
           },
         }),
       })
@@ -1065,6 +1101,47 @@ describe('Reactor', () => {
         })
       }).not.toThrow(
         new Error('Dispatch may not be called while a dispatch is in progress'))
+    })
+
+    it('should allow subsequent dispatches if an error is raised by a store handler', () => {
+      expect(() => {
+        reactor.batch(() => {
+          reactor.dispatch('add', 'one')
+          reactor.dispatch('error')
+        })
+      }).toThrow(new Error('store error'))
+
+      expect(() => {
+        reactor.dispatch('add', 'three')
+      }).not.toThrow()
+    })
+
+    it('should allow subsequent dispatches if batched action doesnt cause state change', () => {
+      reactor.batch(() => {
+        reactor.dispatch('noop')
+      })
+
+      expect(() => reactor.dispatch('add', 'one')).not.toThrow()
+    })
+
+    it('should allow subsequent dispatches if an error is raised in an observer', () => {
+      var unWatchFn = reactor.observe([], state => {
+        throw new Error('observe error')
+      })
+
+      expect(() => {
+        reactor.batch(() => {
+          reactor.dispatch('add', 'one')
+          reactor.dispatch('add', 'two')
+        })
+      }).toThrow(
+        new Error('observe error'))
+
+      unWatchFn()
+
+      expect(() => {
+        reactor.dispatch('add', 'three')
+      }).not.toThrow()
     })
   })
 })
