@@ -108,7 +108,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	/**
 	 * Returns true if the value is an ImmutableJS data structure
-	 * or a javascript primitive that is immutable (stirng, number, etc)
+	 * or a JavaScript primitive that is immutable (string, number, etc)
 	 * @param {*} obj
 	 * @return {boolean}
 	 */
@@ -124,7 +124,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Can be called on any type
 	 */
 	function toJS(arg) {
-	  // arg instanceof Immutable.Sequence is unreleable
+	  // arg instanceof Immutable.Sequence is unreliable
 	  return (isImmutable(arg))
 	    ? arg.toJS()
 	    : arg
@@ -5100,7 +5100,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return objectToString(val) === '[object Array]'
 	}
 
-	// taken from underscore source to account for browser descrepency
+	// taken from underscore source to account for browser discrepancy
 	/* istanbul ignore if  */
 	if (typeof /./ !== 'function' && typeof Int8Array !== 'object') {
 	  /**
@@ -5123,7 +5123,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 	/**
-	 * Checks if the passed in value is af type Object
+	 * Checks if the passed in value is of type Object
 	 * @param {*} val
 	 * @return {boolean}
 	 */
@@ -5274,7 +5274,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 	/**
-	 * In Nuclear Reactors are where state is stored.  Reactors
+	 * State is stored in NuclearJS Reactors.  Reactors
 	 * contain a 'state' object which is an Immutable.Map
 	 *
 	 * The only way Reactors can change state is by reacting to
@@ -5308,8 +5308,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	     */
 	    this.__changeObserver = new ChangeObserver(this.state, this.__evaluator)
 
-	    this.__isBatching = false;
-	    this.__batchDispatchCount = 0;
+	    // keep track of the depth of batch nesting
+	    this.__batchDepth = 0
+	    // number of dispatches in the top most batch cycle
+	    this.__batchDispatchCount = 0
+
+	    // keep track if we are currently dispatching
+	    this.__isDispatching = false
 	  }
 
 	  /**
@@ -5363,13 +5368,36 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @param {object|undefined} payload
 	   */
 	  Object.defineProperty(Reactor.prototype,"dispatch",{writable:true,configurable:true,value:function(actionType, payload) {"use strict";
-	    var prevState = this.state
-	    this.state = this.__handleAction(prevState, actionType, payload)
+	    if (this.__batchDepth === 0) {
+	      if (this.__isDispatching) {
+	        this.__isDispatching = false
+	        throw new Error('Dispatch may not be called while a dispatch is in progress')
+	      }
+	      this.__isDispatching = true
+	    }
 
-	    if (this.__isBatching) {
+	    var prevState = this.state
+
+	    try {
+	      this.state = this.__handleAction(prevState, actionType, payload)
+	    } catch (e) {
+	      this.__isDispatching = false
+	      throw e
+	    }
+
+
+	    if (this.__batchDepth > 0) {
 	      this.__batchDispatchCount++
-	    } else if (this.state !== prevState) {
-	      this.__notify()
+	    } else {
+	      if (this.state !== prevState) {
+	        try {
+	          this.__notify()
+	        } catch (e) {
+	          this.__isDispatching = false
+	          throw e
+	        }
+	      }
+	      this.__isDispatching = false
 	    }
 	  }});
 
@@ -5429,7 +5457,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var serialized = {}
 	    this.__stores.forEach(function(store, id)  {
 	      var storeState = this.state.get(id)
-	      serialized[id] = store.serialize(storeState)
+	      var serializedState = store.serialize(storeState)
+	      if (serializedState !== undefined) {
+	        serialized[id] = serializedState
+	      }
 	    }.bind(this))
 	    return serialized
 	  }});
@@ -5442,7 +5473,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      each(state, function(serializedStoreState, storeId)  {
 	        var store = this.__stores.get(storeId)
 	        if (store) {
-	          stateToLoad.set(storeId, store.deserialize(serializedStoreState))
+	          var storeState = store.deserialize(serializedStoreState)
+	          if (storeState !== undefined) {
+	            stateToLoad.set(storeId, storeState)
+	          }
 	        }
 	      }.bind(this))
 	    }.bind(this))
@@ -5484,7 +5518,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.__changeObserver.notifyObservers(this.state)
 	  }});
 
-
 	  /**
 	   * Reduces the current state to the new state given actionType / message
 	   * @param {string} actionType
@@ -5497,15 +5530,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	        logging.dispatchStart(actionType, payload)
 	      }
 
-	      // let each core handle the message
+	      // let each store handle the message
 	      this.__stores.forEach(function(store, id)  {
 	        var currState = state.get(id)
-	        var newState = store.handle(currState, actionType, payload)
+	        var newState
+
+	        try {
+	          newState = store.handle(currState, actionType, payload)
+	        } catch(e) {
+	          // ensure console.group is properly closed
+	          logging.dispatchError(e.message)
+	          throw e
+	        }
 
 	        if (this.debug && newState === undefined) {
-	          var error = 'Store handler must return a value, did you forget a return statement'
-	          logging.dispatchError(error)
-	          throw new Error(error)
+	          var errorMsg = 'Store handler must return a value, did you forget a return statement'
+	          logging.dispatchError(errorMsg)
+	          throw new Error(errorMsg)
 	        }
 
 	        state.set(id, newState)
@@ -5522,19 +5563,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }});
 
 	  Object.defineProperty(Reactor.prototype,"__batchStart",{writable:true,configurable:true,value:function() {"use strict";
-	    if (this.__isBatching) {
-	      throw new Error('Reactor already in batch mode')
-	    }
-	    this.__isBatching = true
+	    this.__batchDepth++
 	  }});
 
 	  Object.defineProperty(Reactor.prototype,"__batchEnd",{writable:true,configurable:true,value:function() {"use strict";
-	    if (!this.__isBatching) {
-	      throw new Error('Reactor is not in batch mode')
-	    }
+	    this.__batchDepth--
 
-	    if (this.__batchDispatchCount > 0) {
-	      this.__notify()
+	    if (this.__batchDepth <= 0) {
+	      if (this.__batchDispatchCount > 0) {
+	        // set to true to catch if dispatch called from observer
+	        this.__isDispatching = true
+	        try {
+	          this.__notify()
+	        } catch (e) {
+	          this.__isDispatching = false
+	          throw e
+	        }
+	        this.__isDispatching = false
+	      }
 	      this.__batchDispatchCount = 0
 	    }
 	  }});
@@ -5644,7 +5690,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }});
 
 	  /**
-	   * Specify an getter and a change handler fn
+	   * Specify a getter and a change handler function
 	   * Handler function is called whenever the value of the getter changes
 	   * @param {Getter} getter
 	   * @param {function} handler
@@ -5900,9 +5946,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      throw new Error('Evaluate may not be called within a Getters computeFn')
 	    }
 
+	    var evaluatedValue
 	    __applyingComputeFn = true
 	    try {
-	      var evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
+	      evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
 	      __applyingComputeFn = false
 	    } catch (e) {
 	      __applyingComputeFn = false
@@ -5962,7 +6009,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @param {Getter}
 	   */
 	  Object.defineProperty(Evaluator.prototype,"untrack",{writable:true,configurable:true,value:function(getter) {"use strict";
-	    // TODO: untrack all depedencies
+	    // TODO: untrack all dependencies
 	  }});
 
 	  Object.defineProperty(Evaluator.prototype,"reset",{writable:true,configurable:true,value:function() {"use strict";
@@ -6053,7 +6100,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 
 	  /**
-	   * This method is overriden by extending classses to setup message handlers
+	   * This method is overridden by extending classes to setup message handlers
 	   * via `this.on` and to set up the initial state
 	   *
 	   * Anything returned from this function will be coerced into an ImmutableJS value
@@ -6086,7 +6133,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  /**
 	   * Pure function taking the current state of store and returning
-	   * the new state after a Nuclear reactor has been reset
+	   * the new state after a NuclearJS reactor has been reset
 	   *
 	   * Overridable
 	   */
@@ -6102,23 +6149,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }});
 
 	  /**
-	   * Serializes store state to plain JSON serializable javascript
+	   * Serializes store state to plain JSON serializable JavaScript
 	   * Overridable
 	   * @param {*}
 	   * @return {*}
 	   */
 	  Object.defineProperty(Store.prototype,"serialize",{writable:true,configurable:true,value:function(state) {"use strict";
-	    return toJS(state);
+	    return toJS(state)
 	  }});
 
 	  /**
-	   * Deserializes plain javascript to store state
+	   * Deserializes plain JavaScript to store state
 	   * Overridable
 	   * @param {*}
 	   * @return {*}
 	   */
 	  Object.defineProperty(Store.prototype,"deserialize",{writable:true,configurable:true,value:function(state) {"use strict";
-	    return toImmutable(state);
+	    return toImmutable(state)
 	  }});
 
 
