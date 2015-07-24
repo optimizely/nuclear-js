@@ -1,4 +1,4 @@
-## 1.1.0
+## 1.1.0 (July 23, 2015)
 
 - **[NEW]** added `Reactor#serialize`, `Reactor#loadState`, `Store#serialize` and `Store#deserialize` methods
 - **[NEW]** added `Reactor#batch` to allow batch dispatches before notify observers
