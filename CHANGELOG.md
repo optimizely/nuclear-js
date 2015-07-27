@@ -1,3 +1,7 @@
+## 1.1.1 (July 26, 2015)
+
+- **[ADDED]** Bowser support via bower.json
+
 ## 1.1.0 (July 23, 2015)
 
 - **[NEW]** added `Reactor#serialize`, `Reactor#loadState`, `Store#serialize` and `Store#deserialize` methods
