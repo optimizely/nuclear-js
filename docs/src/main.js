@@ -11,7 +11,7 @@ updateSideBar()
 function render(component, id) {
   var el = document.getElementById(id)
   if (el) {
-    React.render(React.createElement(ItemFilterExample), el)
+    React.render(React.createElement(component), el)
   }
 }
 
