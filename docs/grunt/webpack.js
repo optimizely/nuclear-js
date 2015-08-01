@@ -1,4 +1,4 @@
-var webpack = require("webpack");
+var webpack = require('webpack')
 
 module.exports = {
   options: {
@@ -8,25 +8,24 @@ module.exports = {
 
     output: {
       path: './dist',
-      filename: "app.js",
+      filename: 'app.js',
     },
 
     module: {
       loaders: [
         { test: /\.js$/, exclude: /node_modules/, loader: 'babel-loader'},
         { test: /\.jsx$/, loader: 'babel-loader'},
-      ]
+      ],
     },
   },
 
   dev: {
     watch: true,
-    //keepalive: true,
+    // keepalive: true,
   },
 
   prod: {
     watch: false,
-
     plugins: [
       new webpack.optimize.DedupePlugin(),
       new webpack.optimize.UglifyJsPlugin({
@@ -38,4 +37,4 @@ module.exports = {
       }),
     ],
   },
-};
+}

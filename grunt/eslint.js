@@ -8,8 +8,10 @@ module.exports = {
   tests: [
     'tests/*',
   ],
-
   grunt: [
     'grunt/*',
+  ],
+  docs_grunt: [
+    'docs/grunt/*',
   ],
 }

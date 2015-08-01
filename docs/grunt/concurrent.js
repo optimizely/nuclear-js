@@ -3,6 +3,6 @@ module.exports = {
     options: {
       logConcurrentOutput: true,
     },
-    tasks: ['exec:watch-sass', 'watch:build-site']
-  }
+    tasks: ['exec:watch-sass', 'watch:build-site'],
+  },
 }

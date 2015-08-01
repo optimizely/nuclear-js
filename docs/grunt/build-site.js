@@ -1,5 +1,5 @@
-var mkdirp = require("mkdirp")
-var path = require('path');
+var mkdirp = require('mkdirp')
+var path = require('path')
 var glob = require('glob')
 var async = require('async')
 var fm = require('front-matter')
@@ -11,7 +11,7 @@ require('babel/register')({
     'src/',
     'node_modules/highlight.js',
     'node_modules/react-highlight',
-  ]
+  ],
 })
 
 var React = require('react')
@@ -24,9 +24,9 @@ module.exports = function(grunt) {
 
     async.parallel([
       buildPages.bind(null, '**/*.js', { cwd: 'src/pages' }),
-      buildDocs.bind(null, 'docs/**/*.md', { cwd: 'src/' })
+      buildDocs.bind(null, 'docs/**/*.md', { cwd: 'src/' }),
     ], done)
-  });
+  })
 }
 
 /**
@@ -37,15 +37,15 @@ module.exports = function(grunt) {
  */
 function buildPages(pagesGlob, opts, cb) {
   var cwd = path.join(process.cwd(), opts.cwd)
-  console.log('buildPages, cwd=%s', cwd)
+  console.log('buildPages, cwd=%s', cwd) // eslint-disable-line no-console
 
-  glob(pagesGlob, opts, function(err, files) {
+  glob(pagesGlob, opts, function(err, files) { // eslint-disable-line handle-callback-err
     async.each(files, function(item, cb) {
       var componentPath = path.relative(__dirname, path.join(cwd, item))
       var destFilepath = changeExtension(path.join(OUT, item), '.html')
 
       var Component = require(componentPath)
-      var html = React.renderToStaticMarkup(React.createElement(Component));
+      var html = React.renderToStaticMarkup(React.createElement(Component))
 
       writeFile(destFilepath, html, cb)
     }, cb)
@@ -60,14 +60,14 @@ function buildPages(pagesGlob, opts, cb) {
  */
 function buildDocs(globPattern, opts, cb) {
   var DocWrapper = require('../src/layouts/doc-wrapper')
-  parseDocs(globPattern, opts, function(err, docs) {
+  parseDocs(globPattern, opts, function(err, docs) { // eslint-disable-line handle-callback-err
     var navData = docs.map(function(doc) {
       return {
         title: doc.attributes.title,
         relative: doc.relative,
       }
     })
-    console.log('navdata', navData)
+    console.log('navdata', navData) // eslint-disable-line no-console
 
     async.each(docs, function(doc, cb) {
       fs.readFile(doc.src, 'utf8')
@@ -76,7 +76,7 @@ function buildDocs(globPattern, opts, cb) {
         contents: doc.body,
         navData: navData,
       }
-      var html = React.renderToStaticMarkup(React.createElement(DocWrapper, props));
+      var html = React.renderToStaticMarkup(React.createElement(DocWrapper, props))
       writeFile(path.join(OUT, doc.relative), html, cb)
     }, cb)
   })
@@ -91,7 +91,7 @@ function buildDocs(globPattern, opts, cb) {
 function parseDocs(globPattern, opts, cb) {
   var cwd = path.join(process.cwd(), opts.cwd)
 
-  glob(globPattern, opts, function(err, files) {
+  glob(globPattern, opts, function(err, files) { // eslint-disable-line handle-callback-err
     async.map(files, function(item, cb) {
       var filepath = path.join(cwd, item)
       var relativeFilepath = changeExtension(item, '.html')
@@ -118,16 +118,18 @@ function filenameOnly(filepath) {
 }
 
 function changeExtension(filepath, newExt) {
-  var newFilename = filenameOnly(filepath) + newExt;
+  var newFilename = filenameOnly(filepath) + newExt
   return path.join(path.dirname(filepath), newFilename)
 }
 
 
-function writeFile (p, contents, cb) {
-  mkdirp(path.dirname(p), function (err) {
-    console.log('writing file: [%s]', p)
-    if (err) return cb(err)
-      fs.writeFile(p, contents, cb)
+function writeFile(p, contents, cb) {
+  mkdirp(path.dirname(p), function(err) {
+    console.log('writing file: [%s]', p) // eslint-disable-line no-console
+    if (err) {
+      return cb(err)
+    }
+    fs.writeFile(p, contents, cb)
   })
 }
 

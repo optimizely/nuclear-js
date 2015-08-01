@@ -3,6 +3,6 @@ module.exports = {
     options: {
       base: 'dist/',
       port: 4000,
-    }
-  }
+    },
+  },
 }
