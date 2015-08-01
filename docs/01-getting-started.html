@@ -11,7 +11,7 @@ to build Flux systems.</p>
 <pre><code class="lang-shell">npm install --save nuclear-js
 </code></pre>
 <h2 id="overview">Overview</h2>
-<p>In this tutorial we&#39;ll create a Nuclear flux system to show a list of products and add them to a shopping cart.  Here&#39;s the plan:</p>
+<p>In this tutorial we&#39;ll create a NuclearJS flux system to show a list of products and add them to a shopping cart.  Here&#39;s the plan:</p>
 <ol>
 <li><p>Create a <strong>Reactor</strong></p>
 </li>
@@ -28,17 +28,17 @@ to build Flux systems.</p>
 <ol>
 <li><p>Although the example code is written using ES6, this is totally optional.  NuclearJS fully supports ES5 out of the box.</p>
 </li>
-<li><p>Nuclear stores work best when using ImmutableJS data structures.  You will see <code>toImmutable</code> quite often, this is simply sugar
-to convert plain JavaScript arrays into <a href="http://facebook.github.io/immutable-js/docs/#/List"><code>Immutable.List</code></a> and objects to
-<a href="http://facebook.github.io/immutable-js/docs/#/Map"><code>Immutable.Map</code></a>.  The use of <code>toImmutable</code> is optional, you are free to use
+<li><p>NuclearJS stores work best when using ImmutableJS data structures.  You will see <code>toImmutable</code> quite often, this is simply sugar
+to convert plain JavaScript arrays into <a href="https://facebook.github.io/immutable-js/docs/#/List"><code>Immutable.List</code></a> and objects to
+<a href="https://facebook.github.io/immutable-js/docs/#/Map"><code>Immutable.Map</code></a>.  The use of <code>toImmutable</code> is optional, you are free to use
 any ImmutableJS data structure with no penalty.</p>
 </li>
 </ol>
 <h2 id="creating-a-reactor-">Creating a <code>Reactor</code></h2>
-<p>To get started, we&#39;ll create a Nuclear <code>Reactor</code>.  In Nuclear, the <code>Reactor</code> is the brains of the system and in some ways analogous
+<p>To get started, we&#39;ll create a NuclearJS <code>Reactor</code>.  In Nuclear, the <code>Reactor</code> is the brains of the system and in some ways analogous
 to the traditional Flux <code>dispatcher</code> (though it works differently under the hood and provides a few extra features, which we&#39;ll
 cover later).</p>
-<p>Generally you&#39;ll only have one reactor for your application, however they are instanceable for server-side rendering.</p>
+<p>Generally you&#39;ll only have one reactor for your application, however they are instance-able for server-side rendering.</p>
 <p>The reactor has two main jobs:</p>
 <ol>
 <li>It holds the entire application state in the form of an <code>Immutable.Map</code></li>
@@ -55,7 +55,7 @@ const reactor = new Reactor({
 export default reactor
 </code></pre>
 <p><em>* If you pass a <code>debug: true</code> option when instantiating a reactor, you&#39;ll get great debugging tools that print to your browser console.
-This is completely optional, but very useful for keeping tracking of dispatched actions and subsequest changes in state.</em></p>
+This is completely optional, but very useful for keeping tracking of dispatched actions and subsequent changes in state.</em></p>
 <p>Now that we have our reactor, let&#39;s create some actions.</p>
 <h4 id="-next-creating-actions-02-creating-actions-html-"><a href="./02-creating-actions.html">Next: Creating Actions</a></h4>
 </div></div></div><script src="https://optimizely.github.io/nuclear-js/assets/js/prism.js"></script><script src="https://optimizely.github.io/nuclear-js/app.js"></script></body></html>

@@ -60,12 +60,12 @@ reactor.evaluate([
 </code></pre>
 <h4 id="-reactor-serialize-"><code>Reactor#serialize()</code></h4>
 <p><em>added in 1.1</em></p>
-<p>Returns a plain javascript object representing the application state.  By defualt this maps over all stores and returns <code>toJS(storeState)</code>.</p>
+<p>Returns a plain JavaScript object representing the application state.  By default this maps over all stores and returns <code>toJS(storeState)</code>.</p>
 <pre><code class="lang-javascript">reactor.loadState(reactor.serialize())
 </code></pre>
 <h4 id="-reactor-loadstate-state-"><code>Reactor#loadState( state )</code></h4>
 <p><em>added in 1.1</em></p>
-<p>Takes a plain javascript object and merges into the reactor state, using <code>store.deserialize</code></p>
+<p>Takes a plain JavaScript object and merges into the reactor state, using <code>store.deserialize</code></p>
 <p>This can be useful if you need to load data already on the page.</p>
 <pre><code class="lang-javascript">reactor.loadState({
   stringStore: &#39;bar&#39;,
@@ -143,7 +143,7 @@ reactor.evaluate([
 <p>Responsible for setting up action handlers for the store using <code>this.on(actionTypes, handlerFn)</code></p>
 <h4 id="-store-serialize-"><code>Store#serialize</code></h4>
 <p><em>added in 1.1</em></p>
-<p>Serialization method for the store&#39;s data, by default its implemented as `Nuclear.toJS&#39; which converts ImmutableJS objects to plain javascript.
+<p>Serialization method for the store&#39;s data, by default its implemented as `Nuclear.toJS&#39; which converts ImmutableJS objects to plain JavaScript.
 This is overridable for your specific data needs.</p>
 <pre><code class="lang-javascript">// serializing an Immutable map while preserving numerical keys
 Nuclear.Store({
@@ -159,7 +159,7 @@ Nuclear.Store({
 </code></pre>
 <h4 id="-store-deserialize-"><code>Store#deserialize</code></h4>
 <p><em>added in 1.1</em></p>
-<p>Serialization method for the store&#39;s data, by default its implemented as `Nuclear.toImmutable&#39; which converts plain javascript objects to ImmutableJS data structures.
+<p>Serialization method for the store&#39;s data, by default its implemented as `Nuclear.toImmutable&#39; which converts plain JavaScript objects to ImmutableJS data structures.
 This is overridable for your specific data needs.</p>
 <pre><code class="lang-javascript">// deserializing an array of arrays [[1, &#39;one&#39;], [2, &#39;two&#39;]] to an Immutable.Map
 Nuclear.Store({

@@ -7456,4 +7456,9 @@ pre code.hljs {
 
 .sidebar-links--item {
   line-height: 1.2em;
+  margin-top: 1em;
   margin-bottom: 1em; }
+
+.sidebar-links--item-active {
+  background-color: #E8E4E4;
+  padding: 1em; }
