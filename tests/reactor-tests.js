@@ -1010,7 +1010,7 @@ describe('Reactor', () => {
           initialize() {
             this.on('add', (state, item) => state.push(toImmutable(item)))
             this.on('error', (state, payload) => {
-              throw new Error('store error');
+              throw new Error('store error')
             })
           },
         }),
