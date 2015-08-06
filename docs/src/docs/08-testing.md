@@ -154,7 +154,7 @@ let mockProjects = [
 
 describe('modules/Project', () => {
   afterEach(() => {
-    flux.reset()
+    reactor.reset()
   })
 
   describe('actions', () => {
@@ -162,7 +162,7 @@ describe('modules/Project', () => {
       it('should set the current project id', () => {
         Project.actions.setCurrentProjectId('123-abc')
 
-        expect(flux.evaluate(Project.getters.currentProjectId)).to.be('123-abc')
+        expect(reactor.evaluate(Project.getters.currentProjectId)).to.be('123-abc')
       })
     })
 
@@ -181,7 +181,7 @@ describe('modules/Project', () => {
 
       it('should load projects into the project store', (done) => {
         Project.actions.fetchProjects().then(() => {
-          projectsMap = flux.evaluateToJS(Project.getters.projectMap)
+          projectsMap = reactor.evaluateToJS(Project.getters.projectMap)
           expect(projectsMap).to.eql({
             '123-abc': { id: '123-abc', name: 'project 1' },
             '456-cdf': { id: '456-cdf', name: 'project 2' },
@@ -211,11 +211,11 @@ describe('modules/Project', () => {
       })
 
       it('should evaluate to the current project when the currentProjectId is set', () => {
-        expect(flux.evaluate(Project.getters.currentProject)).to.be(undefined)
+        expect(reactor.evaluate(Project.getters.currentProject)).to.be(undefined)
 
         Project.actions.setCurrentProjectId('123-abc')
 
-        expect(flux.evaluateToJS(Project.getters.currentProject)).to.eql({
+        expect(reactor.evaluateToJS(Project.getters.currentProject)).to.eql({
           id: '123-abc',
           name: 'project 1',
         })
