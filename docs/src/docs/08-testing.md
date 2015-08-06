@@ -108,8 +108,8 @@ export default {
 
 #### `getters.js`
 
-```
-cosnt projectsMap = ['projects']
+```javascript
+const projectsMap = ['projects']
 
 const currentProjectId = ['currentProjectId']
 
