@@ -31,4 +31,16 @@ describe('Getter', () => {
       }).toThrow()
     })
   })
+
+  describe('wasKeyPath', () => {
+    it('should return true if a KeyPath was converted to a getter', () => {
+      var getter = Getter.fromKeyPath(['foo'])
+      expect(Getter.wasKeyPath(getter)).toBe(true)
+    })
+
+    it('should return false for a non-converted getter', () => {
+      var getter = [['foo'], ['bar'], (foo, bar) => foo + bar]
+      expect(Getter.wasKeyPath(getter)).toBe(false)
+    })
+  })
 })
