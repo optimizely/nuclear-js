@@ -5,14 +5,14 @@ section: "Guide"
 
 # Testing
 
-The most valuable and easy to write tests for NuclearJS are unit tests.  **The unit in Nuclear is the action.** The key assertion we want to make 
+The most valuable and easy to write tests for NuclearJS are unit tests.  **The unit in NuclearJS is the action.** The key assertion we want to make
 is that a particular action or set of actions properly transforms the Reactor from **State A** to **State B**.
 
 This is done by setting up the reactor with the proper state, using actions, executing the action under test and asserting proper state via **Getters**.
 
 ## Example
 
-In our testing example we will test our Project module while contains two stores, the `currentProjectIdStore` and the `projectStore` as well as
+In our testing example we will test our Project module which contains two stores, the `currentProjectIdStore` and the `projectStore` as well as
 actions and getters.
 
 #### `index.js`
@@ -126,16 +126,16 @@ export default { projectsMap, currentProject, currentProjectId }
 
 Given our module we want to test the following:
 
-- Using `actions.setCurrentProjectId()` sets the correct id using the `currentProjectId` getter
+- Using `actions.setCurrentProjectId()` sets the correct id using the `currentProjectId` getter.
 
-- When `Api.fetchProducts` is stubbed with mock data, calling `actions.fetchProjects` properly poulates
-  the projects store by using the `projectsMap` getter
+- When `Api.fetchProducts` is stubbed with mock data, calling `actions.fetchProjects` properly populates
+  the projects store by using the `projectsMap` getter.
 
-- When projects have been loaded and currentProjectId set, `currentProject` getter works
+- When projects have been loaded and currentProjectId set, `currentProject` getter works.
 
 **Testing Tools**
 
-We will use the following tools: mocha, sinon, expect.js.  The same testing ideas can be implemented with a variety of tools.
+We will use the following tools: **mocha**, **sinon**, and **expect.js**.  The same testing ideas can be implemented with a variety of tools.
 
 #### `tests.js`
 
@@ -159,7 +159,7 @@ describe('modules/Project', () => {
 
   describe('actions', () => {
     describe('#setCurrentProjectId', () => {
-      it("should set the current project id", () => {
+      it('should set the current project id', () => {
         Project.actions.setCurrentProjectId('123-abc')
 
         expect(flux.evaluate(Project.getters.currentProjectId)).to.be('123-abc')
@@ -227,10 +227,10 @@ describe('modules/Project', () => {
 
 ## Recap
 
-When testing NuclearJS code it makes sense to test around actions asserting proper state updates via getters.  While these tests may seem simple, they are
-testing that our stores, actions and getters are all working in a cohesive manner.  As your codebase scales out these tests be the foundation of unit tests
-for all data flow and state logic.
+When testing NuclearJS code it makes sense to test around actions by asserting proper state updates via getters.  While these tests may seem simple, they are
+testing that our stores, actions and getters are all working together in a cohesive manner.  As your codebase scales, these tests can be the foundation of unit tests
+for all your data flow and state logic.
 
 Another thing to note is that we did not stub or mock any part of the NuclearJS system.  While testing in isolation is good for a variety of reasons,
 isolating too much will cause your tests to be unrealistic and more prone to breakage after refactoring.  By testing the entire module as a unit
-we are able to keep the test high level with limited stubs.
+you are able to keep the test high level with limited stubs.
