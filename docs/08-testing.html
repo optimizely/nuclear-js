@@ -5,11 +5,11 @@ m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 
 ga('create', 'UA-64060472-1', 'auto');
 ga('send', 'pageview');</script></head><body><div class="navbar-fixed"><nav class="nav"><div class="hide-on-large-only"><ul class="right"><li class="hide-on-large-only"><a href="https://optimizely.github.io/nuclear-js/">Home</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Docs</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/07-api.html">API</a></li><li><a href="https://github.com/optimizely/nuclear-js">Github</a></li></ul></div><div class="nav-wrapper hide-on-med-and-down"><a href="https://optimizely.github.io/nuclear-js/" class="brand-logo">NuclearJS</a><ul class="right"><li><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Docs</a></li><li><a href="https://optimizely.github.io/nuclear-js/docs/07-api.html">API</a></li><li><a href="https://github.com/optimizely/nuclear-js">Github</a></li></ul></div></nav></div><div class="container"><div class="docs-page row"><div class="docs-page--sidebar col l2"><h3>Docs</h3><ul class="sidebar-links"><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/01-getting-started.html">Getting Started</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/02-creating-actions.html">Creating Actions</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/03-creating-stores.html">Creating Stores</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/04-getters.html">Getters</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/05-hooking-up-to-react.html">Hooking up to React</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/06-async-actions-and-optimistic-updates.html">Async Actions and Optimistic Updates</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/07-api.html">API</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/08-testing.html">Testing</a></li><li class="sidebar-links--item"><a href="https://optimizely.github.io/nuclear-js/docs/99-core-concepts.html">Core Concepts (old)</a></li></ul></div><div class="docs-page--contents col l8"><h1 id="testing">Testing</h1>
-<p>The most valuable and easy to write tests for NuclearJS are unit tests.  <strong>The unit in Nuclear is the action.</strong> The key assertion we want to make 
+<p>The most valuable and easy to write tests for NuclearJS are unit tests.  <strong>The unit in NuclearJS is the action.</strong> The key assertion we want to make
 is that a particular action or set of actions properly transforms the Reactor from <strong>State A</strong> to <strong>State B</strong>.</p>
 <p>This is done by setting up the reactor with the proper state, using actions, executing the action under test and asserting proper state via <strong>Getters</strong>.</p>
 <h2 id="example">Example</h2>
-<p>In our testing example we will test our Project module while contains two stores, the <code>currentProjectIdStore</code> and the <code>projectStore</code> as well as
+<p>In our testing example we will test our Project module which contains two stores, the <code>currentProjectIdStore</code> and the <code>projectStore</code> as well as
 actions and getters.</p>
 <h4 id="-index-js-"><code>index.js</code></h4>
 <pre><code class="lang-javascript">import reactor from &#39;../reactor&#39;
@@ -105,16 +105,16 @@ export default { projectsMap, currentProject, currentProjectId }
 </code></pre><h3 id="tests">Tests</h3>
 <p>Given our module we want to test the following:</p>
 <ul>
-<li><p>Using <code>actions.setCurrentProjectId()</code> sets the correct id using the <code>currentProjectId</code> getter</p>
+<li><p>Using <code>actions.setCurrentProjectId()</code> sets the correct id using the <code>currentProjectId</code> getter.</p>
 </li>
-<li><p>When <code>Api.fetchProducts</code> is stubbed with mock data, calling <code>actions.fetchProjects</code> properly poulates
-the projects store by using the <code>projectsMap</code> getter</p>
+<li><p>When <code>Api.fetchProducts</code> is stubbed with mock data, calling <code>actions.fetchProjects</code> properly populates
+the projects store by using the <code>projectsMap</code> getter.</p>
 </li>
-<li><p>When projects have been loaded and currentProjectId set, <code>currentProject</code> getter works</p>
+<li><p>When projects have been loaded and currentProjectId set, <code>currentProject</code> getter works.</p>
 </li>
 </ul>
 <p><strong>Testing Tools</strong></p>
-<p>We will use the following tools: mocha, sinon, expect.js.  The same testing ideas can be implemented with a variety of tools.</p>
+<p>We will use the following tools: <strong>mocha</strong>, <strong>sinon</strong>, and <strong>expect.js</strong>.  The same testing ideas can be implemented with a variety of tools.</p>
 <h4 id="-tests-js-"><code>tests.js</code></h4>
 <pre><code class="lang-javascript">import reactor from &#39;../reactor&#39;
 import Api from &#39;../utils/api&#39;
@@ -130,15 +130,15 @@ let mockProjects = [
 
 describe(&#39;modules/Project&#39;, () =&gt; {
   afterEach(() =&gt; {
-    flux.reset()
+    reactor.reset()
   })
 
   describe(&#39;actions&#39;, () =&gt; {
     describe(&#39;#setCurrentProjectId&#39;, () =&gt; {
-      it(&quot;should set the current project id&quot;, () =&gt; {
+      it(&#39;should set the current project id&#39;, () =&gt; {
         Project.actions.setCurrentProjectId(&#39;123-abc&#39;)
 
-        expect(flux.evaluate(Project.getters.currentProjectId)).to.be(&#39;123-abc&#39;)
+        expect(reactor.evaluate(Project.getters.currentProjectId)).to.be(&#39;123-abc&#39;)
       })
     })
 
@@ -157,7 +157,7 @@ describe(&#39;modules/Project&#39;, () =&gt; {
 
       it(&#39;should load projects into the project store&#39;, (done) =&gt; {
         Project.actions.fetchProjects().then(() =&gt; {
-          projectsMap = flux.evaluateToJS(Project.getters.projectMap)
+          projectsMap = reactor.evaluateToJS(Project.getters.projectMap)
           expect(projectsMap).to.eql({
             &#39;123-abc&#39;: { id: &#39;123-abc&#39;, name: &#39;project 1&#39; },
             &#39;456-cdf&#39;: { id: &#39;456-cdf&#39;, name: &#39;project 2&#39; },
@@ -187,11 +187,11 @@ describe(&#39;modules/Project&#39;, () =&gt; {
       })
 
       it(&#39;should evaluate to the current project when the currentProjectId is set&#39;, () =&gt; {
-        expect(flux.evaluate(Project.getters.currentProject)).to.be(undefined)
+        expect(reactor.evaluate(Project.getters.currentProject)).to.be(undefined)
 
         Project.actions.setCurrentProjectId(&#39;123-abc&#39;)
 
-        expect(flux.evaluateToJS(Project.getters.currentProject)).to.eql({
+        expect(reactor.evaluateToJS(Project.getters.currentProject)).to.eql({
           id: &#39;123-abc&#39;,
           name: &#39;project 1&#39;,
         })
@@ -201,10 +201,10 @@ describe(&#39;modules/Project&#39;, () =&gt; {
 })
 </code></pre>
 <h2 id="recap">Recap</h2>
-<p>When testing NuclearJS code it makes sense to test around actions asserting proper state updates via getters.  While these tests may seem simple, they are
-testing that our stores, actions and getters are all working in a cohesive manner.  As your codebase scales out these tests be the foundation of unit tests
-for all data flow and state logic.</p>
+<p>When testing NuclearJS code it makes sense to test around actions by asserting proper state updates via getters.  While these tests may seem simple, they are
+testing that our stores, actions and getters are all working together in a cohesive manner.  As your codebase scales, these tests can be the foundation of unit tests
+for all your data flow and state logic.</p>
 <p>Another thing to note is that we did not stub or mock any part of the NuclearJS system.  While testing in isolation is good for a variety of reasons,
 isolating too much will cause your tests to be unrealistic and more prone to breakage after refactoring.  By testing the entire module as a unit
-we are able to keep the test high level with limited stubs.</p>
+you are able to keep the test high level with limited stubs.</p>
 </div></div></div><script src="https://optimizely.github.io/nuclear-js/assets/js/prism.js"></script><script src="https://optimizely.github.io/nuclear-js/app.js"></script></body></html>
