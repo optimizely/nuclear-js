@@ -42,3 +42,35 @@ exports.same = function same(keyPath, otherKeyPath) {
 
   return true
 }
+
+/**
+ * Determines if a keyPath references a key that is upstream to another keyPath
+ * @param {array} keyPath
+ * @param {array} downstreamKeyPath
+ * @return {boolean}
+ * @example
+ * isUpstream(['some', 'keypath'], ['some', 'keypath', 'with depth']) // => true
+ * isUpstream(['some', 'keypath'], ['some', 'other', 'keypath']) // => false
+ */
+exports.isUpstream = function isUpstream(keyPath, downstreamKeyPath) {
+  if (!isKeyPath(keyPath) || !isKeyPath(downstreamKeyPath)) {
+    return false
+  }
+
+  var i = 0
+  var len = keyPath.length
+
+  if (len >= downstreamKeyPath.length) {
+    return false
+  }
+
+  while (i < len) {
+    if (keyPath[i] !== downstreamKeyPath[i]) {
+      return false
+    }
+
+    i++
+  }
+
+  return true
+}
