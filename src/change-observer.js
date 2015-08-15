@@ -18,6 +18,7 @@ class ChangeObserver {
     this.__evaluator = evaluator
     this.__prevValues = Immutable.Map()
     this.__observers = []
+    this.__notifyIndex = -1
   }
 
   /**
@@ -27,7 +28,13 @@ class ChangeObserver {
     if (this.__observers.length > 0) {
       var currentValues = Immutable.Map()
 
-      this.__observers.forEach(entry => {
+      // The unwatch function needs to read and modify where in the
+      // iteration we are, so that removing the current or previous
+      // observers does not cause us to skip observers.
+      for (this.__notifyIndex = 0;
+           this.__notifyIndex < this.__observers.length;
+           ++this.__notifyIndex) {
+        var entry = this.__observers[this.__notifyIndex]
         var getter = entry.getter
         var code = hashCode(getter)
         var prevState = this.__prevState
@@ -46,8 +53,9 @@ class ChangeObserver {
           entry.handler.call(null, currValue)
           currentValues = currentValues.set(code, currValue)
         }
-      })
+      }
 
+      this.__notifyIndex = -1
       this.__prevValues = currentValues
     }
     this.__prevState = newState
@@ -73,6 +81,10 @@ class ChangeObserver {
       var ind = this.__observers.indexOf(entry)
       if (ind > -1) {
         this.__observers.splice(ind, 1)
+        // If we are at or before the current notifyIndex, decrement it.
+        if (ind <= this.__notifyIndex) {
+          this.__notifyIndex -= 1
+        }
       }
     }
   }
