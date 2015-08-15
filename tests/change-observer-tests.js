@@ -78,6 +78,17 @@ describe('ChangeObserver', () => {
         expect(mockFn2.calls.count()).toBe(1)
       })
     })
+
+    it('should not skip observers when handler causes unobserve', () => {
+      var getter = ['foo', 'bar']
+      var mockFn = jasmine.createSpy()
+      var unreg = observer.onChange(getter, () => unreg())
+      observer.onChange(getter, mockFn)
+
+      observer.notifyObservers(initialState.updateIn(getter, x => 2))
+
+      expect(mockFn.calls.count()).toBe(1)
+    })
   })
   // TODO: test the prevValues and registering an observable
 })
