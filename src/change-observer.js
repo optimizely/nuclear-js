@@ -27,7 +27,10 @@ class ChangeObserver {
     if (this.__observers.length > 0) {
       var currentValues = Immutable.Map()
 
-      this.__observers.forEach(entry => {
+      this.__observers.slice(0).forEach(entry => {
+        if (entry.unwatched) {
+          return
+        }
         var getter = entry.getter
         var code = hashCode(getter)
         var prevState = this.__prevState
@@ -65,6 +68,7 @@ class ChangeObserver {
     var entry = {
       getter: getter,
       handler: handler,
+      unwatched: false,
     }
     this.__observers.push(entry)
     // return unwatch function
@@ -72,6 +76,7 @@ class ChangeObserver {
       // TODO: untrack from change emitter
       var ind = this.__observers.indexOf(entry)
       if (ind > -1) {
+        entry.unwatched = true
         this.__observers.splice(ind, 1)
       }
     }
