@@ -78,6 +78,46 @@ describe('ChangeObserver', () => {
         expect(mockFn2.calls.count()).toBe(1)
       })
     })
+
+    it('should not skip observers when handler causes unobserve', () => {
+      var getter = ['foo', 'bar']
+      var mockFn = jasmine.createSpy()
+      var unreg = observer.onChange(getter, () => unreg())
+      observer.onChange(getter, mockFn)
+
+      observer.notifyObservers(initialState.updateIn(getter, x => 2))
+
+      expect(mockFn.calls.count()).toBe(1)
+    })
+
+    it('should not call unwatched observers when removed during notify', () => {
+      var getter = ['foo', 'bar']
+      var mockFn1 = jasmine.createSpy()
+      var mockFn2 = jasmine.createSpy()
+      observer.onChange(getter, () => {
+        mockFn1()
+        unreg()
+      })
+      var unreg = observer.onChange(getter, mockFn2)
+
+      observer.notifyObservers(initialState.updateIn(getter, x => 2))
+
+      expect(mockFn1.calls.count()).toBe(1)
+      expect(mockFn2.calls.count()).toBe(0)
+    })
+
+    it('should not call new observers when handlers attach them', () => {
+      var getter = ['foo', 'bar']
+      var mockFn1 = jasmine.createSpy()
+      var mockFn2 = jasmine.createSpy()
+      observer.onChange(getter, mockFn1)
+      observer.onChange(getter, () => observer.onChange(getter, mockFn2))
+
+      observer.notifyObservers(initialState.updateIn(getter, x => 2))
+
+      expect(mockFn1.calls.count()).toBe(1)
+      expect(mockFn2.calls.count()).toBe(0)
+    })
   })
   // TODO: test the prevValues and registering an observable
 })
