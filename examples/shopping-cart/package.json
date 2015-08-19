@@ -1,14 +1,7 @@
 {
   "main": "js/app.js",
   "scripts": {
-    "start": "../node_modules/watchify/bin/cmd.js js/app.js -o build/bundle.js -v -d",
-    "build": "browserify js/app.js > build/bundle.js"
-  },
-  "browserify": {
-    "transform": [
-      "babelify",
-      "envify"
-    ]
+    "start": "./node_modules/webpack/bin/webpack.js --watch --progress"
   },
   "dependencies": {
     "nuclear-js": "^1.0.5",

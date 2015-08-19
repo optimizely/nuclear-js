@@ -2,15 +2,21 @@
 
 This example shows how to build a generic Rest API module for NuclearJS's flux architecture.
 
-## Running the example
+## Running
 
-The built files are already checked in, simply open `index.html` to see the example.  Make sure you open the console to see the actions being dispatched.
+You must have [npm](https://www.npmjs.org/) installed on your computer.
+From the root project directory run these commands from the command line:
 
-**To watch/rebuild**
+`npm install`
 
-```sh
-npm run watch
-```
+This will install all dependencies.
+
+To build the project, first run this command:
+
+`npm start`
+
+After starting the watcher, you can open `index.html` in your browser to
+open the app.
 
 ## Architecture
 
