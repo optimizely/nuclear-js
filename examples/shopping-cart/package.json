@@ -16,7 +16,8 @@
     "node-libs-browser": "^0.5.2",
     "webpack": "^1.9.11",
     "babel-core": "^5.6.1",
-    "babel-loader": "^5.1.4"
+    "babel-loader": "^5.1.4",
+    "json-loader": "^0.5.2"
   },
   "name": "shopping-cart-example",
   "version": "0.0.1",
