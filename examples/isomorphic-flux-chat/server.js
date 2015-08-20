@@ -57,9 +57,8 @@ http.createServer(function(req, res) {
 
     /**
      * Dehydrate reactor
-     * @todo: refactor to use new nuclear methods when 1.1 lands ?
      */
-    var _state = JSON.stringify(reactor.__state.toJS())
+    var _state = JSON.stringify(reactor.serialize())
     returnHtml = returnHtml.replace('window.reactor_state = null', 'window.reactor_state = ' + _state)
 
     /**
