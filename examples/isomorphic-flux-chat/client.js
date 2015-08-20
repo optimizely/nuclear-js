@@ -12,9 +12,8 @@ ChatApp = NuclearAddons.provideReactor(ChatApp)
 
 Chat.register(reactor)
 
-// @todo: refactor to use new nuclear methods when 1.1 lands ?
-if (window.window.reactor_state !== null) {
-  reactor.__state = Nuclear.Immutable.fromJS(window.reactor_state)
+if (window.reactor_state !== null) {
+  reactor.loadState(window.reactor_state)
 } else {
   Chat.actions.receiveAll(reactor, mockData)
 }
