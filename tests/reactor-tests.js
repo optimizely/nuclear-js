@@ -1144,4 +1144,49 @@ describe('Reactor', () => {
       }).not.toThrow()
     })
   })
+
+  describe('issue #140 - change observer error case dealing with hashCode collisions', () => {
+    it('observer should be called correctly', () => {
+      var SET_YEAR_GROUP = 'SET_YEAR_GROUP'
+      var LOADED = 'LOADED'
+
+      var store = Store({
+        getInitialState: function() {
+          return toImmutable({
+            yearGroup: 0,
+            shouldLoaded: true,
+          })
+        },
+
+        initialize: function() {
+          this.on(SET_YEAR_GROUP, setYearGroup)
+          this.on(LOADED, loaded)
+        },
+      })
+
+      function setYearGroup(store, payload) {
+        return store
+          .set('yearGroup', payload.yearGroup)
+          .set('shouldLoad', true)
+      }
+
+      function loaded(store) {
+        return store.set('shouldLoad', false)
+      }
+
+      var reactor = new Reactor()
+
+      reactor.registerStores({ uiStore: store })
+
+      var output = []
+      // Record changes to yearGroup
+      reactor.observe(['uiStore', 'yearGroup'], function(y) { output.push(y) })
+
+      reactor.dispatch(SET_YEAR_GROUP, {yearGroup: 6})
+      reactor.dispatch(LOADED)
+      reactor.dispatch(SET_YEAR_GROUP, {yearGroup: 5})
+
+      expect(output).toEqual([6, 5])
+    })
+  })
 })
