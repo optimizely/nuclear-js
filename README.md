@@ -39,7 +39,7 @@ npm install nuclear-js
 
 ## How NuclearJS differs from other Flux implementations
 
-1.  All app state is in a singular immutable map, think Om.  In development you can see your entire application state at every point in time thanks to awesome debugging tools built into NuclearJS.
+1.  All app state is in a singular immutable map, like [Om](https://github.com/omcljs/om).  In development you can see your entire application state at every point in time thanks to awesome debugging tools built into NuclearJS.
 
 2.  State is not spread out through stores, instead stores are a declarative way of describing some top-level domain of your app state. For each key in the app state map a store declares the initial state of that key and how that piece of the app state reacts over time to actions dispatched on the flux system.
 
