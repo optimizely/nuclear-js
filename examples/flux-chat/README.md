@@ -23,7 +23,7 @@ open the app.
 
 Let's see what the original [Flux Chat Example](https://github.com/facebook/flux/tree/master/examples/flux-chat) looks like in NuclearJS.
 
-All of the above code lives in [examples/flux-chat](./examples/flux-chat)
+All of the above code lives in [examples/flux-chat](/examples/flux-chat)
 
 ##### `flux.js`
 
