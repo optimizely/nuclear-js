@@ -55,6 +55,9 @@ module.exports = [{
       // don't try to load them ... just make the require calls not break
       test: /\.css$/,
       loader: 'css',
+    }, {
+      test: /\.json$/,
+      loader: "json-loader"
     }],
   },
 

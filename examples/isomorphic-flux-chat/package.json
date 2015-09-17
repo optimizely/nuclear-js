@@ -6,6 +6,7 @@
   "author": "Jordan Garcia",
   "license": "ISC",
   "dependencies": {
+    "json-loader": "^0.5.3",
     "keymirror": "^0.1.1",
     "nuclear-js": "^1.1.1",
     "nuclear-js-react-addons": "jordangarcia/nuclear-js-react-addons#051c39b10c4af9af7007216b06fccbdf79994529",
