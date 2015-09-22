@@ -141,7 +141,7 @@ export default React.createClass({
 
             <p>
               <code>initialize()</code> - Sets up any action handlers, by specifying the action type and a function that transforms
-              <pre><code>(storeState, action) => (newStoreState)</code></pre>
+              <pre><code>(storeState, actionPayload) => (newStoreState)</code></pre>
             </p>
           </div>
         </div>
