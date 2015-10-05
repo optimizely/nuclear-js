@@ -2,7 +2,7 @@
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();
 	else if(typeof define === 'function' && define.amd)
-		define(factory);
+		define([], factory);
 	else if(typeof exports === 'object')
 		exports["Nuclear"] = factory();
 	else
@@ -220,7 +220,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 
 	  function wrapIndex(iter, index) {
-	    return index >= 0 ? (+index) : ensureSize(iter) + (+index);
+	    // This implements "is array index" which the ECMAString spec defines as:
+	    //     A String property name P is an array index if and only if
+	    //     ToString(ToUint32(P)) is equal to P and ToUint32(P) is not equal
+	    //     to 2^32−1.
+	    // However note that we're currently calling ToNumber() instead of ToUint32()
+	    // which should be improved in the future, as floating point numbers should
+	    // not be accepted as an array index.
+	    if (typeof index !== 'number') {
+	      var numIndex = +index;
+	      if ('' + numIndex !== index) {
+	        return NaN;
+	      }
+	      index = numIndex;
+	    }
+	    return index < 0 ? ensureSize(iter) + index : index;
 	  }
 
 	  function returnTrue() {
@@ -890,7 +904,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  var src_Math__imul =
 	    typeof Math.imul === 'function' && Math.imul(0xffffffff, 2) === -2 ?
 	    Math.imul :
-	    function src_Math__imul(a, b) {
+	    function imul(a, b) {
 	      a = a | 0; // int
 	      b = b | 0; // int
 	      var c = a & 0xffff;
@@ -1441,6 +1455,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	  function sliceFactory(iterable, begin, end, useKeys) {
 	    var originalSize = iterable.size;
 
+	    // Sanitize begin & end using this shorthand for ToInt32(argument)
+	    // http://www.ecma-international.org/ecma-262/6.0/#sec-toint32
+	    if (begin !== undefined) {
+	      begin = begin | 0;
+	    }
+	    if (end !== undefined) {
+	      end = end | 0;
+	    }
+
 	    if (wholeSlice(begin, end, originalSize)) {
 	      return iterable;
 	    }
@@ -1467,7 +1490,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    var sliceSeq = makeSequence(iterable);
 
-	    sliceSeq.size = sliceSize;
+	    // If iterable.size is undefined, the size of the realized sliceSeq is
+	    // unknown at this point unless the number of items to slice is 0
+	    sliceSeq.size = sliceSize === 0 ? sliceSize : iterable.size && sliceSize || undefined;
 
 	    if (!useKeys && isSeq(iterable) && sliceSize >= 0) {
 	      sliceSeq.get = function (index, notSetValue) {
@@ -1916,7 +1941,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    function src_Map__Map(value) {
 	      return value === null || value === undefined ? emptyMap() :
-	        isMap(value) ? value :
+	        isMap(value) && !isOrdered(value) ? value :
 	        emptyMap().withMutations(function(map ) {
 	          var iter = KeyedIterable(value);
 	          assertNotInfinite(iter.size);
@@ -2763,12 +2788,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    List.prototype.get = function(index, notSetValue) {
 	      index = wrapIndex(this, index);
-	      if (index < 0 || index >= this.size) {
-	        return notSetValue;
+	      if (index >= 0 && index < this.size) {
+	        index += this._origin;
+	        var node = listNodeFor(this, index);
+	        return node && node.array[index & MASK];
 	      }
-	      index += this._origin;
-	      var node = listNodeFor(this, index);
-	      return node && node.array[index & MASK];
+	      return notSetValue;
 	    };
 
 	    // @pragma Modification
@@ -2964,29 +2989,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 
 	    VNode.prototype.removeAfter = function(ownerID, level, index) {
-	      if (index === level ? 1 << level : 0 || this.array.length === 0) {
+	      if (index === (level ? 1 << level : 0) || this.array.length === 0) {
 	        return this;
 	      }
 	      var sizeIndex = ((index - 1) >>> level) & MASK;
 	      if (sizeIndex >= this.array.length) {
 	        return this;
 	      }
-	      var removingLast = sizeIndex === this.array.length - 1;
+
 	      var newChild;
 	      if (level > 0) {
 	        var oldChild = this.array[sizeIndex];
 	        newChild = oldChild && oldChild.removeAfter(ownerID, level - SHIFT, index);
-	        if (newChild === oldChild && removingLast) {
+	        if (newChild === oldChild && sizeIndex === this.array.length - 1) {
 	          return this;
 	        }
 	      }
-	      if (removingLast && !newChild) {
-	        return this;
-	      }
+
 	      var editable = editableVNode(this, ownerID);
-	      if (!removingLast) {
-	        editable.array.pop();
-	      }
+	      editable.array.splice(sizeIndex + 1);
 	      if (newChild) {
 	        editable.array[sizeIndex] = newChild;
 	      }
@@ -3077,6 +3098,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  function updateList(list, index, value) {
 	    index = wrapIndex(list, index);
+
+	    if (index !== index) {
+	      return list;
+	    }
 
 	    if (index >= list.size || index < 0) {
 	      return list.withMutations(function(list ) {
@@ -3169,6 +3194,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 
 	  function setListBounds(list, begin, end) {
+	    // Sanitize begin & end using this shorthand for ToInt32(argument)
+	    // http://www.ecma-international.org/ecma-262/6.0/#sec-toint32
+	    if (begin !== undefined) {
+	      begin = begin | 0;
+	    }
+	    if (end !== undefined) {
+	      end = end | 0;
+	    }
 	    var owner = list.__ownerID || new OwnerID();
 	    var oldOrigin = list._origin;
 	    var oldCapacity = list._capacity;
@@ -3681,7 +3714,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    function src_Set__Set(value) {
 	      return value === null || value === undefined ? emptySet() :
-	        isSet(value) ? value :
+	        isSet(value) && !isOrdered(value) ? value :
 	        emptySet().withMutations(function(set ) {
 	          var iter = SetIterable(value);
 	          assertNotInfinite(iter.size);
@@ -4426,10 +4459,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	      return reify(this, concatFactory(this, values));
 	    },
 
-	    contains: function(searchValue) {
-	      return this.includes(searchValue);
-	    },
-
 	    includes: function(searchValue) {
 	      return this.some(function(value ) {return is(value, searchValue)});
 	    },
@@ -4719,7 +4748,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    hashCode: function() {
 	      return this.__hash || (this.__hash = hashIterable(this));
-	    },
+	    }
 
 
 	    // ### Internal
@@ -4742,6 +4771,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  IterablePrototype.inspect =
 	  IterablePrototype.toSource = function() { return this.toString(); };
 	  IterablePrototype.chain = IterablePrototype.flatMap;
+	  IterablePrototype.contains = IterablePrototype.includes;
 
 	  // Temporary warning about using length
 	  (function () {
@@ -4812,7 +4842,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	          function(k, v)  {return mapper.call(context, k, v, this$0)}
 	        ).flip()
 	      );
-	    },
+	    }
 
 	  });
 
@@ -4867,7 +4897,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      if (numArgs === 0 || (numArgs === 2 && !removeNum)) {
 	        return this;
 	      }
-	      index = resolveBegin(index, this.size);
+	      // If index is negative, it should resolve relative to the size of the
+	      // collection. However size may be expensive to compute if not cached, so
+	      // only call count() if the number is in fact negative.
+	      index = resolveBegin(index, index < 0 ? this.count() : this.size);
 	      var spliced = this.slice(0, index);
 	      return reify(
 	        this,
@@ -4940,7 +4973,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var iterables = arrCopy(arguments);
 	      iterables[0] = this;
 	      return reify(this, zipWithFactory(this, zipper, iterables));
-	    },
+	    }
 
 	  });
 
@@ -4966,7 +4999,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    keySeq: function() {
 	      return this.valueSeq();
-	    },
+	    }
 
 	  });
 
@@ -5070,7 +5103,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    Repeat: Repeat,
 
 	    is: is,
-	    fromJS: fromJS,
+	    fromJS: fromJS
 
 	  };
 
