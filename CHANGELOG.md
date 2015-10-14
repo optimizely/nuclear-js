@@ -1,3 +1,7 @@
+## 1.1.2 (October 5, 2015)
+
+- **[FIXED]** Fix for observer iteration when removed during notify. [Issue #151](https://github.com/optimizely/nuclear-js/issues/151)
+
 ## 1.1.1 (July 26, 2015)
 
 - **[ADDED]** Bowser support via bower.json
