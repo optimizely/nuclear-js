@@ -187,7 +187,7 @@ At this point defined how our application manages state over time by creating an
 
 Getters can take 2 forms:
 
-  1. A KeyPath such as `['messages']` which equates to a `state.getIn(['messages'])` on the app state `Immutable.Map`.  
+  1. A KeyPath such as `['messages']` which equates to a `state.getIn(['messages'])` on the app state `Immutable.Map`.
   2. An array with the form `[  [keypath | getter], [keypath | getter], ..., tranformFunction]`
 
 ##### `modules/chat/getters.js`

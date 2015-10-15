@@ -16,7 +16,7 @@ var DATA = {
       name: 'jane',
       email: 'jane@nuclear.com',
     },
-  }
+  },
 }
 
 /**

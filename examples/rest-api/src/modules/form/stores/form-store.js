@@ -25,7 +25,7 @@ module.exports = new Nuclear.Store({
 function registerForm(state, { formId, initialValues }) {
   var formEntry = toImmutable({
     initialValues: initialValues,
-    currentValues: initialValues
+    currentValues: initialValues,
   })
   return state.set(formId, formEntry)
 }
@@ -42,7 +42,7 @@ function setFormValue(state, { formId, fieldName, value }) {
   var formEntry = state.get(formId)
 
   if (!formEntry) {
-    throw new Error("FormStore: cannot find form by formId=" + formId)
+    throw new Error('FormStore: cannot find form by formId=' + formId)
   }
 
   return state.setIn([formId, 'currentValues', fieldName], value)

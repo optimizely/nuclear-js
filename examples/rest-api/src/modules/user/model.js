@@ -1,4 +1,3 @@
-var _ = require('lodash')
 var MockServer = require('../../mock-server')
 var { toJS } = require('nuclear-js')
 
@@ -14,9 +13,8 @@ exports.save = function(instance) {
   instance = toJS(instance)
   if (instance.id) {
     return MockServer.update(ENTITY, instance)
-  } else {
-    return MockServer.create(ENTITY, instance)
   }
+  return MockServer.create(ENTITY, instance)
 }
 
 /**

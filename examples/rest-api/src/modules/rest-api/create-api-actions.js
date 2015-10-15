@@ -161,4 +161,3 @@ function onDeleteFail(model, params, reason) {
   })
   return Promise.reject(reason)
 }
-

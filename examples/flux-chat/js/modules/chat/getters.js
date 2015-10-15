@@ -1,16 +1,16 @@
 // it is idiomatic to facade all data access through getters, that way a component only has to subscribe to a getter making it agnostic
-// to the underyling stores / data transformation that is taking place
+// to the underlying stores / data transformation that is taking place
 exports.threadsMap = ['threads']
 
 exports.threads = [
   exports.threadsMap,
-  threadsMap => threadsMap.toList()
+  threadsMap => threadsMap.toList(),
 ]
 
 exports.currentThread = [
   ['currentThreadID'],
   exports.threadsMap,
-  (currentThreadID, threadsMap) => threadsMap.get(currentThreadID)
+  (currentThreadID, threadsMap) => threadsMap.get(currentThreadID),
 ]
 
 exports.latestThread = [
@@ -21,13 +21,13 @@ exports.latestThread = [
         thread.get('messages').last().get('timestamp')
       })
       .last()
-  }
+  },
 ]
 
 
 exports.currentThreadID = [
   exports.currentThread,
-  thread => thread ? thread.get('threadID') : null
+  thread => thread ? thread.get('threadID') : null,
 ]
 
 exports.unreadCount = [
@@ -39,5 +39,5 @@ exports.unreadCount = [
       }
       return accum
     }, 0)
-  }
+  },
 ]

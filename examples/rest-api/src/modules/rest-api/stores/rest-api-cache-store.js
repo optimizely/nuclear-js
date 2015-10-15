@@ -1,7 +1,7 @@
 /**
  * Stores cached entities for the Rest API
  */
-var _ = require('lodash');
+var _ = require('lodash')
 var Nuclear = require('nuclear-js')
 var toImmutable = Nuclear.toImmutable
 var actionTypes = require('../action-types')
@@ -57,5 +57,5 @@ function removeData(state, payload) {
   // we assume that params is the instance with an `id` property
   var id = payload.params.id
 
-  return state.removeIn([entity, id]);
+  return state.removeIn([entity, id])
 }

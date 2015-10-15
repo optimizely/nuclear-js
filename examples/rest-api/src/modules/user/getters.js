@@ -7,5 +7,5 @@ exports.byId = RestApi.createByIdGetter(model)
 
 exports.userList = [
   exports.entityMap,
-  map => map.toList()
+  map => map.toList(),
 ]

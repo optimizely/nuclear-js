@@ -26,15 +26,14 @@ exports.createEntityMapGetter = function(model) {
       // return an Immutable.Map for getters downstream
       if (!entityMap) {
         return toImmutable({})
-      } else {
-        return entityMap
       }
-    }
+      return entityMap
+    },
   ]
 }
 
 /**
- * Creates a function that creates a getter that looks up the entity in the restApiCache by ID 
+ * Creates a function that creates a getter that looks up the entity in the restApiCache by ID
  * @param {Model} model
  */
 exports.createByIdGetter = function(model) {

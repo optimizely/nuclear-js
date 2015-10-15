@@ -13,7 +13,7 @@ module.exports = new Nuclear.Store({
     // all action handlers are pure functions that take the current state and payload
     this.on(actionTypes.ADD_MESSAGE, addMessage)
     this.on(actionTypes.CLICK_THREAD, setMessagesRead)
-  }
+  },
 })
 
 /**
