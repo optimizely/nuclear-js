@@ -22,12 +22,12 @@ exports.createMessage = function(text, threadID) {
   var id = 'm_' + timestamp
   var threadName = flux.evaluate([
     getters.threadsMap,
-    threadsMap => threadsMap.getIn([threadID, 'threadName'])
+    threadsMap => threadsMap.getIn([threadID, 'threadName']),
   ])
   var authorName = 'Jordan'
 
   flux.dispatch(actionTypes.ADD_MESSAGE, {
-    message: { id, threadID, threadName, authorName, timestamp, text }
+    message: { id, threadID, threadName, authorName, timestamp, text },
   })
 }
 

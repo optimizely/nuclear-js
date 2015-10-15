@@ -2,24 +2,22 @@ require('blanket')({
   pattern: [
     '/modules/user',
     'mock-server',
-  ]
+  ],
 })
 
-var _ = require('lodash')
-var Promise = require('es6-promise').Promise
 var chai = require('chai')
 var spies = require('chai-spies')
 var expect = chai.expect
 var sinon = require('sinon')
 var sinonChai = require('sinon-chai')
-chai.use(sinonChai);
+chai.use(sinonChai)
 chai.use(spies)
 
 var Flux = require('../../flux')
 var MockServer = require('../../mock-server')
 var User = require('./index')
 
-describe("modules/user", function() {
+describe('modules/user', function() {
   var userData
 
   beforeEach(function() {
@@ -36,7 +34,7 @@ describe("modules/user", function() {
       },
     }
 
-    sinon.stub(MockServer, '__getData');
+    sinon.stub(MockServer, '__getData')
     MockServer.__getData.withArgs('user').returns(userData)
   })
 
@@ -45,8 +43,8 @@ describe("modules/user", function() {
     Flux.reset()
   })
 
-  describe("#fetchAll", function() {
-    it("should load users into the restApiCache", function(done) {
+  describe('#fetchAll', function() {
+    it('should load users into the restApiCache', function(done) {
       User.actions.fetchAll().then(function() {
         var users = Flux.evaluateToJS(User.getters.entityMap)
         expect(users).to.deep.equal(userData)
@@ -55,8 +53,8 @@ describe("modules/user", function() {
     })
   })
 
-  describe("#fetch", function() {
-    it("should load the fetched user into the restApiCache", function(done) {
+  describe('#fetch', function() {
+    it('should load the fetched user into the restApiCache', function(done) {
       var id = 1
       User.actions.fetch(id).then(function() {
         var users = Flux.evaluateToJS(User.getters.entityMap)
@@ -65,11 +63,11 @@ describe("modules/user", function() {
       }).catch(done)
     })
 
-    it("should reject the promise when there is no entity for that id", function(done) {
+    it('should reject the promise when there is no entity for that id', function(done) {
       var id = 4
       User.actions.fetch(id).then(
         function() {
-          done("In success handler")
+          done('In success handler')
         },
         function() {
           done()
@@ -78,15 +76,15 @@ describe("modules/user", function() {
     })
   })
 
-  describe("#delete", function() {
-    describe("when users have been loaded into the restApiCache", function() {
+  describe('#delete', function() {
+    describe('when users have been loaded into the restApiCache', function() {
       beforeEach(function(done) {
         User.actions.fetchAll().then(function(results) {
           done()
         })
       })
 
-      it("should remove the user from the restApiCache", function(done) {
+      it('should remove the user from the restApiCache', function(done) {
         var user = userData[1]
         User.actions.delete(user).then(function() {
           var user1 = Flux.evaluateToJS(User.getters.byId(1))
@@ -97,11 +95,11 @@ describe("modules/user", function() {
         }).catch(done)
       })
 
-      it("should reject the promise when no user has been found", function(done) {
+      it('should reject the promise when no user has been found', function(done) {
         var user = { id: 4 }
         User.actions.delete(user).then(
           function() {
-            done("In success handler")
+            done('In success handler')
           },
           function() {
             var user1 = Flux.evaluateToJS(User.getters.byId(1))
@@ -115,9 +113,9 @@ describe("modules/user", function() {
     })
   })
 
-  describe("#save", function() {
-    describe("with an id", function() {
-      it("should update the restApiCache", function(done) {
+  describe('#save', function() {
+    describe('with an id', function() {
+      it('should update the restApiCache', function(done) {
         var instance = {
           id: 1,
           name: 'jordan2',
@@ -130,7 +128,7 @@ describe("modules/user", function() {
         }).catch(done)
       })
 
-      it("should reject the promise if no entity exists with that id", function(done) {
+      it('should reject the promise if no entity exists with that id', function(done) {
         var instance = {
           id: 4,
           name: 'jordan2',
@@ -138,7 +136,7 @@ describe("modules/user", function() {
         }
         User.actions.save(instance).then(
           function() {
-            done("In success handler")
+            done('In success handler')
           },
           function() {
             done()
@@ -147,8 +145,8 @@ describe("modules/user", function() {
       })
     })
 
-    describe("without an id", function() {
-      it("should insert into the restApiCache", function(done) {
+    describe('without an id', function() {
+      it('should insert into the restApiCache', function(done) {
         var instance = {
           name: 'new',
           email: 'new@nuclear.com',

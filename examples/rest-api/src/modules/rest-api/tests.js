@@ -1,5 +1,5 @@
 require('blanket')({
-  pattern: '/modules/'
+  pattern: '/modules/',
 })
 
 var _ = require('lodash')
@@ -9,14 +9,14 @@ var spies = require('chai-spies')
 var expect = chai.expect
 var sinon = require('sinon')
 var sinonChai = require('sinon-chai')
-chai.use(sinonChai);
+chai.use(sinonChai)
 chai.use(spies)
 
 var Flux = require('../../flux')
 var RestApi = require('./index')
 var actionTypes = require('./action-types')
 
-describe("modules/rest-api", function() {
+describe('modules/rest-api', function() {
   afterEach(function() {
     Flux.reset()
   })
@@ -29,11 +29,14 @@ describe("modules/rest-api", function() {
     3: { id: 3, name: 'instance 3', category: 'bar' },
   }
 
-  describe("#createApiActions", function() {
+  describe('#createApiActions', function() {
     var apiActions
 
-    describe("when the apiActions are successful", function() {
-      var fetchSpy, fetchAllSpy, saveSpy, deleteSpy
+    describe('when the apiActions are successful', function() {
+      var fetchSpy
+      var fetchAllSpy
+      var saveSpy
+      var deleteSpy
 
       beforeEach(function() {
         fetchSpy = chai.spy()
@@ -77,8 +80,8 @@ describe("modules/rest-api", function() {
         })
       })
 
-      describe("#fetch", function() {
-        it("should call the original model.fetch with the correct param", function(done) {
+      describe('#fetch', function() {
+        it('should call the original model.fetch with the correct param', function(done) {
           apiActions.fetch(1).then(function(result) {
             expect(fetchSpy).to.have.been.called.once
             expect(fetchSpy).to.have.been.called.with(1)
@@ -86,7 +89,7 @@ describe("modules/rest-api", function() {
           }).catch(done)
         })
 
-        it("should add the entry to the restApiCache store", function(done) {
+        it('should add the entry to the restApiCache store', function(done) {
           var id = 1
           apiActions.fetch(id).then(function(result) {
             var cachedResult = Flux.evaluateToJS(['restApiCache', 'entity', id])
@@ -95,15 +98,15 @@ describe("modules/rest-api", function() {
           }).catch(done)
         })
 
-        it("should pass the result through for promise chaining", function(done) {
+        it('should pass the result through for promise chaining', function(done) {
           var id = 1
           apiActions.fetch(id).then(function(result) {
-            expect(result).to.deep.equal(instances[id]);
+            expect(result).to.deep.equal(instances[id])
             done()
           }).catch(done)
         })
 
-        it("should not add anything when fetch comes back with `null`", function(done) {
+        it('should not add anything when fetch comes back with `null`', function(done) {
           var id = 4
           apiActions.fetch(id).then(function(result) {
             var cachedResult = Flux.evaluateToJS(['restApiCache', 'entity', id])
@@ -113,8 +116,8 @@ describe("modules/rest-api", function() {
         })
       })
 
-      describe("#fetchAll", function() {
-        it("should call the original model.fetchAll with the correct params", function(done) {
+      describe('#fetchAll', function() {
+        it('should call the original model.fetchAll with the correct params', function(done) {
           var params = { category: 'foo' }
           apiActions.fetchAll(params).then(function(results) {
             expect(fetchAllSpy).to.have.been.called.once
@@ -123,7 +126,7 @@ describe("modules/rest-api", function() {
           }).catch(done)
         })
 
-        it("should add the entries to the restApiCache store", function(done) {
+        it('should add the entries to the restApiCache store', function(done) {
           var params = { category: 'foo' }
           apiActions.fetchAll(params).then(function(results) {
             var cachedResults = Flux.evaluateToJS(['restApiCache', 'entity'])
@@ -135,18 +138,18 @@ describe("modules/rest-api", function() {
           }).catch(done)
         })
 
-        it("should pass the result through for promise chaining", function(done) {
+        it('should pass the result through for promise chaining', function(done) {
           var params = { category: 'foo' }
           apiActions.fetchAll(params).then(function(results) {
             expect(results).to.deep.equal([
               instances[1],
               instances[2],
-            ]);
+            ])
             done()
           }).catch(done)
         })
 
-        it("should not add anything when fetchAll comes back with `[]`", function(done) {
+        it('should not add anything when fetchAll comes back with `[]`', function(done) {
           var params = { category: 'invalid' }
           apiActions.fetchAll(params).then(function(results) {
             var cachedResult = Flux.evaluateToJS(['restApiCache', 'entity'])
@@ -157,8 +160,8 @@ describe("modules/rest-api", function() {
         })
       })
 
-      describe("#save", function() {
-        it("should call the original model.save with the correct params", function(done) {
+      describe('#save', function() {
+        it('should call the original model.save with the correct params', function(done) {
           var instance = { name: 'instance 4', category: 'new' }
           apiActions.save(instance).then(function(result) {
             expect(saveSpy).to.have.been.called.once
@@ -167,7 +170,7 @@ describe("modules/rest-api", function() {
           }).catch(done)
         })
 
-        it("should add the new entry to the restApiCache store", function(done) {
+        it('should add the new entry to the restApiCache store', function(done) {
           var instance = { name: 'instance 4', category: 'new' }
           apiActions.save(instance).then(function(result) {
             var cachedResult = Flux.evaluateToJS(['restApiCache', 'entity', generatedId])
@@ -181,7 +184,7 @@ describe("modules/rest-api", function() {
           }).catch(done)
         })
 
-        it("should pass the result through for promise chaining", function(done) {
+        it('should pass the result through for promise chaining', function(done) {
           var instance = { name: 'instance 4', category: 'new' }
           apiActions.save(instance).then(function(result) {
             expect(result).to.deep.equal({
@@ -194,14 +197,14 @@ describe("modules/rest-api", function() {
         })
       })
 
-      describe("#delete", function() {
+      describe('#delete', function() {
         beforeEach(function(done) {
           apiActions.fetchAll().then(function() {
             done()
           })
         })
 
-        it("should call the original model.delete with the correct params", function(done) {
+        it('should call the original model.delete with the correct params', function(done) {
           apiActions['delete'](instances[3]).then(function(result) {
             expect(deleteSpy).to.have.been.called.once
             expect(deleteSpy).to.have.been.called.with(instances[3])
@@ -209,24 +212,27 @@ describe("modules/rest-api", function() {
           }).catch(done)
         })
 
-        it("should remove the entry the restApiCache store", function(done) {
+        it('should remove the entry the restApiCache store', function(done) {
           apiActions['delete'](instances[3]).then(function(result) {
             var instance1 = Flux.evaluateToJS(['restApiCache', 'entity', 1])
             var instance2 = Flux.evaluateToJS(['restApiCache', 'entity', 2])
             var instance3 = Flux.evaluateToJS(['restApiCache', 'entity', 3])
 
-            expect(instance1).to.exist;
-            expect(instance2).to.exist;
-            expect(instance3).to.be.undefined;
+            expect(instance1).to.exist
+            expect(instance2).to.exist
+            expect(instance3).to.be.undefined
             done()
           }).catch(done)
         })
       })
     })
 
-    describe("when the apiActions fail", function() {
+    describe('when the apiActions fail', function() {
       var model
-      var fetchReason, fetchAllReason, saveReason, deleteReason
+      var fetchReason
+      var fetchAllReason
+      var saveReason
+      var deleteReason
 
       beforeEach(function() {
         sinon.stub(Flux, 'dispatch')
@@ -271,12 +277,12 @@ describe("modules/rest-api", function() {
         Flux.dispatch.restore()
       })
 
-      describe("#fetch", function() {
+      describe('#fetch', function() {
         it('should dispatch API_FETCH_FAIL with the model, params and reason', function(done) {
           var id = 123
           apiActions.fetch(id).then(
             function() {
-              done("Did not go into reject handler")
+              done('Did not go into reject handler')
             },
             // fail
             function(reason) {
@@ -294,7 +300,7 @@ describe("modules/rest-api", function() {
           var id = 123
           apiActions.fetch(id).then(
             function() {
-              done("Did not go into reject handler")
+              done('Did not go into reject handler')
             },
             // fail
             function(reason) {
@@ -305,12 +311,12 @@ describe("modules/rest-api", function() {
         })
       })
 
-      describe("#fetchAll", function() {
+      describe('#fetchAll', function() {
         it('should dispatch API_FETCH_FAIL with the model, params and reason', function(done) {
           var params = { invalid: 'invalid' }
           apiActions.fetchAll(params).then(
             function() {
-              done("Did not go into reject handler")
+              done('Did not go into reject handler')
             },
             // fail
             function(reason) {
@@ -328,7 +334,7 @@ describe("modules/rest-api", function() {
           var params = { invalid: 'invalid' }
           apiActions.fetchAll(params).then(
             function() {
-              done("Did not go into reject handler")
+              done('Did not go into reject handler')
             },
             // fail
             function(reason) {
@@ -339,12 +345,12 @@ describe("modules/rest-api", function() {
         })
       })
 
-      describe("#save", function() {
+      describe('#save', function() {
         it('should dispatch API_SAVE_FAIL with the model, params and reason', function(done) {
           var instance = { id: 5, invalid: 'invalid' }
           apiActions.save(instance).then(
             function() {
-              done("Did not go into reject handler")
+              done('Did not go into reject handler')
             },
             // fail
             function(reason) {
@@ -362,7 +368,7 @@ describe("modules/rest-api", function() {
           var instance = { id: 5, invalid: 'invalid' }
           apiActions.save(instance).then(
             function() {
-              done("Did not go into reject handler")
+              done('Did not go into reject handler')
             },
             // fail
             function(reason) {
@@ -373,12 +379,12 @@ describe("modules/rest-api", function() {
         })
       })
 
-      describe("#delete", function() {
+      describe('#delete', function() {
         it('should dispatch API_DELETE_FAIL with the model, params and reason', function(done) {
           var instance = { id: 5, invalid: 'invalid' }
           apiActions['delete'](instance).then(
             function() {
-              done("Did not go into reject handler")
+              done('Did not go into reject handler')
             },
             // fail
             function(reason) {
@@ -396,7 +402,7 @@ describe("modules/rest-api", function() {
           var instance = { id: 5, invalid: 'invalid' }
           apiActions['delete'](instance).then(
             function() {
-              done("Did not go into reject handler")
+              done('Did not go into reject handler')
             },
             // fail
             function(reason) {
@@ -409,24 +415,24 @@ describe("modules/rest-api", function() {
     })
   })
 
-  describe("#createEntityMapGetter", function() {
+  describe('#createEntityMapGetter', function() {
     var model
 
     beforeEach(function() {
       model = {
-        entity: 'entity'
+        entity: 'entity',
       }
     })
 
-    describe("when no entities are loaded", function() {
-      it("should return an empty map", function() {
+    describe('when no entities are loaded', function() {
+      it('should return an empty map', function() {
         var getter = RestApi.createEntityMapGetter(model)
         var result = Flux.evaluateToJS(getter)
         expect(result).to.deep.equal({})
       })
     })
 
-    describe("when entities are loaded after a fetch success", function() {
+    describe('when entities are loaded after a fetch success', function() {
       beforeEach(function() {
         // simulate a fetch success to insert entities in the restApiCache store
         Flux.dispatch(actionTypes.API_FETCH_SUCCESS, {
@@ -439,7 +445,7 @@ describe("modules/rest-api", function() {
         })
       })
 
-      it("should return a map of id => entity", function() {
+      it('should return a map of id => entity', function() {
         var getter = RestApi.createEntityMapGetter(model)
         var result = Flux.evaluateToJS(getter)
         expect(result).to.deep.equal(instances)
@@ -447,16 +453,16 @@ describe("modules/rest-api", function() {
     })
   })
 
-  describe("#createByIdGetter", function() {
+  describe('#createByIdGetter', function() {
     var model
 
     beforeEach(function() {
       model = {
-        entity: 'entity'
+        entity: 'entity',
       }
     })
 
-    describe("when entities are loaded after a fetch success", function() {
+    describe('when entities are loaded after a fetch success', function() {
       beforeEach(function() {
         // simulate a fetch success to insert entities in the restApiCache store
         Flux.dispatch(actionTypes.API_FETCH_SUCCESS, {
@@ -469,7 +475,7 @@ describe("modules/rest-api", function() {
         })
       })
 
-      it("should return the entity by id", function() {
+      it('should return the entity by id', function() {
         var getter = RestApi.createByIdGetter(model)
         var result = Flux.evaluateToJS(getter(1))
         expect(result).to.deep.equal(instances[1])

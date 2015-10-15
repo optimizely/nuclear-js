@@ -1,10 +1,9 @@
 var { Immutable } = require('nuclear-js')
-var User = require('../user')
 
 exports.formExists = function(formId) {
   return [
     ['form', formId],
-    formEntry => !!formEntry
+    formEntry => !!formEntry,
   ]
 }
 
@@ -20,7 +19,7 @@ exports.isDirty = function(formId) {
   return [
     exports.initialValues(formId),
     exports.currentValues(formId),
-    (initial, current) => !Immutable.is(initial, current)
+    (initial, current) => !Immutable.is(initial, current),
   ]
 }
 
@@ -34,7 +33,7 @@ exports.dirtyFields = function(formId) {
       }
       return initial
         .map((val, key) => val !== current.get(key))
-    }
+    },
   ]
 }
 

@@ -1,5 +1,4 @@
 var Nuclear = require('nuclear-js')
-var toImmutable = Nuclear.toImmutable
 var actionTypes = require('../action-types')
 
 module.exports = new Nuclear.Store({
@@ -11,7 +10,7 @@ module.exports = new Nuclear.Store({
   initialize() {
     // all action handlers are pure functions that take the current state and payload
     this.on(actionTypes.CLICK_THREAD, setCurrentThreadID)
-  }
+  },
 })
 
 function setCurrentThreadID(state, { threadID }) {

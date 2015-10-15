@@ -17,7 +17,7 @@ exports.editUser = function(user) {
   }
 
   if (isEditing() && isDirty()) {
-    // show confirm and do something 
+    // show confirm and do something
     return
   }
 

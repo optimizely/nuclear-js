@@ -6,7 +6,7 @@ module.exports = [
     authorName: 'Bill',
     text: 'Hey Jing, want to give a Flux talk at ForwardJS?',
     isRead: false,
-    timestamp: Date.now() - 99999
+    timestamp: Date.now() - 99999,
   },
   {
     id: 'm_2',
@@ -15,7 +15,7 @@ module.exports = [
     authorName: 'Bill',
     text: 'Seems like a pretty cool conference.',
     isRead: false,
-    timestamp: Date.now() - 89999
+    timestamp: Date.now() - 89999,
   },
   {
     id: 'm_3',
@@ -24,7 +24,7 @@ module.exports = [
     authorName: 'Jing',
     text: 'Sounds good.  Will they be serving dessert?',
     isRead: false,
-    timestamp: Date.now() - 79999
+    timestamp: Date.now() - 79999,
   },
   {
     id: 'm_4',
@@ -33,7 +33,7 @@ module.exports = [
     authorName: 'Bill',
     text: 'Hey Dave, want to get a beer after the conference?',
     isRead: false,
-    timestamp: Date.now() - 69999
+    timestamp: Date.now() - 69999,
   },
   {
     id: 'm_5',
@@ -42,7 +42,7 @@ module.exports = [
     authorName: 'Dave',
     text: 'Totally!  Meet you at the hotel bar.',
     isRead: false,
-    timestamp: Date.now() - 59999
+    timestamp: Date.now() - 59999,
   },
   {
     id: 'm_6',
@@ -51,7 +51,7 @@ module.exports = [
     authorName: 'Bill',
     text: 'Hey Brian, are you going to be talking about functional stuff?',
     isRead: false,
-    timestamp: Date.now() - 49999
+    timestamp: Date.now() - 49999,
   },
   {
     id: 'm_7',
@@ -60,6 +60,6 @@ module.exports = [
     authorName: 'Brian',
     text: 'At ForwardJS?  Yeah, of course.  See you there!',
     isRead: false,
-    timestamp: Date.now() - 39999
-  }
+    timestamp: Date.now() - 39999,
+  },
 ]
