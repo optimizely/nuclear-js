@@ -1,6 +1,5 @@
 var Immutable = require('immutable')
 var toImmutable = require('./immutable-helpers').toImmutable
-var hashCode = require('./hash-code')
 var isEqual = require('./is-equal')
 var getComputeFn = require('./getter').getComputeFn
 var getDeps = require('./getter').getDeps
@@ -14,8 +13,8 @@ class Evaluator {
   constructor() {
     /**
      * {
-     *   <hashCode>: {
-     *     stateHashCode: number,
+     *   <Getter>: {
+     *     state: Immutable.Map,
      *     args: Immutable.List,
      *     value: any,
      *   }
@@ -46,12 +45,10 @@ class Evaluator {
     }
 
     // Must be a Getter
-    var code = hashCode(keyPathOrGetter)
-
     // if the value is cached for this dispatch cycle, return the cached value
     if (this.__isCached(state, keyPathOrGetter)) {
       // Cache hit
-      return this.__cachedGetters.getIn([code, 'value'])
+      return this.__cachedGetters.getIn([keyPathOrGetter, 'value'])
 
     }
 
@@ -60,11 +57,11 @@ class Evaluator {
 
     if (this.__hasStaleValue(state, keyPathOrGetter)) {
       // getter deps could still be unchanged since we only looked at the unwrapped (keypath, bottom level) deps
-      var prevArgs = this.__cachedGetters.getIn([code, 'args'])
+      var prevArgs = this.__cachedGetters.getIn([keyPathOrGetter, 'args'])
 
       // since Getter is a pure functions if the args are the same its a cache hit
       if (isEqual(prevArgs, toImmutable(args))) {
-        var prevValue = this.__cachedGetters.getIn([code, 'value'])
+        var prevValue = this.__cachedGetters.getIn([keyPathOrGetter, 'value'])
         this.__cacheValue(state, keyPathOrGetter, prevArgs, prevValue)
         return prevValue
       }
@@ -97,11 +94,10 @@ class Evaluator {
    * @param {Getter} getter
    */
   __hasStaleValue(state, getter) {
-    var code = hashCode(getter)
     var cache = this.__cachedGetters
     return (
-      cache.has(code) &&
-      cache.getIn([code, 'stateHashCode']) !== state.hashCode()
+      cache.has(getter) &&
+      !Immutable.is(cache.getIn([getter, 'state']), state)
     )
   }
 
@@ -113,11 +109,10 @@ class Evaluator {
    * @param {any} value
    */
   __cacheValue(state, getter, args, value) {
-    var code = hashCode(getter)
-    this.__cachedGetters = this.__cachedGetters.set(code, Immutable.Map({
+    this.__cachedGetters = this.__cachedGetters.set(getter, Immutable.Map({
       value: value,
       args: toImmutable(args),
-      stateHashCode: state.hashCode(),
+      state: state,
     }))
   }
 
@@ -128,10 +123,9 @@ class Evaluator {
    * @return {boolean}
    */
   __isCached(state, getter) {
-    var code = hashCode(getter)
     return (
-      this.__cachedGetters.hasIn([code, 'value']) &&
-      this.__cachedGetters.getIn([code, 'stateHashCode']) === state.hashCode()
+      this.__cachedGetters.hasIn([getter, 'value']) &&
+      Immutable.is(this.__cachedGetters.getIn([getter, 'state']), state)
     )
   }
 
