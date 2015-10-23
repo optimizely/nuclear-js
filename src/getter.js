@@ -48,10 +48,21 @@ function fromKeyPath(keyPath) {
   return [keyPath, identity]
 }
 
+/**
+ * Determines if a getter was converted from a plain KeyPath, ex. ['a', 'b'],
+ * using Getter.fromKeyPath
+ * @param {Getter}
+ * @return {boolean}
+ */
+function wasKeyPath(getter) {
+  return getComputeFn(getter) === identity
+}
+
 
 module.exports = {
   isGetter: isGetter,
   getComputeFn: getComputeFn,
   getDeps: getDeps,
   fromKeyPath: fromKeyPath,
+  wasKeyPath: wasKeyPath,
 }

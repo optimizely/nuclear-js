@@ -101,6 +101,20 @@ class Reactor {
     return this.__changeObserver.onChange(getter, handler)
   }
 
+  /**
+   * Removes a change observer that has previously been set
+   *
+   * 1. unobserve(keyPath) Removes all observables for keyPath
+   * 2. unobserve(getter) Removes all observables for getter and getter dependencies
+   * 3. unobserve(keyPath|getter, handlerFn) Removes the specific handlerFn for
+   *    the passed in keyPath or getter.
+   *
+   * @param {KeyPath|Getter} getter
+   * @param {function} handler
+   */
+  unobserve(getter, handler) {
+    this.__changeObserver.unwatch(getter, handler)
+  }
 
   /**
    * Dispatches a single message

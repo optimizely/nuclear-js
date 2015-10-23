@@ -1,6 +1,8 @@
 var Immutable = require('immutable')
 var KeyPath = require('../src/key-path')
 var isKeyPath = KeyPath.isKeyPath
+var same = KeyPath.same
+var isUpstream = KeyPath.isUpstream
 
 describe('KeyPath', () => {
   describe('isKeyPath', () => {
@@ -25,6 +27,39 @@ describe('KeyPath', () => {
       })
 
       expect(isKeyPath([immMap])).toBe(true)
+    })
+  })
+
+  describe('same', () => {
+    it('should return false when a non-keypath is passed', () => {
+      expect(same(['some', 'keypath'], 'something else')).toBe(false)
+      expect(same({ something: 'else' }, ['some', 'keypath'])).toBe(false)
+    })
+
+    it('should return false when two differnt keypaths are compared', () => {
+      expect(same(['some', 'keypath'], ['some', 'other', 'keypath'])).toBe(false)
+      expect(same(['some', 'keypath'], ['something', 'else'])).toBe(false)
+    })
+
+    it('should return true when the same keypath is compared', () => {
+      expect(same(['some', 'keypath'], ['some', 'keypath'])).toBe(true)
+    })
+  })
+
+  describe('isUpstream', () => {
+    it('should return false when a non-keypath is passed', () => {
+      expect(isUpstream(['some', 'keypath'], 'something else')).toBe(false)
+      expect(isUpstream({ something: 'else' }, ['some', 'keypath'])).toBe(false)
+    })
+
+    it('should return false when two unrelated keypaths are passed', () => {
+      expect(isUpstream(['some', 'keypath'], ['some', 'other', 'keypath'])).toBe(false)
+      expect(isUpstream(['some', 'keypath'], ['something', 'else'])).toBe(false)
+    })
+
+    it('should return true when two related keypaths are passed', () => {
+      expect(isUpstream(['some', 'keypath'], ['some', 'keypath', 'with depth'])).toBe(true)
+      expect(isUpstream(['some'], ['some', 'keypath', 'with depth'])).toBe(true)
     })
   })
 })

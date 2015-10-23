@@ -118,6 +118,123 @@ describe('ChangeObserver', () => {
       expect(mockFn1.calls.count()).toBe(1)
       expect(mockFn2.calls.count()).toBe(0)
     })
+
+    describe('unregistering change handlers', () => {
+      it('should de-register by KeyPath', () => {
+        var mockFn = jasmine.createSpy()
+
+        observer.onChange(Getter.fromKeyPath(['foo']), mockFn)
+        observer.unwatch(['foo'])
+        observer.notifyObservers(initialState.updateIn(['foo', 'bar'], x => 2))
+
+        expect(mockFn.calls.count()).toBe(0)
+      })
+
+      describe('when a deep KeyPath is registered', () => {
+        it('should de-register the entire KeyPath', () => {
+          var mockFn = jasmine.createSpy()
+
+          observer.onChange(Getter.fromKeyPath(['foo', 'bar']), mockFn)
+          observer.unwatch(['foo', 'bar'])
+
+          observer.notifyObservers(initialState.updateIn(['foo', 'bar'], x => {
+            return Map({
+              'baz': 2,
+            })
+          }))
+
+          expect(mockFn.calls.count()).toBe(0)
+        })
+
+        it('should de-register by a higher-up key', () => {
+          var mockFn = jasmine.createSpy()
+
+          observer.onChange(Getter.fromKeyPath(['foo', 'bar']), mockFn)
+          observer.unwatch(['foo'])
+
+          observer.notifyObservers(initialState.updateIn(['foo', 'bar'], x => {
+            return Map({
+              'baz': 2,
+            })
+          }))
+
+          expect(mockFn.calls.count()).toBe(0)
+        })
+      })
+
+      it('should de-register by Getter', () => {
+        var mockFn = jasmine.createSpy()
+        var getter = Getter.fromKeyPath(['foo'])
+
+        observer.onChange(getter, mockFn)
+        observer.unwatch(getter)
+        observer.notifyObservers(initialState.updateIn(['foo', 'bar'], x => 2))
+
+        expect(mockFn.calls.count()).toBe(0)
+      })
+
+      describe('when two of the same getter are registered', () => {
+        it('should de-register both', () => {
+          var getter = Getter.fromKeyPath(['foo'])
+          var mockFn1 = jasmine.createSpy()
+          var mockFn2 = jasmine.createSpy()
+
+          observer.onChange(getter, mockFn1)
+          observer.onChange(getter, mockFn2)
+          observer.unwatch(getter)
+
+          observer.notifyObservers(initialState.updateIn(['foo', 'bar'], x => 2))
+
+          expect(mockFn1.calls.count()).toBe(0)
+          expect(mockFn2.calls.count()).toBe(0)
+        })
+      })
+
+      describe('when a getter with dependencies is registered', () => {
+        it('should de-register for any changes up the dependency chain', () => {
+          var getter = Getter.fromKeyPath(['foo'])
+          var otherGetter = [getter, Getter.fromKeyPath(['bar'])]
+          var mockFn = jasmine.createSpy()
+
+          observer.onChange(otherGetter, mockFn)
+          observer.unwatch(otherGetter)
+
+          observer.notifyObservers(initialState.updateIn(['foo'], x => 2))
+
+          expect(mockFn.calls.count()).toBe(0)
+        })
+      })
+
+      describe('when a handlerFn is specified', () => {
+        it('should de-register the specific change handler for the getter', () => {
+          var mockFn = jasmine.createSpy()
+          var otherMockFn = jasmine.createSpy()
+          var getter = Getter.fromKeyPath(['foo'])
+
+          observer.onChange(getter, mockFn)
+          observer.onChange(getter, otherMockFn)
+          observer.unwatch(getter, mockFn)
+
+          observer.notifyObservers(initialState.updateIn(['foo'], x => 2))
+
+          expect(mockFn.calls.count()).toEqual(0)
+        })
+
+        it('should not de-register other change handlers for the same getter', () => {
+          var mockFn = jasmine.createSpy()
+          var otherMockFn = jasmine.createSpy()
+          var getter = Getter.fromKeyPath(['foo'])
+
+          observer.onChange(getter, mockFn)
+          observer.onChange(getter, otherMockFn)
+          observer.unwatch(getter, mockFn)
+
+          observer.notifyObservers(initialState.updateIn(['foo'], x => 2))
+
+          expect(otherMockFn.calls.count()).toBe(1)
+        })
+      })
+    })
   })
   // TODO: test the prevValues and registering an observable
 })

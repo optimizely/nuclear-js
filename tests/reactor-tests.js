@@ -285,6 +285,80 @@ describe('Reactor', () => {
         expect(mockFn.calls.count()).toEqual(0)
       })
     })
+
+    describe('#unobserve', () => {
+      var mockFn
+
+      beforeEach(() => {
+        mockFn = jasmine.createSpy()
+      })
+
+      describe('when a keypath is passed', () => {
+        beforeEach(() => {
+          reactor.observe(['taxPercent'], mockFn)
+        })
+
+        it('should remove the change handler for the passed in keyPath', () => {
+          reactor.unobserve(['taxPercent'])
+          checkoutActions.setTaxPercent(5)
+
+          expect(mockFn.calls.count()).toEqual(0)
+        })
+
+        describe('when a handler is specified', () => {
+          it('should remove the specific change handler for the keyPath', () => {
+            reactor.unobserve(['taxPercent'], mockFn)
+            checkoutActions.setTaxPercent(5)
+
+            expect(mockFn.calls.count()).toEqual(0)
+          })
+
+          it('should not remove other change handlers for the same keypath', () => {
+            var otherMockFn = jasmine.createSpy()
+            reactor.observe(['taxPercent'], otherMockFn)
+
+            reactor.unobserve(['taxPercent'], mockFn)
+            checkoutActions.setTaxPercent(5)
+
+            expect(otherMockFn.calls.count()).toBe(1)
+          })
+        })
+      })
+
+      describe('when a getter is passed', () => {
+        var otherMockFn
+
+        beforeEach(() => {
+          checkoutActions.addItem('item', 100)
+          reactor.observe(totalGetter, mockFn)
+          otherMockFn = jasmine.createSpy()
+          reactor.observe(totalGetter, otherMockFn)
+        })
+
+        it('should remove the change handler for the getter and deps', () => {
+          reactor.unobserve(totalGetter)
+          checkoutActions.setTaxPercent(5)
+
+          expect(mockFn.calls.count()).toEqual(0)
+          expect(otherMockFn.calls.count()).toEqual(0)
+        })
+
+        describe('when a handler is specified', () => {
+          beforeEach(() => {
+            reactor.unobserve(totalGetter, mockFn)
+            checkoutActions.setTaxPercent(5)
+          })
+
+          it('should remove the specific change handler for the getter', () => {
+            expect(mockFn.calls.count()).toEqual(0)
+          })
+
+          it('should not remove other change handlers for the same getter', () => {
+            expect(otherMockFn.calls.count()).toBe(1)
+          })
+        })
+      })
+    })
   }) // Reactor with no initial state
 
   describe('reactor#reset', () => {
