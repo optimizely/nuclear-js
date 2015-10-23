@@ -74,7 +74,7 @@ export default Store({
  */
 function loadProjects(state, payload) {
   return state.withMutations(state => {
-    payload.forEach(function(project) {
+    payload.data.forEach(function(project) {
       state.set(project.id, project)
     })
   })
