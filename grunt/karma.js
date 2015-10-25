@@ -23,7 +23,7 @@ module.exports = {
     webpack: {
       module: {
         loaders: [
-          { test: /\.js$/, loader: 'jstransform-loader' },
+          { test: /\.js$/, loader: 'babel-loader' },
         ],
       },
     },
@@ -37,6 +37,10 @@ module.exports = {
     autoWatch: false,
 
     singleRun: true,
+
+    client: {
+      captureConsole: false,
+    },
   },
 
   phantom: {
@@ -66,7 +70,7 @@ module.exports = {
     webpack: {
       module: {
         loaders: [
-          { test: /\.js$/, loader: 'jstransform-loader' },
+          { test: /\.js$/, loader: 'babel-loader' },
         ],
         postLoaders: [
           {

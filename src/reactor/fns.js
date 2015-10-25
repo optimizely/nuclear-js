@@ -1,16 +1,32 @@
-var Immutable = require('immutable')
-var logging = require('../logging')
-var isImmutableValue = require('../immutable-helpers').isImmutableValue
-var Getter = require('../getter')
-var KeyPath = require('../key-path')
-var evaluate = require('./evaluate')
-var each = require('../utils').each
+import Immutable from 'immutable'
+import logging from '../logging'
+import { isImmutableValue } from '../immutable-helpers'
+import { toImmutable } from '../immutable-helpers'
+import { fromKeyPath, getStoreDeps, getComputeFn, getDeps, isGetter } from '../getter'
+import { isKeyPath } from '../key-path'
+import { each } from '../utils'
+import isEqual from '../is-equal'
 
-var ObserveResult = Immutable.Record({ unwatchFn: null, reactorState: null})
+/**
+ * Immutable Types
+ */
+var ObserveResult = Immutable.Record({
+  observerStoreMap: null,
+  unwatchEntry: null
+})
 
-function observeResult(unwatchFn, reactorState) {
+function observeResult(observerStoreMap, unwatchEntry) {
   return new ObserveResult({
-    unwatchFn: unwatchFn,
+    observerStoreMap,
+    unwatchEntry,
+  })
+}
+
+var EvaluateResult = Immutable.Record({ result: null, reactorState: null})
+
+function evaluateResult(result, reactorState) {
+  return new EvaluateResult({
+    result: result,
     reactorState: reactorState,
   })
 }
@@ -24,6 +40,7 @@ function observeResult(unwatchFn, reactorState) {
 exports.dispatch = function(reactorState, actionType, payload) {
   var currState = reactorState.get('state')
   var debug = reactorState.get('debug')
+  var dirtyStores = reactorState.get('dirtyStores')
 
   var nextState = currState.withMutations(state => {
     if (debug) {
@@ -51,6 +68,11 @@ exports.dispatch = function(reactorState, actionType, payload) {
 
       state.set(id, newState)
 
+      if (currState !== newState) {
+        // if the store state changed add store to list of dirty stores
+        dirtyStores = dirtyStores.add(id)
+      }
+
       if (debug) {
         logging.storeHandled(id, currState, newState)
       }
@@ -61,7 +83,11 @@ exports.dispatch = function(reactorState, actionType, payload) {
     }
   })
 
-  return incrementId(reactorState.set('state', nextState))
+  const nextReactorState = reactorState
+    .set('state', nextState)
+    .set('dirtyStores', dirtyStores);
+
+  return incrementId(nextReactorState)
 }
 
 /**
@@ -111,9 +137,10 @@ exports.registerStores = function(reactorState, stores) {
       reactorState
         .update('stores', stores => stores.set(id, store))
         .update('state', state => state.set(id, initialState))
+        .update('dirtyStores', state => state.add(id))
 
-      incrementId(reactorState)
     })
+    incrementId(reactorState)
   })
 }
 
@@ -129,67 +156,106 @@ exports.registerStores = function(reactorState, stores) {
  * If only one argument is passed invoked the handler whenever
  * the reactor state changes
  *
- * @param {ReactorState} reactorState
+ * @param {ObserverStoreMap} observerStoreMap
  * @param {KeyPath|Getter} getter
  * @param {function} handler
  * @return {ObserveResult}
  */
-exports.addObserver = function(reactorState, getter, handler) {
-  // TODO: make observers a map of <Getter> => { handlers }
-  var entry = {
+exports.addObserver = function(observerStoreMap, getter, handler) {
+  // use the passed in getter as the key so we can rely on a byreference call for unobserve
+  const getterKey = getter
+  if (isKeyPath(getter)) {
+    getter = fromKeyPath(getter)
+  }
+
+  const currId = observerStoreMap.get('nextId')
+  const storeDeps = getStoreDeps(getter)
+  const entry = Immutable.Map({
+    storeDeps: storeDeps,
+    getterKey: getterKey,
     getter: getter,
     handler: handler,
     unwatched: false,
-  }
-  var observers = reactorState.get('observers')
-  observers.push(entry)
-  // return unwatch function
-  var unwatchFn = () => {
-    debugger;
-    // TODO: untrack from change emitter
-    var ind = observers.indexOf(entry)
-    if (ind > -1) {
-      entry.unwatched = true
-      observers.splice(ind, 1)
-      debugger;
-    }
+  })
+
+  let updatedObserverStoreMap
+  if (storeDeps.size === 0) {
+    updatedObserverStoreMap = observerStoreMap.setIn(['any', getterKey, handler], currId)
+  } else {
+    updatedObserverStoreMap = observerStoreMap.withMutations(map => {
+      storeDeps.forEach(storeId => {
+        map.setIn(['stores', storeId, getterKey, handler], currId);
+      })
+    })
   }
 
-  return observeResult(unwatchFn, reactorState)
+  updatedObserverStoreMap = updatedObserverStoreMap
+    .set('nextId', currId + 1)
+    .update('observersMap', entries => {
+      return entries.set(currId, entry)
+    })
+
+  return {
+    observerStoreMap: updatedObserverStoreMap,
+    unwatchEntry: entry,
+  }
 }
 
 /**
- * @param {ReactorState} prevReactorState
- * @param {ReactorState} prevReactorState
- * @return {ReactorState}
+ * Use cases
+ * removeObserver(observerStoreMap, [])
+ * removeObserver(observerStoreMap, [], handler)
+ * removeObserver(observerStoreMap, ['keyPath'])
+ * removeObserver(observerStoreMap, ['keyPath'], handler)
+ * removeObserver(observerStoreMap, getter)
+ * removeObserver(observerStoreMap, getter, handler)
+ * @param {ObserverStoreMap} observerStoreMap
+ * @param {KeyPath|Getter} getter
+ * @param {function} handler
+ * @return {ObserverStoreMap}
  */
-exports.notify = function(prevReactorState, reactorState) {
-  var observers = reactorState.get('observers')
+exports.removeObserver = function(observerStoreMap, getter, handler) {
+  debugger;
+  const getterKey = getter
+  if (isKeyPath(getter)) {
+    getter = fromKeyPath(getter)
+  }
+  const storeDeps = getStoreDeps(getter)
+  let pathsToRemove = []
 
-  if (observers.length > 0) {
-    var currentValues = Immutable.Map()
-
-    observers.slice(0).forEach(entry => {
-      if (entry.unwatched) {
-        return
+  if (storeDeps.size === 0) {
+    let path = ['any', getterKey]
+    if (handler) {
+      path.push(handler)
+    }
+    pathsToRemove.push(path)
+  } else {
+    storeDeps.forEach(storeId => {
+      let path = ['stores', storeId, getterKey]
+      if (handler) {
+        path.push(handler)
       }
-      var getter = entry.getter
-      var prevEvaluateResult = evaluate(prevReactorState, getter)
-      var currEvaluateResult = evaluate(reactorState, getter)
-
-      var prevValue = prevEvaluateResult.result
-      var currValue = currEvaluateResult.result
-
-      if (!Immutable.is(prevValue, currValue)) {
-        entry.handler.call(null, currValue)
-      }
-
-      // update prevReactorState / reactorState
-      reactorState = currEvaluateResult.reactorState
-      prevReactorState = prevEvaluateResult.reactorState
+      pathsToRemove.push(path)
     })
   }
-  return reactorState
+
+  return observerStoreMap.withMutations(map => {
+    pathsToRemove.forEach(path => {
+      var observerId = observerStoreMap.getIn(path)
+
+      map.removeIn(path)
+      if (observerId) {
+        map.removeIn(['observersMap', observerId])
+      }
+    })
+  })
+}
+
+/**
+ * Given the current observerStoreMap and a store/getter/handler checks if still active
+ */
+exports.isValidHandler = function(observerStoreMap, storeId, getter, handler) {
+  return !!observerStoreMap.getIn([storeId, getter, handler]);
 }
 
 /**
@@ -212,11 +278,104 @@ exports.reset = function(reactorState) {
       }
       reactorState.setIn(['state', id], resetStoreState)
     })
-
-    reactorState.set('observers', [])
   })
 }
 
+/**
+ * @param {ReactorState} reactorState
+ * @param {KeyPath|Gettter} keyPathOrGetter
+ * @return {EvaluateResult}
+ */
+exports.evaluate = function evaluate(reactorState, keyPathOrGetter) {
+  var state = reactorState.get('state')
+
+  if (isKeyPath(keyPathOrGetter)) {
+    // if its a keyPath simply return
+    return evaluateResult(
+      state.getIn(keyPathOrGetter),
+      reactorState
+    )
+  } else if (!isGetter(keyPathOrGetter)) {
+    throw new Error('evaluate must be passed a keyPath or Getter')
+  }
+
+  // Must be a Getter
+  // if the value is cached for this dispatch cycle, return the cached value
+  if (isCached(reactorState, keyPathOrGetter)) {
+    // Cache hit
+    return evaluateResult(
+      reactorState.getIn(['cache', keyPathOrGetter, 'value']),
+      reactorState
+    )
+  }
+
+  // evaluate dependencies
+  var args = getDeps(keyPathOrGetter).map(dep => evaluate(reactorState, dep).result)
+
+  if (hasStaleValue(reactorState, keyPathOrGetter)) {
+    // getter deps could still be unchanged since we only looked at the unwrapped (keypath, bottom level) deps
+    var prevArgs = reactorState.getIn(['cache', keyPathOrGetter, 'args'])
+
+    // since Getter is a pure functions if the args are the same its a cache hit
+    if (Immutable.is(prevArgs, toImmutable(args))) {
+      var prevValue = reactorState.getIn(['cache', keyPathOrGetter, 'value'])
+      return evaluateResult(
+        prevValue,
+        cacheValue(reactorState, keyPathOrGetter, args, prevValue)
+      )
+    }
+  }
+
+  var evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
+
+  return evaluateResult(
+    evaluatedValue,
+    cacheValue(reactorState, keyPathOrGetter, args, evaluatedValue)
+  )
+}
+
+/**
+ * @param {ReactorState} reactorState
+ * @param {Getter} getter
+ * @return {Boolean}
+ */
+function isCached(reactorState, keyPathOrGetter) {
+  return (
+    reactorState.hasIn(['cache', keyPathOrGetter, 'value']) &&
+    reactorState.getIn(['cache', keyPathOrGetter, 'dispatchId']) === reactorState.get('dispatchId')
+  )
+}
+
+/**
+ * @param {ReactorState} reactorState
+ * @param {Getter} getter
+ * @return {Boolean}
+ */
+function hasStaleValue(reactorState, getter) {
+  var cache = reactorState.get('cache')
+  var dispatchId = reactorState.get('dispatchId')
+  return (
+    cache.has(getter) &&
+    cache.getIn([getter, 'dispatchId']) === dispatchId
+  )
+}
+
+/**
+ * Caches the value of a getter given state, getter, args, value
+ * @param {ReactorState} reactorState
+ * @param {Getter} getter
+ * @param {Array} args
+ * @param {any} value
+ * @return {ReactorState}
+ */
+function cacheValue(reactorState, getter, args, value) {
+  var dispatchId = reactorState.get('dispatchId')
+  return reactorState.setIn(['cache', getter], Immutable.Map({
+    value: value,
+    args: toImmutable(args),
+    dispatchId: dispatchId,
+  }))
+}
 
 /**
  * @param {ReactorState} reactorState

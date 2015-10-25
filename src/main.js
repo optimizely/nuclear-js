@@ -1,3 +1,4 @@
+import Store from './store'
 var helpers = require('./immutable-helpers')
 
 /**
@@ -8,7 +9,7 @@ exports.Reactor = require('./reactor')
 /**
  * @return {Store}
  */
-exports.Store = require('./store')
+exports.Store = Store
 
 // export the immutable library
 exports.Immutable = require('immutable')

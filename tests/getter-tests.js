@@ -1,3 +1,4 @@
+import { Set, List, is } from 'immutable'
 var Getter = require('../src/getter')
 var isGetter = Getter.isGetter
 
@@ -29,6 +30,53 @@ describe('Getter', () => {
       expect(function() {
         Getter.fromKeyPath(invalidKeypath)
       }).toThrow()
+    })
+  })
+
+  describe('getFlattenedDeps', function() {
+    describe('when passed the identity getter', () => {
+      it('should return a set with only an empty list', () => {
+        var getter = [[], (x) => x]
+        var result = Getter.getFlattenedDeps(getter)
+        var expected = Set().add(List())
+        expect(is(result, expected)).toBe(true)
+      })
+    })
+
+    describe('when passed a flat getter', () => {
+      it('return all keypaths', () => {
+        var getter = [
+          ['store1', 'key1'],
+          ['store2', 'key2'],
+          (a, b) => 1,
+        ]
+        var result = Getter.getFlattenedDeps(getter)
+        var expected = Set()
+          .add(List(['store1', 'key1']))
+          .add(List(['store2', 'key2']))
+        expect(is(result, expected)).toBe(true)
+      })
+    })
+
+    describe('when passed getter with a getter dependency', () => {
+      it('should return flattened keypaths', () => {
+        var getter1 = [
+          ['store1', 'key1'],
+          ['store2', 'key2'],
+          (a, b) => 1,
+        ]
+        var getter2 = [
+          getter1,
+          ['store3', 'key3'],
+          (a, b) => 1,
+        ]
+        var result = Getter.getFlattenedDeps(getter2)
+        var expected = Set()
+          .add(List(['store1', 'key1']))
+          .add(List(['store2', 'key2']))
+          .add(List(['store3', 'key3']))
+        expect(is(result, expected)).toBe(true)
+      })
     })
   })
 })

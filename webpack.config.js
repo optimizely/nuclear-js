@@ -20,7 +20,7 @@ module.exports = [
     },
     module: {
       loaders: [
-        { test: /\.js$/, loader: 'jstransform-loader' },
+        { test: /\.js$/, loader: 'babel-loader' },
       ],
     },
   },
@@ -33,7 +33,7 @@ module.exports = [
     },
     module: {
       loaders: [
-        { test: /\.js$/, loader: 'jstransform-loader' },
+        { test: /\.js$/, loader: 'babel-loader' },
       ],
     },
     plugins: [uglifyJsPlugin],

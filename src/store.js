@@ -2,6 +2,7 @@ var Map = require('immutable').Map
 var extend = require('./utils').extend
 var toJS = require('./immutable-helpers').toJS
 var toImmutable = require('./immutable-helpers').toImmutable
+import { toFactory } from './utils'
 
 /**
  * Stores define how a certain domain of the application should respond to actions
@@ -14,6 +15,7 @@ class Store {
       return new Store(config)
     }
 
+    this.__isInitialized = false
     this.__handlers = Map({})
 
     if (config) {
@@ -22,6 +24,7 @@ class Store {
     }
 
     this.initialize()
+    this.__isInitialized = true
   }
 
   /**
@@ -70,6 +73,9 @@ class Store {
    * Binds an action type => handler
    */
   on(actionType, handler) {
+    if (this.__isInitialized) {
+      throw new Error('Cannot use Store.on after construction');
+    }
     this.__handlers = this.__handlers.set(actionType, handler)
   }
 
@@ -98,6 +104,6 @@ function isStore(toTest) {
   return (toTest instanceof Store)
 }
 
-module.exports = Store
+export { isStore }
 
-module.exports.isStore = isStore
+export default toFactory(Store)

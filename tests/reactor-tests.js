@@ -1,8 +1,6 @@
 var Immutable = require('immutable')
-var Map = require('immutable').Map
-var List = require('immutable').List
-var Reactor = require('../src/main').Reactor
-var Store = require('../src/main').Store
+import { Map, List } from 'immutable'
+import { Reactor, Store } from '../src/main'
 var toImmutable = require('../src/immutable-helpers').toImmutable
 var logging = require('../src/logging')
 
@@ -191,6 +189,7 @@ describe('Reactor', () => {
       })
 
       it('should keep working after it raised for dispatching while dispatching', () => {
+        debugger;
         var unWatchFn = reactor.observe([], state => reactor.dispatch('noop', {}))
 
         expect(() => checkoutActions.setTaxPercent(5)).toThrow(
@@ -198,7 +197,11 @@ describe('Reactor', () => {
 
         unWatchFn()
 
-        expect(() => checkoutActions.setTaxPercent(5)).not.toThrow(
+        expect(() => {
+          debugger;
+          checkoutActions.setTaxPercent(5)
+
+        }).not.toThrow(
           new Error('Dispatch may not be called while a dispatch is in progress'))
       })
 
@@ -234,7 +237,7 @@ describe('Reactor', () => {
     }) // when dispatching a relevant action
 
     describe('#observe', () => {
-      it('should invoke a change handler if the specific keypath changes', () => {
+      it('should invoke a change handler if the specific keyPath changes', () => {
         var mockFn = jasmine.createSpy()
         reactor.observe(['taxPercent'], mockFn)
 
@@ -243,7 +246,7 @@ describe('Reactor', () => {
         expect(mockFn.calls.count()).toEqual(1)
         expect(mockFn.calls.argsFor(0)).toEqual([5])
       })
-      it('should not invoke a change handler if another keypath changes', () => {
+      it('should not invoke a change handler if another keyPath changes', () => {
         var mockFn = jasmine.createSpy()
         reactor.observe(['taxPercent'], mockFn)
 
@@ -261,6 +264,39 @@ describe('Reactor', () => {
 
         expect(mockFn.calls.count()).toEqual(1)
         expect(mockFn.calls.argsFor(0)).toEqual([105])
+      })
+
+      it('should only invoke a handler once if multiple underlying stores update ', () => {
+        var mockFn = jasmine.createSpy()
+        reactor.observe(totalGetter, mockFn)
+        reactor.batch(() => {
+          checkoutActions.addItem('item', 100)
+          checkoutActions.setTaxPercent(5)
+        })
+
+        expect(mockFn.calls.count()).toEqual(1)
+        expect(mockFn.calls.argsFor(0)).toEqual([105])
+      })
+
+      it('should allow multiple getter observation without interference', () => {
+        var subtotalSpy = jasmine.createSpy()
+        var taxPercentSpy = jasmine.createSpy()
+        var taxPercentGetter = ['taxPercent']
+        reactor.observe(subtotalGetter, subtotalSpy)
+        reactor.observe(taxPercentGetter, taxPercentSpy)
+
+        checkoutActions.addItem('item', 100)
+
+        expect(subtotalSpy.calls.count()).toEqual(1)
+        expect(subtotalSpy.calls.argsFor(0)).toEqual([100])
+
+        checkoutActions.setTaxPercent(5)
+
+        expect(taxPercentSpy.calls.count()).toEqual(1)
+        expect(taxPercentSpy.calls.argsFor(0)).toEqual([5])
+
+        // subtotal spy didn't get called again
+        expect(subtotalSpy.calls.count()).toEqual(1)
       })
 
       it('should not invoke a change handler if a getters deps dont change', () => {
@@ -283,6 +319,89 @@ describe('Reactor', () => {
         checkoutActions.setTaxPercent(5)
 
         expect(mockFn.calls.count()).toEqual(0)
+      })
+    })
+
+    describe('#unobserve', () => {
+      it('should unobserve an observer called with only a handle with the getter `[]`', () => {
+        var mockFn = jasmine.createSpy()
+        reactor.observe(mockFn)
+        checkoutActions.setTaxPercent(5)
+        expect(mockFn.calls.count()).toEqual(1)
+
+        reactor.unobserve([])
+        checkoutActions.setTaxPercent(6)
+        expect(mockFn.calls.count()).toEqual(1)
+      })
+      it('should unobserve the identity getter by value', () => {
+        var mockFn = jasmine.createSpy()
+        reactor.observe([], mockFn)
+        checkoutActions.setTaxPercent(5)
+        expect(mockFn.calls.count()).toEqual(1)
+
+        reactor.unobserve([])
+        checkoutActions.setTaxPercent(6)
+        expect(mockFn.calls.count()).toEqual(1)
+      })
+      it('should unobserve a keyPath by reference', () => {
+        var mockFn = jasmine.createSpy()
+        var keyPath = ['taxPercent']
+        reactor.observe(keyPath, mockFn)
+        checkoutActions.setTaxPercent(5)
+        expect(mockFn.calls.count()).toEqual(1)
+
+        reactor.unobserve(keyPath)
+        checkoutActions.setTaxPercent(6)
+        expect(mockFn.calls.count()).toEqual(1)
+      })
+      it('should unobserve a keyPath by value', () => {
+        var mockFn = jasmine.createSpy()
+        reactor.observe(['taxPercent'], mockFn)
+        checkoutActions.setTaxPercent(5)
+        expect(mockFn.calls.count()).toEqual(1)
+
+        reactor.unobserve(['taxPercent'])
+        checkoutActions.setTaxPercent(6)
+        expect(mockFn.calls.count()).toEqual(1)
+      })
+      it('should unobserve a keyPath, handler combination', () => {
+        var mockFn1 = jasmine.createSpy()
+        var mockFn2 = jasmine.createSpy()
+        var keyPath = ['taxPercent']
+        reactor.observe(keyPath, mockFn1)
+        reactor.observe(keyPath, mockFn2)
+        checkoutActions.setTaxPercent(5)
+        expect(mockFn1.calls.count()).toEqual(1)
+        expect(mockFn2.calls.count()).toEqual(1)
+
+        reactor.unobserve(keyPath, mockFn2)
+        checkoutActions.setTaxPercent(6)
+        expect(mockFn1.calls.count()).toEqual(2)
+      })
+      it('should unobserve a getter by reference', () => {
+        var mockFn = jasmine.createSpy()
+        reactor.observe(subtotalGetter, mockFn)
+        checkoutActions.addItem({ name: 'foo', price: 5 })
+        expect(mockFn.calls.count()).toEqual(1)
+
+        reactor.unobserve(subtotalGetter)
+        checkoutActions.addItem({ name: 'bar', price: 10 })
+        expect(mockFn.calls.count()).toEqual(1)
+      })
+      it('should unobserve a getter, handler combination', () => {
+        var mockFn1 = jasmine.createSpy()
+        var mockFn2 = jasmine.createSpy()
+        reactor.observe(subtotalGetter, mockFn1)
+        reactor.observe(subtotalGetter, mockFn2)
+        checkoutActions.addItem({ name: 'foo', price: 5 })
+        expect(mockFn1.calls.count()).toEqual(1)
+        expect(mockFn2.calls.count()).toEqual(1)
+
+        reactor.unobserve(subtotalGetter, mockFn2)
+
+        checkoutActions.addItem({ name: 'bar', price: 10 })
+        expect(mockFn1.calls.count()).toEqual(2)
+        expect(mockFn2.calls.count()).toEqual(1)
       })
     })
   }) // Reactor with no initial state
@@ -922,13 +1041,13 @@ describe('Reactor', () => {
 
           serialize(state) {
             serializeSpy(state)
-            var serialized = super(state)
+            var serialized = serialize(state)
             return JSON.stringify(serialized)
           }
 
           loadState(state) {
             loadStateSpy(state)
-            super(JSON.parse(state))
+            loadState(JSON.parse(state))
           }
         }
         var reactor1 = new MyReactor()

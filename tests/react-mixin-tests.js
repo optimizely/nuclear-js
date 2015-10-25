@@ -26,7 +26,7 @@ var testStore = new Nuclear.Store({
   },
 })
 
-describe('reactor.ReactMixin', () => {
+xdescribe('reactor.ReactMixin', () => {
   var mountNode
   var reactor
   var countGetter = ['test', 'count']

@@ -1,15 +1,14 @@
-var Immutable = require('immutable')
-var createReactMixin = require('./create-react-mixin')
-var ReactorState = require('./reactor/reactor-state')
-var fns = require('./reactor/fns')
-var evaluate = require('./reactor/evaluate')
-var Getter = require('./getter')
-var KeyPath = require('./key-path')
+import Immutable from 'immutable'
+import createReactMixin from './create-react-mixin'
+import fns from './reactor/fns'
+import { isKeyPath } from './key-path'
+import { isGetter, fromKeyPath } from './getter'
+import { toJS } from './immutable-helpers'
+import { isArray, toFactory } from './utils'
+import { ReactorState, ObserverStoreMap } from './reactor/records'
 
-// helper fns
-var toJS = require('./immutable-helpers').toJS
-
-
+// keep a singleton app state identity getter so we can leverage by reference keying
+const APP_STATE_IDENTITY_GETTER = [[], x => x]
 /**
  * State is stored in NuclearJS Reactors.  Reactors
  * contain a 'state' object which is an Immutable.Map
@@ -29,8 +28,10 @@ class Reactor {
     var initialReactorState = new ReactorState({
       debug: config.debug
     })
+
     this.prevReactorState = initialReactorState
     this.reactorState = initialReactorState
+    this.observerStoreMap = new ObserverStoreMap()
 
     this.ReactMixin = createReactMixin(this)
 
@@ -49,9 +50,9 @@ class Reactor {
    * @return {*}
    */
   evaluate(keyPathOrGetter) {
-    var evaluateResult = evaluate(this.reactorState, keyPathOrGetter)
-    this.__changed(evaluateResult.reactorState)
-    return evaluateResult.result
+    let { result, reactorState } = fns.evaluate(this.reactorState, keyPathOrGetter)
+    this.reactorState = reactorState
+    return result
   }
 
   /**
@@ -82,16 +83,38 @@ class Reactor {
   observe(getter, handler) {
     if (arguments.length === 1) {
       handler = getter
-      getter = Getter.fromKeyPath([])
-    } else if (KeyPath.isKeyPath(getter)) {
-      getter = Getter.fromKeyPath(getter)
+      getter = APP_STATE_IDENTITY_GETTER
     }
-    var observeResult = fns.addObserver(this.reactorState, getter, handler)
-    this.__changed(observeResult.reactorState)
-
-    return observeResult.unwatchFn
+    // by value check if getter === []
+    if (isArray(getter) && getter.length === 0) {
+      getter = APP_STATE_IDENTITY_GETTER
+    }
+    // TODO dont mutate getter to allow by reference unobservation of keypaths (since they are getting transformed into identity getter)
+    let { observerStoreMap, unwatchEntry } = fns.addObserver(this.observerStoreMap, getter, handler)
+    this.observerStoreMap = observerStoreMap;
+    return () => {
+      this.unobserve(
+        unwatchEntry.get('getter'),
+        unwatchEntry.get('hander')
+      )
+    }
   }
 
+  unobserve(getter, handler) {
+    if (arguments.length === 0) {
+      throw new Error('Must call unobserve with a Getter')
+    }
+    if (!isGetter(getter) && !isKeyPath(getter)) {
+      throw new Error('Must call unobserve with a Getter')
+    }
+
+    // by value check if getter === []
+    if (isArray(getter) && getter.length === 0) {
+      getter = APP_STATE_IDENTITY_GETTER
+    }
+
+    this.observerStoreMap = fns.removeObserver(this.observerStoreMap, getter, handler)
+  }
 
   /**
    * Dispatches a single message
@@ -108,12 +131,11 @@ class Reactor {
     }
 
     try {
-      this.__changed(fns.dispatch(this.reactorState, actionType, payload))
+      this.reactorState = fns.dispatch(this.reactorState, actionType, payload)
     } catch (e) {
       this.__isDispatching = false
       throw e
     }
-
 
     if (this.__batchDepth > 0) {
       this.__batchDispatchCount++
@@ -122,6 +144,7 @@ class Reactor {
     try {
       this.__notify()
     } finally {
+      console.log('DISPATCHING FALSE')
       this.__isDispatching = false
     }
   }
@@ -156,7 +179,7 @@ class Reactor {
    * @param {Store[]} stores
    */
   registerStores(stores) {
-    this.__changed(fns.registerStores(this.reactorState, stores))
+    this.reactorState = fns.registerStores(this.reactorState, stores)
     this.__notify()
   }
 
@@ -172,7 +195,7 @@ class Reactor {
    * @param {Object} state
    */
   loadState(state) {
-    this.__changed(fns.loadState(this.reactorState, state))
+    this.reactorState = fns.loadState(this.reactorState, state)
     this.__notify()
   }
 
@@ -190,20 +213,62 @@ class Reactor {
    * @private
    */
   __notify() {
-    if (this.__batchDepth <= 0) {
-      // side-effects of notify all observers
-      var nextReactorState = fns.notify(this.prevReactorState, this.reactorState)
-
-      this.prevReactorState = nextReactorState
-      this.reactorState = nextReactorState
+    if (this.__batchDepth > 0) {
+      // in the middle of batch, dont notify
+      return
     }
-  }
+    const dirtyStores = this.reactorState.get('dirtyStores')
 
-  /**
-   * @param {ReactorState} reactorState
-   */
-  __changed(reactorState) {
-    this.reactorState = reactorState
+    if (dirtyStores.size === 0) {
+      return
+    }
+
+    let observerIdsToNotify = Immutable.Set().withMutations(set => {
+      // notify all observers
+      this.observerStoreMap.get('any').forEach(handlerMap => {
+        handlerMap.forEach((observerId) => {
+          set.add(observerId);
+        })
+      })
+
+      dirtyStores.forEach(id => {
+        const entries = this.observerStoreMap.getIn(['stores', id])
+        if (!entries) {
+          return
+        }
+        entries.forEach((handlerMap, getter) => {
+          handlerMap.forEach((observerId) => {
+            set.add(observerId)
+          })
+        })
+      })
+    })
+
+    observerIdsToNotify.forEach((observerId) => {
+      const entry = this.observerStoreMap.getIn(['observersMap', observerId])
+      if (!entry) {
+        // don't notify here in the case a handler called unobserve on another observer
+        return
+      }
+
+      const getter = entry.get('getter');
+      const handler = entry.get('handler');
+
+      const prevEvaluateResult = fns.evaluate(this.prevReactorState, getter)
+      const currEvaluateResult = fns.evaluate(this.reactorState, getter)
+
+      const prevValue = prevEvaluateResult.result
+      const currValue = currEvaluateResult.result
+
+      if (!Immutable.is(prevValue, currValue)) {
+        handler.call(null, currValue)
+      }
+    })
+
+    const nextReactorState = this.reactorState.set('dirtyStores', Immutable.Set())
+
+    this.prevReactorState = nextReactorState
+    this.reactorState = nextReactorState
   }
 
   __batchStart() {
@@ -230,4 +295,4 @@ class Reactor {
   }
 }
 
-module.exports = Reactor
+export default toFactory(Reactor)
