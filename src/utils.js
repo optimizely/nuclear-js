@@ -150,8 +150,8 @@ exports.partial = function(func) {
  * Returns a factory method that allows construction with or without `new`
  */
 exports.toFactory = function(Klass) {
-  var Factory = function() {
-    return new (Function.prototype.bind.apply(Klass, arguments));
+  var Factory = function(...args) {
+    return new Klass(...args)
   }
 
   Factory.__proto__ = Klass

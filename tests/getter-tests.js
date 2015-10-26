@@ -1,4 +1,4 @@
-import Getter, { isGetter } from '../src/getter'
+import { isGetter, getFlattenedDeps, fromKeyPath } from '../src/getter'
 import { Set, List, is } from 'immutable'
 
 describe('Getter', () => {
@@ -27,7 +27,7 @@ describe('Getter', () => {
     it('should throw an Error for a nonvalid KeyPath', () => {
       var invalidKeypath = 'foo.bar'
       expect(function() {
-        Getter.fromKeyPath(invalidKeypath)
+        fromKeyPath(invalidKeypath)
       }).toThrow()
     })
   })
@@ -36,7 +36,7 @@ describe('Getter', () => {
     describe('when passed the identity getter', () => {
       it('should return a set with only an empty list', () => {
         var getter = [[], (x) => x]
-        var result = Getter.getFlattenedDeps(getter)
+        var result = getFlattenedDeps(getter)
         var expected = Set().add(List())
         expect(is(result, expected)).toBe(true)
       })
@@ -49,7 +49,7 @@ describe('Getter', () => {
           ['store2', 'key2'],
           (a, b) => 1,
         ]
-        var result = Getter.getFlattenedDeps(getter)
+        var result = getFlattenedDeps(getter)
         var expected = Set()
           .add(List(['store1', 'key1']))
           .add(List(['store2', 'key2']))
@@ -69,7 +69,7 @@ describe('Getter', () => {
           ['store3', 'key3'],
           (a, b) => 1,
         ]
-        var result = Getter.getFlattenedDeps(getter2)
+        var result = getFlattenedDeps(getter2)
         var expected = Set()
           .add(List(['store1', 'key1']))
           .add(List(['store2', 'key2']))
