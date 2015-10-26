@@ -11,11 +11,6 @@ import { toFactory } from './utils'
  */
 class Store {
   constructor(config) {
-    if (!(this instanceof Store)) {
-      return new Store(config)
-    }
-
-    this.__isInitialized = false
     this.__handlers = Map({})
 
     if (config) {
@@ -24,7 +19,6 @@ class Store {
     }
 
     this.initialize()
-    this.__isInitialized = true
   }
 
   /**
@@ -73,9 +67,6 @@ class Store {
    * Binds an action type => handler
    */
   on(actionType, handler) {
-    if (this.__isInitialized) {
-      throw new Error('Cannot use Store.on after construction');
-    }
     this.__handlers = this.__handlers.set(actionType, handler)
   }
 

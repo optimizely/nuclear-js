@@ -1,5 +1,5 @@
-var Map = require('immutable').Map
-var Store = require('../src/store')
+import { Map } from 'immutable'
+import Store, { isStore } from '../src/store'
 
 describe('Store', () => {
   describe('Immutable Store', () => {
@@ -102,12 +102,12 @@ describe('Store', () => {
   describe('#isStore', () => {
     it('should return true if the store is an `instanceof` Store', () => {
       var store = new Store()
-      expect(Store.isStore(store)).toBe(true)
+      expect(isStore(store)).toBe(true)
     })
 
     it('should return false if the store is NOT an `instanceof` Store', () => {
       var notStore = {}
-      expect(Store.isStore(notStore)).toBe(false)
+      expect(isStore(notStore)).toBe(false)
     })
   })
 })

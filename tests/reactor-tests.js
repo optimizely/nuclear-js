@@ -189,7 +189,6 @@ describe('Reactor', () => {
       })
 
       it('should keep working after it raised for dispatching while dispatching', () => {
-        debugger;
         var unWatchFn = reactor.observe([], state => reactor.dispatch('noop', {}))
 
         expect(() => checkoutActions.setTaxPercent(5)).toThrow(
@@ -198,7 +197,6 @@ describe('Reactor', () => {
         unWatchFn()
 
         expect(() => {
-          debugger;
           checkoutActions.setTaxPercent(5)
 
         }).not.toThrow(
@@ -314,6 +312,8 @@ describe('Reactor', () => {
 
         var unwatch = reactor.observe(totalGetter, mockFn)
 
+        expect(mockFn.calls.count()).toEqual(0)
+
         unwatch()
 
         checkoutActions.setTaxPercent(5)
@@ -381,11 +381,12 @@ describe('Reactor', () => {
       it('should unobserve a getter by reference', () => {
         var mockFn = jasmine.createSpy()
         reactor.observe(subtotalGetter, mockFn)
-        checkoutActions.addItem({ name: 'foo', price: 5 })
+        checkoutActions.addItem('foo', 5)
         expect(mockFn.calls.count()).toEqual(1)
+        expect(mockFn.calls.argsFor(0)).toEqual([5])
 
         reactor.unobserve(subtotalGetter)
-        checkoutActions.addItem({ name: 'bar', price: 10 })
+        checkoutActions.addItem('bar', 10)
         expect(mockFn.calls.count()).toEqual(1)
       })
       it('should unobserve a getter, handler combination', () => {
@@ -393,13 +394,15 @@ describe('Reactor', () => {
         var mockFn2 = jasmine.createSpy()
         reactor.observe(subtotalGetter, mockFn1)
         reactor.observe(subtotalGetter, mockFn2)
-        checkoutActions.addItem({ name: 'foo', price: 5 })
+        checkoutActions.addItem('foo', 5)
         expect(mockFn1.calls.count()).toEqual(1)
         expect(mockFn2.calls.count()).toEqual(1)
+        expect(mockFn1.calls.argsFor(0)).toEqual([5])
+        expect(mockFn2.calls.argsFor(0)).toEqual([5])
 
         reactor.unobserve(subtotalGetter, mockFn2)
 
-        checkoutActions.addItem({ name: 'bar', price: 10 })
+        checkoutActions.addItem('bar', 10)
         expect(mockFn1.calls.count()).toEqual(2)
         expect(mockFn2.calls.count()).toEqual(1)
       })
@@ -1041,13 +1044,13 @@ describe('Reactor', () => {
 
           serialize(state) {
             serializeSpy(state)
-            var serialized = serialize(state)
+            var serialized = super.serialize(state)
             return JSON.stringify(serialized)
           }
 
           loadState(state) {
             loadStateSpy(state)
-            loadState(JSON.parse(state))
+            super.loadState(JSON.parse(state))
           }
         }
         var reactor1 = new MyReactor()

@@ -3,9 +3,8 @@ import logging from '../logging'
 import { isImmutableValue } from '../immutable-helpers'
 import { toImmutable } from '../immutable-helpers'
 import { fromKeyPath, getStoreDeps, getComputeFn, getDeps, isGetter } from '../getter'
-import { isKeyPath } from '../key-path'
+import { isEqual, isKeyPath } from '../key-path'
 import { each } from '../utils'
-import isEqual from '../is-equal'
 
 /**
  * Immutable Types
@@ -96,20 +95,24 @@ exports.dispatch = function(reactorState, actionType, payload) {
  * @return {ReactorState}
  */
 exports.loadState = function(reactorState, state) {
-  var stateToLoad = toImmutable({}).withMutations(stateToLoad => {
+  let dirtyStores = []
+  const stateToLoad = toImmutable({}).withMutations(stateToLoad => {
     each(state, (serializedStoreState, storeId) => {
       var store = reactorState.getIn(['stores', storeId])
       if (store) {
         var storeState = store.deserialize(serializedStoreState)
         if (storeState !== undefined) {
           stateToLoad.set(storeId, storeState)
+          dirtyStores.push(storeId)
         }
       }
     })
   })
 
-  var newState = reactorState.get('state').merge(stateToLoad)
-  return reactorState.set('state', newState)
+  var dirtyStoresSet = Immutable.Set(dirtyStores)
+  return reactorState
+    .update('state', state => state.merge(stateToLoad))
+    .update('dirtyStores', stores => stores.union(dirtyStoresSet))
 }
 
 /**
@@ -171,33 +174,35 @@ exports.addObserver = function(observerStoreMap, getter, handler) {
   const currId = observerStoreMap.get('nextId')
   const storeDeps = getStoreDeps(getter)
   const entry = Immutable.Map({
+    id: currId,
     storeDeps: storeDeps,
     getterKey: getterKey,
     getter: getter,
     handler: handler,
-    unwatched: false,
   })
 
   let updatedObserverStoreMap
   if (storeDeps.size === 0) {
-    updatedObserverStoreMap = observerStoreMap.setIn(['any', getterKey, handler], currId)
+    updatedObserverStoreMap = observerStoreMap.update('any', observerIds => observerIds.add(currId))
   } else {
     updatedObserverStoreMap = observerStoreMap.withMutations(map => {
       storeDeps.forEach(storeId => {
-        map.setIn(['stores', storeId, getterKey, handler], currId);
+        let path = ['stores', storeId]
+        if (!map.hasIn(path)) {
+          map.setIn(path, Immutable.Set([]))
+        }
+        map.updateIn(['stores', storeId], observerIds => observerIds.add(currId));
       })
     })
   }
 
   updatedObserverStoreMap = updatedObserverStoreMap
     .set('nextId', currId + 1)
-    .update('observersMap', entries => {
-      return entries.set(currId, entry)
-    })
+    .setIn(['observersMap', currId], entry)
 
   return {
     observerStoreMap: updatedObserverStoreMap,
-    unwatchEntry: entry,
+    entry: entry,
   }
 }
 
@@ -211,43 +216,47 @@ exports.addObserver = function(observerStoreMap, getter, handler) {
  * removeObserver(observerStoreMap, getter, handler)
  * @param {ObserverStoreMap} observerStoreMap
  * @param {KeyPath|Getter} getter
- * @param {function} handler
+ * @param {Function} handler
  * @return {ObserverStoreMap}
  */
 exports.removeObserver = function(observerStoreMap, getter, handler) {
-  debugger;
-  const getterKey = getter
-  if (isKeyPath(getter)) {
-    getter = fromKeyPath(getter)
-  }
-  const storeDeps = getStoreDeps(getter)
-  let pathsToRemove = []
-
-  if (storeDeps.size === 0) {
-    let path = ['any', getterKey]
-    if (handler) {
-      path.push(handler)
+  const entriesToRemove = observerStoreMap.get('observersMap').filter(entry => {
+    // use the getterKey in the case of a keyPath is transformed to a getter in addObserver
+    let entryGetter = entry.get('getterKey')
+    let handlersMatch = (!handler || entry.get('handler') === handler)
+    if (!handlersMatch) {
+      return false
     }
-    pathsToRemove.push(path)
-  } else {
-    storeDeps.forEach(storeId => {
-      let path = ['stores', storeId, getterKey]
-      if (handler) {
-        path.push(handler)
-      }
-      pathsToRemove.push(path)
-    })
-  }
+    // check for a by-value equality of keypaths
+    if (isKeyPath(getter) && isKeyPath(entryGetter)) {
+      return isEqual(getter, entryGetter)
+    }
+    // we are comparing two getters do it by reference
+    return (getter === entryGetter)
+  })
 
   return observerStoreMap.withMutations(map => {
-    pathsToRemove.forEach(path => {
-      var observerId = observerStoreMap.getIn(path)
+    entriesToRemove.forEach(entry => exports.removeObserverByEntry(map, entry))
+  })
+}
 
-      map.removeIn(path)
-      if (observerId) {
-        map.removeIn(['observersMap', observerId])
-      }
-    })
+/**
+ * Removes an observer entry by id from the observerStoreMap
+ */
+exports.removeObserverByEntry = function(observerStoreMap, entry) {
+  return observerStoreMap.withMutations(map => {
+    const id = entry.get('id')
+    const storeDeps = entry.get('storeDeps')
+
+    if (storeDeps.size === 0) {
+      map.update('any', anyObsevers => anyObsevers.remove(id))
+    } else {
+      storeDeps.forEach(storeId => {
+        map.updateIn(['stores', storeId], observers => observers.remove(id))
+      })
+    }
+
+    map.removeIn(['observersMap', id])
   })
 }
 
@@ -332,6 +341,23 @@ exports.evaluate = function evaluate(reactorState, keyPathOrGetter) {
     evaluatedValue,
     cacheValue(reactorState, keyPathOrGetter, args, evaluatedValue)
   )
+}
+
+/**
+ * Returns serialized state for all stores
+ * @param {ReactorState} reactorState
+ * @return {Object}
+ */
+exports.serialize = function(reactorState) {
+  let serialized = {}
+  reactorState.get('stores').forEach((store, id) => {
+    let storeState = reactorState.getIn(['state', id])
+    let serializedState = store.serialize(storeState)
+    if (serializedState !== undefined) {
+      serialized[id] = serializedState
+    }
+  })
+  return serialized
 }
 
 /**

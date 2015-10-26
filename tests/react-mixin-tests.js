@@ -26,7 +26,7 @@ var testStore = new Nuclear.Store({
   },
 })
 
-xdescribe('reactor.ReactMixin', () => {
+describe('reactor.ReactMixin', () => {
   var mountNode
   var reactor
   var countGetter = ['test', 'count']
@@ -189,7 +189,7 @@ xdescribe('reactor.ReactMixin', () => {
 
     it('should unobserve all getters', () => {
       React.unmountComponentAtNode(mountNode)
-      expect(reactor.__changeObserver.__observers.length).toBe(0)
+      expect(reactor.observerStoreMap.get('observersMap').size).toBe(0)
     })
   })
 })

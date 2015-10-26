@@ -1,3 +1,4 @@
+import Immutable from 'immutable'
 var isArray = require('./utils').isArray
 var isFunction = require('./utils').isFunction
 
@@ -11,4 +12,17 @@ exports.isKeyPath = function(toTest) {
     isArray(toTest) &&
     !isFunction(toTest[toTest.length - 1])
   )
+}
+
+/**
+ * Checks if two keypaths are equal by value
+ * @param {KeyPath} a
+ * @param {KeyPath} a
+ * @return {Boolean}
+ */
+exports.isEqual = function(a, b) {
+  const iA = Immutable.List(a)
+  const iB = Immutable.List(b)
+
+  return Immutable.is(iA, iB)
 }

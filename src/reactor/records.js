@@ -11,7 +11,7 @@ const ReactorState = Immutable.Record({
 
 const ObserverStoreMap = Immutable.Record({
   // observers registered to any store change
-  any: Immutable.Map({}),
+  any: Immutable.Set([]),
   // observers registered to specific store changes
   stores: Immutable.Map({}),
 
