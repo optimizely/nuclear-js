@@ -1,32 +1,19 @@
 import Store from './store'
-var helpers = require('./immutable-helpers')
+import Reactor from './reactor'
+import Immutable from 'immutable'
+import { toJS, toImmutable, isImmutable } from './immutable-helpers'
+import { isKeyPath } from './key-path'
+import { isGetter } from './getter'
+import createReactMixin from './create-react-mixin'
 
-/**
- * @return {Reactor}
- */
-exports.Reactor = require('./reactor')
-
-/**
- * @return {Store}
- */
-exports.Store = Store
-
-// export the immutable library
-exports.Immutable = require('immutable')
-
-/**
- * @return {boolean}
- */
-exports.isKeyPath = require('./key-path').isKeyPath
-
-/**
- * @return {boolean}
- */
-exports.isGetter = require('./getter').isGetter
-
-// expose helper functions
-exports.toJS = helpers.toJS
-exports.toImmutable = helpers.toImmutable
-exports.isImmutable = helpers.isImmutable
-
-exports.createReactMixin = require('./create-react-mixin')
+export default {
+  Reactor,
+  Store,
+  Immutable,
+  isKeyPath,
+  isGetter,
+  toJS,
+  toImmutable,
+  isImmutable,
+  createReactMixin,
+}

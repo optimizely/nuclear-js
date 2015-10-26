@@ -1,9 +1,6 @@
-import Immutable from 'immutable'
-import { List } from 'immutable'
-
-var isFunction = require('./utils').isFunction
-var isArray = require('./utils').isArray
-var isKeyPath = require('./key-path').isKeyPath
+import Immutable, { List } from 'immutable'
+import { isFunction, isArray } from './utils'
+import { isKeyPath } from './key-path'
 
 /**
  * Getter helper functions

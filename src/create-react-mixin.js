@@ -1,8 +1,9 @@
-var each = require('./utils').each
+import { each } from './utils'
+
 /**
  * @param {Reactor} reactor
  */
-module.exports = function(reactor) {
+export default function(reactor) {
   return {
     getInitialState: function() {
       return getState(reactor, this.getDataBindings())

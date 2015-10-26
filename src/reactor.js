@@ -18,7 +18,7 @@ import { ReactorState, ObserverStoreMap } from './reactor/records'
  */
 class Reactor {
   constructor(config = {}) {
-    var initialReactorState = new ReactorState({
+    const initialReactorState = new ReactorState({
       debug: config.debug
     })
 
@@ -141,10 +141,8 @@ class Reactor {
     /* eslint-disable no-console */
     console.warn('Deprecation warning: `registerStore` will no longer be supported in 1.1, use `registerStores` instead')
     /* eslint-enable no-console */
-    var stores = {}
-    stores[id] = store
-    this.batch(() => {
-      this.registerStores(stores)
+    this.registerStores({
+      [id]: store
     })
   }
 
@@ -176,7 +174,7 @@ class Reactor {
    * Resets the state of a reactor and returns back to initial state
    */
   reset() {
-    var newState = fns.reset(this.reactorState)
+    const newState = fns.reset(this.reactorState)
     this.reactorState = newState
     this.prevReactorState = newState
   }

@@ -1,6 +1,5 @@
+import Getter, { isGetter } from '../src/getter'
 import { Set, List, is } from 'immutable'
-var Getter = require('../src/getter')
-var isGetter = Getter.isGetter
 
 describe('Getter', () => {
   describe('isGetter', () => {
