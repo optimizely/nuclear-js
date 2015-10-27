@@ -1,6 +1,18 @@
 import { each } from './utils'
 
 /**
+ * Returns a mapping of the getDataBinding keys to
+ * the reactor values
+ */
+function getState(reactor, data) {
+  var state = {}
+  each(data, function(value, key) {
+    state[key] = reactor.evaluate(value)
+  })
+  return state
+}
+
+/**
  * @param {Reactor} reactor
  */
 export default function(reactor) {
@@ -31,14 +43,3 @@ export default function(reactor) {
   }
 }
 
-/**
- * Returns a mapping of the getDataBinding keys to
- * the reactor values
- */
-function getState(reactor, data) {
-  var state = {}
-  each(data, function(value, key) {
-    state[key] = reactor.evaluate(value)
-  })
-  return state
-}

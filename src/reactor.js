@@ -2,9 +2,9 @@ import Immutable from 'immutable'
 import createReactMixin from './create-react-mixin'
 import fns from './reactor/fns'
 import { isKeyPath } from './key-path'
-import { isGetter, fromKeyPath } from './getter'
+import { isGetter } from './getter'
 import { toJS } from './immutable-helpers'
-import { isArray, toFactory } from './utils'
+import { toFactory } from './utils'
 import { ReactorState, ObserverState } from './reactor/records'
 
 /**
@@ -19,7 +19,7 @@ import { ReactorState, ObserverState } from './reactor/records'
 class Reactor {
   constructor(config = {}) {
     const initialReactorState = new ReactorState({
-      debug: config.debug
+      debug: config.debug,
     })
 
     this.prevReactorState = initialReactorState
@@ -77,7 +77,7 @@ class Reactor {
       getter = []
     }
     let { observerState, entry } = fns.addObserver(this.observerState, getter, handler)
-    this.observerState = observerState;
+    this.observerState = observerState
     return () => {
       this.observerState = fns.removeObserverByEntry(this.observerState, entry)
     }
@@ -142,7 +142,7 @@ class Reactor {
     console.warn('Deprecation warning: `registerStore` will no longer be supported in 1.1, use `registerStores` instead')
     /* eslint-enable no-console */
     this.registerStores({
-      [id]: store
+      [id]: store,
     })
   }
 
@@ -215,8 +215,8 @@ class Reactor {
         return
       }
 
-      const getter = entry.get('getter');
-      const handler = entry.get('handler');
+      const getter = entry.get('getter')
+      const handler = entry.get('handler')
 
       const prevEvaluateResult = fns.evaluate(this.prevReactorState, getter)
       const currEvaluateResult = fns.evaluate(this.reactorState, getter)

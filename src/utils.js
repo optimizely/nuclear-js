@@ -154,7 +154,7 @@ exports.toFactory = function(Klass) {
     return new Klass(...args)
   }
 
-  Factory.__proto__ = Klass
+  Factory.__proto__ = Klass // eslint-disable-line no-proto
   Factory.prototype = Klass.prototype
   return Factory
 }

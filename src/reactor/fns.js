@@ -376,8 +376,6 @@ function isCached(reactorState, keyPathOrGetter) {
     return false
   }
 
-  const storeStates = entry.get('storeStates')
-
   return entry.get('storeStates').every((stateId, storeId) => {
     return reactorState.getIn(['storeStates', storeId]) === stateId
   })
@@ -401,7 +399,7 @@ function cacheValue(reactorState, getter, value) {
     })
   })
 
-  return reactorState.setIn(['cache', getter], Immutable.Map({
+  return reactorState.setIn(['cache', cacheKey], Immutable.Map({
     value: value,
     storeStates: storeStates,
     dispatchId: dispatchId,

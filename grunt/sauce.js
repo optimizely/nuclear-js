@@ -70,8 +70,8 @@ var batches = {
   },
 }
 
-for (var key in batches) {
-  value = batches[key]
+for (var key in batches) { // eslint-disable-line guard-for-in
+  var value = batches[key]
 
   exports[key] = {
     sauceLabs: sauceConfig,

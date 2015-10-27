@@ -255,7 +255,7 @@ describe('Reactor', () => {
         checkoutActions.setTaxPercent(5)
         var getter = [
           ['taxPercent'],
-          (percent) => percent * 2
+          (percent) => percent * 2,
         ]
         var result = reactor.evaluate(getter)
         expect(result).toBe(10)
@@ -277,7 +277,7 @@ describe('Reactor', () => {
           t => {
             taxPercentSpy()
             return t
-          }
+          },
         ]
 
         subtotalGetter = [

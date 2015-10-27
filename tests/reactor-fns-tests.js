@@ -1,12 +1,15 @@
-import Immutable, { Map, List, Set, is } from 'immutable'
-import { Reactor, Store } from '../src/main'
+/*eslint-disable one-var, comma-dangle*/
+import { Map, Set, is } from 'immutable'
+import { Store } from '../src/main'
 import fns from '../src/reactor/fns'
 import { ReactorState, ObserverState } from '../src/reactor/records'
 import { toImmutable } from '../src/immutable-helpers'
 
 describe('reactor fns', () => {
   describe('#registerStores', () => {
-    let reactorState, store1, store2
+    let reactorState
+    let store1
+    let store2
     let nextReactorState
 
     beforeEach(() => {
@@ -14,14 +17,14 @@ describe('reactor fns', () => {
       store1 = new Store({
         getInitialState() {
           return toImmutable({
-            foo: 'bar'
+            foo: 'bar',
           })
-        }
+        },
       })
       store2 = new Store({
         getInitialState() {
           return 2
-        }
+        },
       })
 
       nextReactorState = fns.registerStores(reactorState, {
@@ -33,7 +36,7 @@ describe('reactor fns', () => {
     it('should update reactorState.stores', () => {
       const expectedStores = Map({
         store1,
-        store2
+        store2,
       })
       expect(is(nextReactorState.get('stores'), expectedStores)).toBe(true)
     })
@@ -80,12 +83,12 @@ describe('reactor fns', () => {
       store1 = new Store({
         getInitialState() {
           return toImmutable({
-            foo: 'bar'
+            foo: 'bar',
           })
         },
         initialize() {
           this.on('set1', (state, payload) => state.set('foo', payload))
-        }
+        },
       })
       store2 = new Store({
         getInitialState() {
@@ -93,11 +96,11 @@ describe('reactor fns', () => {
         },
         initialize() {
           this.on('set2', (state, payload) => payload)
-        }
+        },
       })
 
       initialReactorState = fns.resetDirtyStores(
-        fns.registerStores(reactorState, { store1, store2, })
+        fns.registerStores(reactorState, { store1, store2 })
       )
     })
 
@@ -116,9 +119,9 @@ describe('reactor fns', () => {
         const result = nextReactorState.get('state')
         const expected = Map({
           store1: Map({
-            foo: 'bar'
+            foo: 'bar',
           }),
-          store2: 3
+          store2: 3,
         })
         expect(is(result, expected)).toBe(true)
       })
@@ -154,9 +157,9 @@ describe('reactor fns', () => {
         const result = nextReactorState.get('state')
         const expected = Map({
           store1: Map({
-            foo: 'bar'
+            foo: 'bar',
           }),
-          store2: 2
+          store2: 2,
         })
         expect(is(result, expected)).toBe(true)
       })
@@ -184,32 +187,32 @@ describe('reactor fns', () => {
     beforeEach(() => {
       const stateToLoad = {
         store1: {
-          foo: 'baz'
+          foo: 'baz',
         },
         // invalid storekey -> ignore
-        store3: 'wtf'
+        store3: 'wtf',
       }
 
       const reactorState = new ReactorState()
       store1 = new Store({
         getInitialState() {
           return toImmutable({
-            foo: 'bar'
+            foo: 'bar',
           })
         },
 
         deserialize(state) {
           return toImmutable(state)
-        }
+        },
       })
       store2 = new Store({
         getInitialState() {
           return 2
-        }
+        },
       })
 
       initialReactorState = fns.resetDirtyStores(
-        fns.registerStores(reactorState, { store1, store2, })
+        fns.registerStores(reactorState, { store1, store2 })
       )
 
       nextReactorState = fns.loadState(initialReactorState, stateToLoad)
@@ -250,7 +253,7 @@ describe('reactor fns', () => {
       store1 = new Store({
         getInitialState() {
           return toImmutable({
-            foo: 'bar'
+            foo: 'bar',
           })
         },
         initialize() {
@@ -264,7 +267,7 @@ describe('reactor fns', () => {
         handleReset() {
           // override reset method and return different value
           return 3
-        }
+        },
       })
 
       initialReactorState = fns.resetDirtyStores(
@@ -341,7 +344,7 @@ describe('reactor fns', () => {
             getterKey: getter,
             getter: getter,
             handler: handler,
-          })]
+          })],
         ])
         const result = nextObserverState.get('observersMap')
         expect(is(expected, result)).toBe(true)
@@ -462,8 +465,6 @@ describe('reactor fns', () => {
           ])
         })
         const result = nextObserverState
-        console.log(expected.toJS())
-        console.log(result.toJS())
         expect(is(expected, result)).toBe(true)
       })
     })
@@ -496,10 +497,9 @@ describe('reactor fns', () => {
           ])
         })
         const result = nextObserverState
-        console.log('expected', expected.toJS())
-        console.log(result.toJS())
         expect(is(expected, result)).toBe(true)
       })
     })
   })
 })
+/*eslint-enable one-var, comma-dangle*/
