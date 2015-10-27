@@ -5,11 +5,13 @@ const ReactorState = Immutable.Record({
   state: Immutable.Map(),
   stores: Immutable.Map(),
   cache: Immutable.Map(),
+  // maintains a mapping of storeId => state id (monotomically increasing integer whenever store state changes)
+  storeStates: Immutable.Map(),
   dirtyStores: Immutable.Set(),
   debug: false,
 })
 
-const ObserverStoreMap = Immutable.Record({
+const ObserverState = Immutable.Record({
   // observers registered to any store change
   any: Immutable.Set([]),
   // observers registered to specific store changes
@@ -20,7 +22,7 @@ const ObserverStoreMap = Immutable.Record({
   nextId: 1,
 })
 
-export {
+export default {
   ReactorState,
-  ObserverStoreMap,
+  ObserverState,
 }

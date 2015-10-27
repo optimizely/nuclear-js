@@ -5,7 +5,7 @@ import { isKeyPath } from './key-path'
 import { isGetter, fromKeyPath } from './getter'
 import { toJS } from './immutable-helpers'
 import { isArray, toFactory } from './utils'
-import { ReactorState, ObserverStoreMap } from './reactor/records'
+import { ReactorState, ObserverState } from './reactor/records'
 
 /**
  * State is stored in NuclearJS Reactors.  Reactors
@@ -24,7 +24,7 @@ class Reactor {
 
     this.prevReactorState = initialReactorState
     this.reactorState = initialReactorState
-    this.observerStoreMap = new ObserverStoreMap()
+    this.observerState = new ObserverState()
 
     this.ReactMixin = createReactMixin(this)
 
@@ -76,10 +76,10 @@ class Reactor {
       handler = getter
       getter = []
     }
-    let { observerStoreMap, entry } = fns.addObserver(this.observerStoreMap, getter, handler)
-    this.observerStoreMap = observerStoreMap;
+    let { observerState, entry } = fns.addObserver(this.observerState, getter, handler)
+    this.observerState = observerState;
     return () => {
-      this.observerStoreMap = fns.removeObserverByEntry(this.observerStoreMap, entry)
+      this.observerState = fns.removeObserverByEntry(this.observerState, entry)
     }
   }
 
@@ -91,7 +91,7 @@ class Reactor {
       throw new Error('Must call unobserve with a Getter')
     }
 
-    this.observerStoreMap = fns.removeObserver(this.observerStoreMap, getter, handler)
+    this.observerState = fns.removeObserver(this.observerState, getter, handler)
   }
 
   /**
@@ -177,6 +177,7 @@ class Reactor {
     const newState = fns.reset(this.reactorState)
     this.reactorState = newState
     this.prevReactorState = newState
+    this.observerState = new ObserverState()
   }
 
   /**
@@ -196,10 +197,10 @@ class Reactor {
 
     let observerIdsToNotify = Immutable.Set().withMutations(set => {
       // notify all observers
-      set.union(this.observerStoreMap.get('any'))
+      set.union(this.observerState.get('any'))
 
       dirtyStores.forEach(id => {
-        const entries = this.observerStoreMap.getIn(['stores', id])
+        const entries = this.observerState.getIn(['stores', id])
         if (!entries) {
           return
         }
@@ -208,7 +209,7 @@ class Reactor {
     })
 
     observerIdsToNotify.forEach((observerId) => {
-      const entry = this.observerStoreMap.getIn(['observersMap', observerId])
+      const entry = this.observerState.getIn(['observersMap', observerId])
       if (!entry) {
         // don't notify here in the case a handler called unobserve on another observer
         return
@@ -228,7 +229,7 @@ class Reactor {
       }
     })
 
-    const nextReactorState = this.reactorState.set('dirtyStores', Immutable.Set())
+    const nextReactorState = fns.resetDirtyStores(this.reactorState)
 
     this.prevReactorState = nextReactorState
     this.reactorState = nextReactorState

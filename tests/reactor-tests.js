@@ -1,9 +1,7 @@
-var Immutable = require('immutable')
-import { Map, List } from 'immutable'
+import Immutable, { Map, List, is } from 'immutable'
 import { Reactor, Store } from '../src/main'
-var toImmutable = require('../src/immutable-helpers').toImmutable
-var logging = require('../src/logging')
-
+import { toImmutable } from '../src/immutable-helpers'
+import logging from '../src/logging'
 
 describe('Reactor', () => {
   it('should construct without \'new\'', () => {
@@ -233,6 +231,84 @@ describe('Reactor', () => {
         }).not.toThrow()
       })
     }) // when dispatching a relevant action
+
+    describe('#evaluate', () => {
+      it('should evaluate the empty keyPath', () => {
+        checkoutActions.setTaxPercent(5)
+        var result = reactor.evaluate([])
+        var expected = Map({
+          taxPercent: 5,
+          items: Map({
+            all: List(),
+          }),
+        })
+        expect(is(result, expected)).toBe(true)
+      })
+
+      it('should evaluate a simple keyPath', () => {
+        checkoutActions.setTaxPercent(5)
+        var result = reactor.evaluate(['taxPercent'])
+        expect(result).toBe(5)
+      })
+
+      it('should evaluate a simple getter', () => {
+        checkoutActions.setTaxPercent(5)
+        var getter = [
+          ['taxPercent'],
+          (percent) => percent * 2
+        ]
+        var result = reactor.evaluate(getter)
+        expect(result).toBe(10)
+      })
+
+      it('should evaluate a complex getter', () => {
+        checkoutActions.setTaxPercent(5)
+        checkoutActions.addItem('pants', 100)
+        var result = reactor.evaluate(totalGetter)
+        expect(result).toBe(105)
+      })
+
+      it('should evaluate and cache a getter if its underlying stores dont change', () => {
+        var taxPercentSpy = jasmine.createSpy()
+        var subtotalSpy = jasmine.createSpy()
+
+        var taxPercentGetter = [
+          ['taxPercent'],
+          t => {
+            taxPercentSpy()
+            return t
+          }
+        ]
+
+        subtotalGetter = [
+          ['items', 'all'],
+          (items) => {
+            subtotalSpy()
+            return items.reduce((total, item) => {
+              return total + item.get('price')
+            }, 0)
+          },
+        ]
+        checkoutActions.setTaxPercent(5)
+        checkoutActions.addItem('pants', 100)
+        var result1 = reactor.evaluate(taxPercentGetter)
+        var result2 = reactor.evaluate(subtotalGetter)
+        expect(result1).toBe(5)
+        expect(result2).toBe(100)
+
+        expect(taxPercentSpy.calls.count()).toEqual(1)
+        expect(subtotalSpy.calls.count()).toEqual(1)
+
+        checkoutActions.setTaxPercent(6)
+        var result3 = reactor.evaluate(taxPercentGetter)
+        var result4 = reactor.evaluate(subtotalGetter)
+        expect(result3).toBe(6)
+        expect(result4).toBe(100)
+
+        expect(taxPercentSpy.calls.count()).toEqual(2)
+        expect(subtotalSpy.calls.count()).toEqual(1)
+      })
+    })
 
     describe('#observe', () => {
       it('should invoke a change handler if the specific keyPath changes', () => {
@@ -815,6 +891,18 @@ describe('Reactor', () => {
         reactor.reset()
 
         expect(reactor.evaluate(['test'])).toBe('foo')
+      })
+
+      it('should reset all observers as well', () => {
+        var observeSpy = jasmine.createSpy()
+        reactor.observe(['test'], observeSpy)
+        reactor.dispatch('set', 2)
+
+        expect(observeSpy.calls.count()).toBe(1)
+        reactor.reset()
+
+        reactor.dispatch('set', 3)
+        expect(observeSpy.calls.count()).toBe(1)
       })
     })
 
