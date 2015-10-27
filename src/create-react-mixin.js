@@ -5,8 +5,8 @@ import { each } from './utils'
  * the reactor values
  */
 function getState(reactor, data) {
-  var state = {}
-  each(data, function(value, key) {
+  let state = {}
+  each(data, (value, key) => {
     state[key] = reactor.evaluate(value)
   })
   return state
@@ -17,25 +17,24 @@ function getState(reactor, data) {
  */
 export default function(reactor) {
   return {
-    getInitialState: function() {
+    getInitialState() {
       return getState(reactor, this.getDataBindings())
     },
 
-    componentDidMount: function() {
-      var component = this
-      component.__unwatchFns = []
-      each(this.getDataBindings(), function(getter, key) {
-        var unwatchFn = reactor.observe(getter, function(val) {
-          var newState = {}
-          newState[key] = val
-          component.setState(newState)
+    componentDidMount() {
+      this.__unwatchFns = []
+      each(this.getDataBindings(), (getter, key) => {
+        const unwatchFn = reactor.observe(getter, (val) => {
+          this.setState({
+            [key]: val
+          })
         })
 
-        component.__unwatchFns.push(unwatchFn)
+        this.__unwatchFns.push(unwatchFn)
       })
     },
 
-    componentWillUnmount: function() {
+    componentWillUnmount() {
       while (this.__unwatchFns.length) {
         this.__unwatchFns.shift()()
       }

@@ -9,7 +9,7 @@ import { each } from '../utils'
 /**
  * Immutable Types
  */
-var EvaluateResult = Immutable.Record({ result: null, reactorState: null})
+const EvaluateResult = Immutable.Record({ result: null, reactorState: null})
 
 function evaluateResult(result, reactorState) {
   return new EvaluateResult({
@@ -24,7 +24,7 @@ function evaluateResult(result, reactorState) {
  * @return {ReactorState}
  */
 exports.registerStores = function(reactorState, stores) {
-  var debug = reactorState.get('debug')
+  const debug = reactorState.get('debug')
 
   return reactorState.withMutations((reactorState) => {
     each(stores, (store, id) => {
@@ -34,7 +34,7 @@ exports.registerStores = function(reactorState, stores) {
         /* eslint-enable no-console */
       }
 
-      var initialState = store.getInitialState()
+      const initialState = store.getInitialState()
 
       if (debug && !isImmutableValue(initialState)) {
         throw new Error('Store getInitialState() must return an immutable value, did you forget to call toImmutable')
@@ -57,19 +57,19 @@ exports.registerStores = function(reactorState, stores) {
  * @return {ReactorState}
  */
 exports.dispatch = function(reactorState, actionType, payload) {
-  var currState = reactorState.get('state')
-  var debug = reactorState.get('debug')
-  var dirtyStores = reactorState.get('dirtyStores')
+  const currState = reactorState.get('state')
+  const debug = reactorState.get('debug')
+  let dirtyStores = reactorState.get('dirtyStores')
 
-  var nextState = currState.withMutations(state => {
+  const nextState = currState.withMutations(state => {
     if (debug) {
       logging.dispatchStart(actionType, payload)
     }
 
     // let each store handle the message
     reactorState.get('stores').forEach((store, id) => {
-      var currState = state.get(id)
-      var newState
+      const currState = state.get(id)
+      let newState
 
       try {
         newState = store.handle(currState, actionType, payload)
@@ -80,7 +80,7 @@ exports.dispatch = function(reactorState, actionType, payload) {
       }
 
       if (debug && newState === undefined) {
-        var errorMsg = 'Store handler must return a value, did you forget a return statement'
+        const errorMsg = 'Store handler must return a value, did you forget a return statement'
         logging.dispatchError(errorMsg)
         throw new Error(errorMsg)
       }
@@ -119,9 +119,9 @@ exports.loadState = function(reactorState, state) {
   let dirtyStores = []
   const stateToLoad = toImmutable({}).withMutations(stateToLoad => {
     each(state, (serializedStoreState, storeId) => {
-      var store = reactorState.getIn(['stores', storeId])
+      const store = reactorState.getIn(['stores', storeId])
       if (store) {
-        var storeState = store.deserialize(serializedStoreState)
+        const storeState = store.deserialize(serializedStoreState)
         if (storeState !== undefined) {
           stateToLoad.set(storeId, storeState)
           dirtyStores.push(storeId)
@@ -130,7 +130,7 @@ exports.loadState = function(reactorState, state) {
     })
   })
 
-  var dirtyStoresSet = Immutable.Set(dirtyStores)
+  const dirtyStoresSet = Immutable.Set(dirtyStores)
   return reactorState
     .update('state', state => state.merge(stateToLoad))
     .update('dirtyStores', stores => stores.union(dirtyStoresSet))
@@ -259,15 +259,15 @@ exports.removeObserverByEntry = function(observerState, entry) {
  * @return {ReactorState}
  */
 exports.reset = function(reactorState) {
-  var debug = reactorState.get('debug')
-  var prevState = reactorState.get('state')
+  const debug = reactorState.get('debug')
+  const prevState = reactorState.get('state')
 
   return reactorState.withMutations(reactorState => {
     const storeMap = reactorState.get('stores')
     const storeIds = storeMap.keySeq().toJS()
     storeMap.forEach((store, id) => {
-      var storeState = prevState.get(id)
-      var resetStoreState = store.handleReset(storeState)
+      const storeState = prevState.get(id)
+      const resetStoreState = store.handleReset(storeState)
       if (debug && resetStoreState === undefined) {
         throw new Error('Store handleReset() must return a value, did you forget a return statement')
       }
@@ -288,7 +288,7 @@ exports.reset = function(reactorState) {
  * @return {EvaluateResult}
  */
 exports.evaluate = function evaluate(reactorState, keyPathOrGetter) {
-  var state = reactorState.get('state')
+  const state = reactorState.get('state')
 
   if (isKeyPath(keyPathOrGetter)) {
     // if its a keyPath simply return
@@ -311,8 +311,8 @@ exports.evaluate = function evaluate(reactorState, keyPathOrGetter) {
   }
 
   // evaluate dependencies
-  var args = getDeps(keyPathOrGetter).map(dep => evaluate(reactorState, dep).result)
-  var evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
+  const args = getDeps(keyPathOrGetter).map(dep => evaluate(reactorState, dep).result)
+  const evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
 
   return evaluateResult(
     evaluatedValue,
@@ -361,7 +361,7 @@ function getCacheKey(getter) {
  * @return {Immutable.Map}
  */
 function getCacheEntry(reactorState, keyPathOrGetter) {
-  var key = getCacheKey(keyPathOrGetter)
+  const key = getCacheKey(keyPathOrGetter)
   return reactorState.getIn(['cache', key])
 }
 

@@ -7,7 +7,7 @@ import { isKeyPath } from './key-path'
  * A getter is an array with the form:
  * [<KeyPath>, ...<KeyPath>, <function>]
  */
-var identity = (x) => x
+const identity = (x) => x
 
 /**
  * Checks if something is a getter literal, ex: ['dep1', 'dep2', function(dep1, dep2) {...}]
@@ -52,7 +52,7 @@ function getFlattenedDeps(getter, existing) {
       throw new Error('getFlattenedDeps must be passed a Getter')
     }
 
-    getDeps(getter).forEach(function(dep) {
+    getDeps(getter).forEach(dep => {
       if (isKeyPath(dep)) {
         set.add(List(dep))
       } else if (isGetter(dep)) {
