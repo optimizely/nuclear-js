@@ -233,6 +233,9 @@ exports.removeObserver = function(observerState, getter, handler) {
 
 /**
  * Removes an observer entry by id from the observerState
+ * @param {ObserverState} observerState
+ * @param {Immutable.Map} entry
+ * @return {ObserverState}
  */
 exports.removeObserverByEntry = function(observerState, entry) {
   return observerState.withMutations(map => {
@@ -249,13 +252,6 @@ exports.removeObserverByEntry = function(observerState, entry) {
 
     map.removeIn(['observersMap', id])
   })
-}
-
-/**
- * Given the current observerState and a store/getter/handler checks if still active
- */
-exports.isValidHandler = function(observerState, storeId, getter, handler) {
-  return !!observerState.getIn([storeId, getter, handler])
 }
 
 /**
