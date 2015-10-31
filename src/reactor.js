@@ -208,9 +208,7 @@ class Reactor {
       })
     })
 
-    gettersToNotify.forEach((getterId) => {
-      const getter = this.observerState.get('getters')[getterId];
-
+    gettersToNotify.forEach(getter => {
       const prevEvaluateResult = fns.evaluate(this.prevReactorState, getter)
       const currEvaluateResult = fns.evaluate(this.reactorState, getter)
 
@@ -218,7 +216,7 @@ class Reactor {
       const currValue = currEvaluateResult.result
 
       if (!Immutable.is(prevValue, currValue)) {
-        const handlers = this.observerState.getIn(['gettersMap', getterId])
+        const handlers = this.observerState.getIn(['gettersMap', getter])
           .map(observerId => this.observerState.getIn(['observersMap', observerId, 'handler']))
            // don't notify here in the case a handler called unobserve on another observer
 

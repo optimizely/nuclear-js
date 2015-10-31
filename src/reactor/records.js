@@ -17,8 +17,6 @@ const ObserverState = Immutable.Record({
   // getters registered to specific store changes
   stores: Immutable.Map({}),
 
-  getters: [],
-
   gettersMap: Immutable.Map({}),
 
   observersMap: Immutable.Map({}),

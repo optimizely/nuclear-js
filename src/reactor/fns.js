@@ -172,40 +172,26 @@ exports.addObserver = function(observerState, getter, handler) {
       handler: handler,
     })
 
-    let updatedObserverState
-
-    let existingGetters = observerState.get('getters');
-
-    let getterId = existingGetters.indexOf(getter);
-
-    if (getterId < 0) {
-      existingGetters.push(getter);
-      getterId = existingGetters.length - 1;
-    }
-    //update getterMap
-
-    let observerIdsForGetter = observerState.getIn(['gettersMap', getterId])
-
-    if (!observerIdsForGetter) {
-      observerIdsForGetter = Immutable.Set([])
-    }
-
-    observerIdsForGetter = observerIdsForGetter.add(currId);
-
-    updatedObserverState = observerState.setIn(['gettersMap', getterId], observerIdsForGetter);
+    let updatedObserverState = observerState.updateIn(['gettersMap', getter]
+      , observerIds =>
+          observerIds
+            ? observerIds.add(currId)
+            : Immutable.Set([]).add(currId)
+    )
 
     if (storeDeps.size === 0) {
       // no storeDeps means the observer is dependent on any of the state changing
 
-      updatedObserverState = updatedObserverState.updateIn(['any'], getters => getters.add(getterId))
+      updatedObserverState = updatedObserverState.updateIn(['any'], getters => getters.add(getter))
     } else {
       updatedObserverState = updatedObserverState.withMutations(map => {
         storeDeps.forEach(storeId => {
-          let path = ['stores', storeId]
-          if (!map.hasIn(path)) {
-            map.setIn(path, Immutable.Set([]))
-          }
-          map.updateIn(['stores', storeId], getters => getters.add(getterId))
+          map.updateIn(['stores', storeId]
+            , getters =>
+                getters
+                  ? getters.add(getter)
+                  : Immutable.Set([]).add(getter)
+          )
         })
       })
     }
@@ -267,30 +253,27 @@ exports.removeObserver = function(observerState, getter, handler) {
  */
 exports.removeObserverByEntry = function(observerState, entry) {
   return observerState.withMutations(map => {
-    try {
-      const id = entry.get('id')
-      const getter = entry.get('getter')
-      const storeDeps = entry.get('storeDeps')
+    const id = entry.get('id')
+    const getter = entry.get('getter')
+    const storeDeps = entry.get('storeDeps')
 
-      const existingGetters = observerState.get('getters');
+    map.updateIn(['gettersMap', getter], observerIds => observerIds.remove(id));
 
-      const getterId = existingGetters.indexOf(getter);
+    if (map.getIn(['gettersMap', getter]).size <= 0) {
 
-      //cleaning the gettersMap
-      map.updateIn(['gettersMap', getterId], observerIds => observerIds.remove(id));
-
-      if (storeDeps.size === 0 && map.getIn(['gettersMap', getterId]).size === 0) {
-        map.update('any', anyGetters => anyGetters.remove(getterId))
+      if (storeDeps.size === 0) {
+        // no storeDeps means the observer is dependent on any of the state changing
+        map.update('any', getters => getters.remove(getter));
       } else {
         storeDeps.forEach(storeId => {
-          map.updateIn(['stores', storeId], getters => getters.remove(getterId))
+          map.updateIn(['stores', storeId]
+            , getters => getters.remove(getter) )
         })
       }
 
-      map.removeIn(['observersMap', id])
-    } catch (e) {
-      debugger;
     }
+
+    map.removeIn(['observersMap', id])
 
   })
 }
