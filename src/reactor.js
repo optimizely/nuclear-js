@@ -221,6 +221,9 @@ class Reactor {
       const prevEvaluateResult = fns.evaluate(this.prevReactorState, getter)
       const currEvaluateResult = fns.evaluate(this.reactorState, getter)
 
+      this.prevReactorState = prevEvaluateResult.reactorState
+      this.reactorState = currEvaluateResult.reactorState
+
       const prevValue = prevEvaluateResult.result
       const currValue = currEvaluateResult.result
 
