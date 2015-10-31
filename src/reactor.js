@@ -208,15 +208,26 @@ class Reactor {
       })
     })
 
-    observerIdsToNotify.forEach((observerId) => {
-      const entry = this.observerState.getIn(['observersMap', observerId])
-      if (!entry) {
-        // don't notify here in the case a handler called unobserve on another observer
-        return
+    //generates a map with getter as key and an arrays of observer id as value.
+    const getterObserverMap = observerIdsToNotify.reduce((map, observerId) => {
+      const entry = this.observerState.getIn(['observersMap', observerId]);
+      const getter = entry.get('getter');
+      const handler = entry.get('handler');
+
+      let handlerList = map.get(getter);
+
+      if (!handlerList) {
+        handlerList = Immutable.List();
       }
 
-      const getter = entry.get('getter')
-      const handler = entry.get('handler')
+      handlerList = handlerList.push(handler);
+
+      return map.set(getter, handlerList);
+
+    }, Immutable.Map());
+
+    // for each getter, evaluate the getter once, then notify all the observers relies on it
+    getterObserverMap.forEach((handlerList, getter) => {
 
       const prevEvaluateResult = fns.evaluate(this.prevReactorState, getter)
       const currEvaluateResult = fns.evaluate(this.reactorState, getter)
@@ -228,9 +239,10 @@ class Reactor {
       const currValue = currEvaluateResult.result
 
       if (!Immutable.is(prevValue, currValue)) {
-        handler.call(null, currValue)
+        handlerList.forEach(handler => handler.call(null, currValue));
       }
-    })
+
+    });
 
     const nextReactorState = fns.resetDirtyStores(this.reactorState)
 
