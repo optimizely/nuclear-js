@@ -195,7 +195,7 @@ class Reactor {
       return
     }
 
-    let observerIdsToNotify = Immutable.Set().withMutations(set => {
+    let gettersToNotify = Immutable.Set().withMutations(set => {
       // notify all observers
       set.union(this.observerState.get('any'))
 
@@ -208,15 +208,8 @@ class Reactor {
       })
     })
 
-    observerIdsToNotify.forEach((observerId) => {
-      const entry = this.observerState.getIn(['observersMap', observerId])
-      if (!entry) {
-        // don't notify here in the case a handler called unobserve on another observer
-        return
-      }
-
-      const getter = entry.get('getter')
-      const handler = entry.get('handler')
+    gettersToNotify.forEach((getterId) => {
+      const getter = this.observerState.get('getters')[getterId];
 
       const prevEvaluateResult = fns.evaluate(this.prevReactorState, getter)
       const currEvaluateResult = fns.evaluate(this.reactorState, getter)
@@ -225,7 +218,11 @@ class Reactor {
       const currValue = currEvaluateResult.result
 
       if (!Immutable.is(prevValue, currValue)) {
-        handler.call(null, currValue)
+        const handlers = this.observerState.getIn(['gettersMap', getterId])
+          .map(observerId => this.observerState.getIn(['observersMap', observerId, 'handler']))
+           // don't notify here in the case a handler called unobserve on another observer
+
+        handlers.forEach(handler => handler.call(null, currValue))
       }
     })
 
