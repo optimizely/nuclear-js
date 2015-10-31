@@ -246,7 +246,13 @@ exports.removeObserverByEntry = function(observerState, entry) {
       map.update('any', anyObsevers => anyObsevers.remove(id))
     } else {
       storeDeps.forEach(storeId => {
-        map.updateIn(['stores', storeId], observers => observers.remove(id))
+        map.updateIn(['stores', storeId], observers => {
+          if (observers) {
+            // check for observers being present because reactor.reset() can be called before an unwatch fn
+            return observers.remove(id)
+          }
+          return observers
+        })
       })
     }
 
