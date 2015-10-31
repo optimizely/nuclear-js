@@ -29,21 +29,6 @@ Dispatches a message to all registered Stores. This process is done synchronousl
 reactor.dispatch('addUser', { name: 'jordan' })
 ```
 
-#### `Reactor#batch(fn)`
-
-_added in 1.1_
-
-Allows multiple dispatches within the `fn` function before notifying any observers.
-
-```javascript
-reactor.batch(function() {
-  reactor.dispatch('addUser', { name: 'jordan' })
-  reactor.dispatch('addUser', { name: 'james' })
-})
-
-// does a single notify to all observers
-```
-
 #### `Reactor#evaluate(Getter | KeyPath)`
 
 Returns the immutable value for some KeyPath or Getter in the reactor state. Returns `undefined` if a keyPath doesn't have a value.
@@ -84,6 +69,41 @@ reactor.observe([
   }
 ])
 ```
+
+#### `Reactor#batch(fn)`
+
+_added in 1.1_
+
+Allows multiple dispatches within the `fn` function before notifying any observers.
+
+```javascript
+reactor.batch(function() {
+  reactor.dispatch('addUser', { name: 'jordan' })
+  reactor.dispatch('addUser', { name: 'james' })
+})
+
+// does a single notify to all observers
+```
+
+#### `Reactor#batchStart()`
+
+_added in 1.2_
+
+Sets the reactor in batch mode, where dispatches don't cause observer notification until `batchEnd()` is called.
+
+```javascript
+// the following is equivalent to the `reactor.batch` example
+reactor.batchStart()
+reactor.dispatch('addUser', { name: 'jordan' })
+reactor.dispatch('addUser', { name: 'james' })
+reactor.batchEnd()
+```
+
+#### `Reactor#batchEnd()`
+
+_added in 1.2_
+
+Signifies the end of reactor batching and will notify all observers of the changes that happened since `batchStart`
 
 #### `Reactor#serialize()`
 
