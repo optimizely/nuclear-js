@@ -171,12 +171,9 @@ exports.addObserver = function(observerState, getter, handler) {
     handler: handler,
   })
 
-  let updatedObserverState = observerState.updateIn(['gettersMap', getter]
-    , observerIds =>
-        observerIds
-          ? observerIds.add(currId)
-          : Immutable.Set([]).add(currId)
-  )
+  let updatedObserverState = observerState.updateIn(['gettersMap', getter], observerIds => {
+    return observerIds ? observerIds.add(currId) : Immutable.Set.of(currId)
+  })
 
   if (storeDeps.size === 0) {
     // no storeDeps means the observer is dependent on any of the state changing
@@ -185,12 +182,9 @@ exports.addObserver = function(observerState, getter, handler) {
   } else {
     updatedObserverState = updatedObserverState.withMutations(map => {
       storeDeps.forEach(storeId => {
-        map.updateIn(['stores', storeId]
-          , getters =>
-              getters
-                ? getters.add(getter)
-                : Immutable.Set([]).add(getter)
-        )
+        map.updateIn(['stores', storeId], getters => {
+          return getters ? getters.add(getter) : Immutable.Set.of(getter)
+        })
       })
     })
   }
