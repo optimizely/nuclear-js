@@ -1,6 +1,5 @@
-var Immutable = require('immutable')
-var KeyPath = require('../src/key-path')
-var isKeyPath = KeyPath.isKeyPath
+import Immutable from 'immutable'
+import { isKeyPath } from '../src/key-path'
 
 describe('KeyPath', () => {
   describe('isKeyPath', () => {

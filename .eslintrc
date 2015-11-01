@@ -2,7 +2,8 @@
   "env": {
     "node": true,
     "browser": true,
-    "amd": true
+    "amd": true,
+    "es6": true
   },
   "ecmaFeatures": {
     "arrowFunctions": true,
@@ -10,6 +11,7 @@
     "defaultParams": true,
     "destructuring": true,
     "forOf": true,
+    "modules": true,
     "objectLiteralShorthandMethods": true,
     "objectLiteralShorthandProperties": true,
     "spread": true,
@@ -58,7 +60,7 @@
     "use-isnan": 1,
     "valid-jsdoc": 0,
     "valid-typeof": 1,
-    "block-scoped-var": 1,
+    "block-scoped-var": 0,
     "complexity": 0,
     "consistent-return": 0,
     "curly": 1,

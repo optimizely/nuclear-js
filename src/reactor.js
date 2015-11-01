@@ -1,17 +1,11 @@
-var Immutable = require('immutable')
-var logging = require('./logging')
-var ChangeObserver = require('./change-observer')
-var Getter = require('./getter')
-var KeyPath = require('./key-path')
-var Evaluator = require('./evaluator')
-var createReactMixin = require('./create-react-mixin')
-
-// helper fns
-var toJS = require('./immutable-helpers').toJS
-var toImmutable = require('./immutable-helpers').toImmutable
-var isImmutableValue = require('./immutable-helpers').isImmutableValue
-var each = require('./utils').each
-
+import Immutable from 'immutable'
+import createReactMixin from './create-react-mixin'
+import fns from './reactor/fns'
+import { isKeyPath } from './key-path'
+import { isGetter } from './getter'
+import { toJS } from './immutable-helpers'
+import { toFactory } from './utils'
+import { ReactorState, ObserverState } from './reactor/records'
 
 /**
  * State is stored in NuclearJS Reactors.  Reactors
@@ -23,35 +17,19 @@ var each = require('./utils').each
  * state based on the message
  */
 class Reactor {
-  constructor(config) {
-    if (!(this instanceof Reactor)) {
-      return new Reactor(config)
-    }
-    config = config || {}
+  constructor(config = {}) {
+    const initialReactorState = new ReactorState({
+      debug: config.debug,
+    })
 
-    this.debug = !!config.debug
+    this.prevReactorState = initialReactorState
+    this.reactorState = initialReactorState
+    this.observerState = new ObserverState()
 
     this.ReactMixin = createReactMixin(this)
-    /**
-     * The state for the whole cluster
-     */
-    this.state = Immutable.Map({})
-    /**
-     * Holds a map of id => store instance
-     */
-    this.__stores = Immutable.Map({})
-
-    this.__evaluator = new Evaluator()
-    /**
-     * Change observer interface to observe certain keypaths
-     * Created after __initialize so it starts with initialState
-     */
-    this.__changeObserver = new ChangeObserver(this.state, this.__evaluator)
 
     // keep track of the depth of batch nesting
     this.__batchDepth = 0
-    // number of dispatches in the top most batch cycle
-    this.__batchDispatchCount = 0
 
     // keep track if we are currently dispatching
     this.__isDispatching = false
@@ -63,7 +41,9 @@ class Reactor {
    * @return {*}
    */
   evaluate(keyPathOrGetter) {
-    return this.__evaluator.evaluate(this.state, keyPathOrGetter)
+    let { result, reactorState } = fns.evaluate(this.reactorState, keyPathOrGetter)
+    this.reactorState = reactorState
+    return result
   }
 
   /**
@@ -94,13 +74,25 @@ class Reactor {
   observe(getter, handler) {
     if (arguments.length === 1) {
       handler = getter
-      getter = Getter.fromKeyPath([])
-    } else if (KeyPath.isKeyPath(getter)) {
-      getter = Getter.fromKeyPath(getter)
+      getter = []
     }
-    return this.__changeObserver.onChange(getter, handler)
+    let { observerState, entry } = fns.addObserver(this.observerState, getter, handler)
+    this.observerState = observerState
+    return () => {
+      this.observerState = fns.removeObserverByEntry(this.observerState, entry)
+    }
   }
 
+  unobserve(getter, handler) {
+    if (arguments.length === 0) {
+      throw new Error('Must call unobserve with a Getter')
+    }
+    if (!isGetter(getter) && !isKeyPath(getter)) {
+      throw new Error('Must call unobserve with a Getter')
+    }
+
+    this.observerState = fns.removeObserver(this.observerState, getter, handler)
+  }
 
   /**
    * Dispatches a single message
@@ -116,27 +108,16 @@ class Reactor {
       this.__isDispatching = true
     }
 
-    var prevState = this.state
-
     try {
-      this.state = this.__handleAction(prevState, actionType, payload)
+      this.reactorState = fns.dispatch(this.reactorState, actionType, payload)
     } catch (e) {
       this.__isDispatching = false
       throw e
     }
 
-
-    if (this.__batchDepth > 0) {
-      this.__batchDispatchCount++
-    } else {
-      if (this.state !== prevState) {
-        try {
-          this.__notify()
-        } catch (e) {
-          this.__isDispatching = false
-          throw e
-        }
-      }
+    try {
+      this.__notify()
+    } finally {
       this.__isDispatching = false
     }
   }
@@ -146,9 +127,9 @@ class Reactor {
    * @param {Function} fn
    */
   batch(fn) {
-    this.__batchStart()
+    this.batchStart()
     fn()
-    this.__batchEnd()
+    this.batchEnd()
   }
 
   /**
@@ -160,32 +141,16 @@ class Reactor {
     /* eslint-disable no-console */
     console.warn('Deprecation warning: `registerStore` will no longer be supported in 1.1, use `registerStores` instead')
     /* eslint-enable no-console */
-    var stores = {}
-    stores[id] = store
-    this.registerStores(stores)
+    this.registerStores({
+      [id]: store,
+    })
   }
 
   /**
    * @param {Store[]} stores
    */
   registerStores(stores) {
-    each(stores, (store, id) => {
-      if (this.__stores.get(id)) {
-        /* eslint-disable no-console */
-        console.warn('Store already defined for id = ' + id)
-        /* eslint-enable no-console */
-      }
-
-      var initialState = store.getInitialState()
-
-      if (this.debug && !isImmutableValue(initialState)) {
-        throw new Error('Store getInitialState() must return an immutable value, did you forget to call toImmutable')
-      }
-
-      this.__stores = this.__stores.set(id, store)
-      this.state = this.state.set(id, initialState)
-    })
-
+    this.reactorState = fns.registerStores(this.reactorState, stores)
     this.__notify()
   }
 
@@ -194,34 +159,14 @@ class Reactor {
    * @return {Object}
    */
   serialize() {
-    var serialized = {}
-    this.__stores.forEach((store, id) => {
-      var storeState = this.state.get(id)
-      var serializedState = store.serialize(storeState)
-      if (serializedState !== undefined) {
-        serialized[id] = serializedState
-      }
-    })
-    return serialized
+    return fns.serialize(this.reactorState)
   }
 
   /**
    * @param {Object} state
    */
   loadState(state) {
-    var stateToLoad = toImmutable({}).withMutations(stateToLoad => {
-      each(state, (serializedStoreState, storeId) => {
-        var store = this.__stores.get(storeId)
-        if (store) {
-          var storeState = store.deserialize(serializedStoreState)
-          if (storeState !== undefined) {
-            stateToLoad.set(storeId, storeState)
-          }
-        }
-      })
-    })
-
-    this.state = this.state.merge(stateToLoad)
+    this.reactorState = fns.loadState(this.reactorState, state)
     this.__notify()
   }
 
@@ -229,25 +174,10 @@ class Reactor {
    * Resets the state of a reactor and returns back to initial state
    */
   reset() {
-    var debug = this.debug
-    var prevState = this.state
-
-    this.state = Immutable.Map().withMutations(state => {
-      this.__stores.forEach((store, id) => {
-        var storeState = prevState.get(id)
-        var resetStoreState = store.handleReset(storeState)
-        if (debug && resetStoreState === undefined) {
-          throw new Error('Store handleReset() must return a value, did you forget a return statement')
-        }
-        if (debug && !isImmutableValue(resetStoreState)) {
-          throw new Error('Store reset state must be an immutable value, did you forget to call toImmutable')
-        }
-        state.set(id, resetStoreState)
-      })
-    })
-
-    this.__evaluator.reset()
-    this.__changeObserver.reset(this.state)
+    const newState = fns.reset(this.reactorState)
+    this.reactorState = newState
+    this.prevReactorState = newState
+    this.observerState = new ObserverState()
   }
 
   /**
@@ -255,75 +185,86 @@ class Reactor {
    * @private
    */
   __notify() {
-    this.__changeObserver.notifyObservers(this.state)
+    if (this.__batchDepth > 0) {
+      // in the middle of batch, dont notify
+      return
+    }
+
+    const dirtyStores = this.reactorState.get('dirtyStores')
+    if (dirtyStores.size === 0) {
+      return
+    }
+
+    let observerIdsToNotify = Immutable.Set().withMutations(set => {
+      // notify all observers
+      set.union(this.observerState.get('any'))
+
+      dirtyStores.forEach(id => {
+        const entries = this.observerState.getIn(['stores', id])
+        if (!entries) {
+          return
+        }
+        set.union(entries)
+      })
+    })
+
+    observerIdsToNotify.forEach((observerId) => {
+      const entry = this.observerState.getIn(['observersMap', observerId])
+      if (!entry) {
+        // don't notify here in the case a handler called unobserve on another observer
+        return
+      }
+
+      const getter = entry.get('getter')
+      const handler = entry.get('handler')
+
+      const prevEvaluateResult = fns.evaluate(this.prevReactorState, getter)
+      const currEvaluateResult = fns.evaluate(this.reactorState, getter)
+
+      this.prevReactorState = prevEvaluateResult.reactorState
+      this.reactorState = currEvaluateResult.reactorState
+
+      const prevValue = prevEvaluateResult.result
+      const currValue = currEvaluateResult.result
+
+      if (!Immutable.is(prevValue, currValue)) {
+        handler.call(null, currValue)
+      }
+    })
+
+    const nextReactorState = fns.resetDirtyStores(this.reactorState)
+
+    this.prevReactorState = nextReactorState
+    this.reactorState = nextReactorState
   }
 
   /**
-   * Reduces the current state to the new state given actionType / message
-   * @param {string} actionType
-   * @param {object|undefined} payload
-   * @return {Immutable.Map}
+   * Starts batching, ie pausing notifies and batching up changes
+   * to be notified when batchEnd() is called
    */
-  __handleAction(state, actionType, payload) {
-    return state.withMutations(state => {
-      if (this.debug) {
-        logging.dispatchStart(actionType, payload)
-      }
-
-      // let each store handle the message
-      this.__stores.forEach((store, id) => {
-        var currState = state.get(id)
-        var newState
-
-        try {
-          newState = store.handle(currState, actionType, payload)
-        } catch(e) {
-          // ensure console.group is properly closed
-          logging.dispatchError(e.message)
-          throw e
-        }
-
-        if (this.debug && newState === undefined) {
-          var errorMsg = 'Store handler must return a value, did you forget a return statement'
-          logging.dispatchError(errorMsg)
-          throw new Error(errorMsg)
-        }
-
-        state.set(id, newState)
-
-        if (this.debug) {
-          logging.storeHandled(id, currState, newState)
-        }
-      })
-
-      if (this.debug) {
-        logging.dispatchEnd(state)
-      }
-    })
-  }
-
-  __batchStart() {
+  batchStart() {
     this.__batchDepth++
   }
 
-  __batchEnd() {
+  /**
+   * Ends a batch cycle and will notify obsevers of all changes if
+   * the batch depth is back to 0 (outer most batch completed)
+   */
+  batchEnd() {
     this.__batchDepth--
 
     if (this.__batchDepth <= 0) {
-      if (this.__batchDispatchCount > 0) {
-        // set to true to catch if dispatch called from observer
-        this.__isDispatching = true
-        try {
-          this.__notify()
-        } catch (e) {
-          this.__isDispatching = false
-          throw e
-        }
+      // set to true to catch if dispatch called from observer
+      this.__isDispatching = true
+      try {
+        this.__notify()
+      } catch (e) {
         this.__isDispatching = false
+        throw e
       }
-      this.__batchDispatchCount = 0
+      this.__isDispatching = false
     }
   }
 }
 
-module.exports = Reactor
+export default toFactory(Reactor)

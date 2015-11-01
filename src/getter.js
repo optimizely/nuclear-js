@@ -1,13 +1,13 @@
-var isFunction = require('./utils').isFunction
-var isArray = require('./utils').isArray
-var isKeyPath = require('./key-path').isKeyPath
+import Immutable, { List } from 'immutable'
+import { isFunction, isArray } from './utils'
+import { isKeyPath } from './key-path'
 
 /**
  * Getter helper functions
  * A getter is an array with the form:
  * [<KeyPath>, ...<KeyPath>, <function>]
  */
-var identity = (x) => x
+const identity = (x) => x
 
 /**
  * Checks if something is a getter literal, ex: ['dep1', 'dep2', function(dep1, dep2) {...}]
@@ -37,6 +37,36 @@ function getDeps(getter) {
 }
 
 /**
+ * Returns an array of deps from a getter and all its deps
+ * @param {Getter} getter
+ * @param {Immutable.Set} existing
+ * @return {Immutable.Set}
+ */
+function getFlattenedDeps(getter, existing) {
+  if (!existing) {
+    existing = Immutable.Set()
+  }
+
+  const toAdd = Immutable.Set().withMutations(set => {
+    if (!isGetter(getter)) {
+      throw new Error('getFlattenedDeps must be passed a Getter')
+    }
+
+    getDeps(getter).forEach(dep => {
+      if (isKeyPath(dep)) {
+        set.add(List(dep))
+      } else if (isGetter(dep)) {
+        set.union(getFlattenedDeps(dep))
+      } else {
+        throw new Error('Invalid getter, each dependency must be a KeyPath or Getter')
+      }
+    })
+  })
+
+  return existing.union(toAdd)
+}
+
+/**
  * @param {KeyPath}
  * @return {Getter}
  */
@@ -48,10 +78,35 @@ function fromKeyPath(keyPath) {
   return [keyPath, identity]
 }
 
+/**
+ * Adds non enumerated __storeDeps property
+ * @param {Getter}
+ */
+function getStoreDeps(getter) {
+  if (getter.hasOwnProperty('__storeDeps')) {
+    return getter.__storeDeps
+  }
 
-module.exports = {
-  isGetter: isGetter,
-  getComputeFn: getComputeFn,
-  getDeps: getDeps,
-  fromKeyPath: fromKeyPath,
+  const storeDeps = getFlattenedDeps(getter)
+    .map(keyPath => keyPath.first())
+    .filter(x => !!x)
+
+
+  Object.defineProperty(getter, '__storeDeps', {
+    enumerable: false,
+    configurable: false,
+    writable: false,
+    value: storeDeps,
+  })
+
+  return storeDeps
+}
+
+export default {
+  isGetter,
+  getComputeFn,
+  getFlattenedDeps,
+  getStoreDeps,
+  getDeps,
+  fromKeyPath,
 }

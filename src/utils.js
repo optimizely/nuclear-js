@@ -147,6 +147,19 @@ exports.partial = function(func) {
 }
 
 /**
+ * Returns a factory method that allows construction with or without `new`
+ */
+exports.toFactory = function(Klass) {
+  var Factory = function(...args) {
+    return new Klass(...args)
+  }
+
+  Factory.__proto__ = Klass // eslint-disable-line no-proto
+  Factory.prototype = Klass.prototype
+  return Factory
+}
+
+/**
  * Returns the text value representation of an object
  * @private
  * @param {*} obj

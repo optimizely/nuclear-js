@@ -1,7 +1,6 @@
-var Map = require('immutable').Map
-var extend = require('./utils').extend
-var toJS = require('./immutable-helpers').toJS
-var toImmutable = require('./immutable-helpers').toImmutable
+import { Map } from 'immutable'
+import { toFactory, extend } from './utils'
+import { toJS, toImmutable } from './immutable-helpers'
 
 /**
  * Stores define how a certain domain of the application should respond to actions
@@ -10,10 +9,6 @@ var toImmutable = require('./immutable-helpers').toImmutable
  */
 class Store {
   constructor(config) {
-    if (!(this instanceof Store)) {
-      return new Store(config)
-    }
-
     this.__handlers = Map({})
 
     if (config) {
@@ -47,7 +42,7 @@ class Store {
    * does the reaction and returns the new state
    */
   handle(state, type, payload) {
-    var handler = this.__handlers.get(type)
+    const handler = this.__handlers.get(type)
 
     if (typeof handler === 'function') {
       return handler.call(this, state, payload, type)
@@ -94,10 +89,8 @@ class Store {
   }
 }
 
-function isStore(toTest) {
+export function isStore(toTest) {
   return (toTest instanceof Store)
 }
 
-module.exports = Store
-
-module.exports.isStore = isStore
+export default toFactory(Store)
