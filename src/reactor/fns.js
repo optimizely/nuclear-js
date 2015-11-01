@@ -156,58 +156,53 @@ exports.loadState = function(reactorState, state) {
  */
 exports.addObserver = function(observerState, getter, handler) {
   // use the passed in getter as the key so we can rely on a byreference call for unobserve
-  try {
-    const getterKey = getter
-    if (isKeyPath(getter)) {
-      getter = fromKeyPath(getter)
-    }
-
-    const currId = observerState.get('nextId')
-    const storeDeps = getStoreDeps(getter)
-    const entry = Immutable.Map({
-      id: currId,
-      storeDeps: storeDeps,
-      getterKey: getterKey,
-      getter: getter,
-      handler: handler,
-    })
-
-    let updatedObserverState = observerState.updateIn(['gettersMap', getter]
-      , observerIds =>
-          observerIds
-            ? observerIds.add(currId)
-            : Immutable.Set([]).add(currId)
-    )
-
-    if (storeDeps.size === 0) {
-      // no storeDeps means the observer is dependent on any of the state changing
-
-      updatedObserverState = updatedObserverState.updateIn(['any'], getters => getters.add(getter))
-    } else {
-      updatedObserverState = updatedObserverState.withMutations(map => {
-        storeDeps.forEach(storeId => {
-          map.updateIn(['stores', storeId]
-            , getters =>
-                getters
-                  ? getters.add(getter)
-                  : Immutable.Set([]).add(getter)
-          )
-        })
-      })
-    }
-
-    updatedObserverState = updatedObserverState
-      .set('nextId', currId + 1)
-      .setIn(['observersMap', currId], entry)
-
-    return {
-      observerState: updatedObserverState,
-      entry: entry,
-    }
-  } catch (e) {
-    debugger;
+  const getterKey = getter
+  if (isKeyPath(getter)) {
+    getter = fromKeyPath(getter)
   }
 
+  const currId = observerState.get('nextId')
+  const storeDeps = getStoreDeps(getter)
+  const entry = Immutable.Map({
+    id: currId,
+    storeDeps: storeDeps,
+    getterKey: getterKey,
+    getter: getter,
+    handler: handler,
+  })
+
+  let updatedObserverState = observerState.updateIn(['gettersMap', getter]
+    , observerIds =>
+        observerIds
+          ? observerIds.add(currId)
+          : Immutable.Set([]).add(currId)
+  )
+
+  if (storeDeps.size === 0) {
+    // no storeDeps means the observer is dependent on any of the state changing
+
+    updatedObserverState = updatedObserverState.updateIn(['any'], getters => getters.add(getter))
+  } else {
+    updatedObserverState = updatedObserverState.withMutations(map => {
+      storeDeps.forEach(storeId => {
+        map.updateIn(['stores', storeId]
+          , getters =>
+              getters
+                ? getters.add(getter)
+                : Immutable.Set([]).add(getter)
+        )
+      })
+    })
+  }
+
+  updatedObserverState = updatedObserverState
+    .set('nextId', currId + 1)
+    .setIn(['observersMap', currId], entry)
+
+  return {
+    observerState: updatedObserverState,
+    entry: entry,
+  }
 
 }
 
