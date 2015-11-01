@@ -2,7 +2,7 @@
   "name": "nuclear-js",
   "version": "1.1.2",
   "description": "Immutable, reactive Flux architecture. UI Agnostic.",
-  "main": "src/main.js",
+  "main": "dist/nuclear.js",
   "scripts": {
     "test": "grunt ci"
   },
