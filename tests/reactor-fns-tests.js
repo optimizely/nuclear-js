@@ -518,6 +518,40 @@ describe('reactor fns', () => {
         expect(is(expected, result)).toBe(true)
       })
     })
+
+    it('should not remove the getter reference in store when there is still listeners for the getter', () => {
+      nextObserverState = fns.removeObserver(initialObserverState, getter1, handler2)
+      const expected = Map({
+        any: Set.of(getter2),
+        stores: Map({
+          store1: Set.of(getter1),
+          store2: Set.of(getter1),
+        }),
+        nextId: 4,
+        gettersMap: Map([
+          [getter1, Set.of(1)],
+          [getter2, Set.of(3)]
+        ]),
+        observersMap: Map([
+          [1, Map({
+            id: 1,
+            storeDeps: Set.of('store1', 'store2'),
+            getterKey: getter1,
+            getter: getter1,
+            handler: handler1,
+          })],
+          [3, Map({
+            id: 3,
+            storeDeps: Set(),
+            getterKey: getter2,
+            getter: getter2,
+            handler: handler3,
+          })]
+        ])
+      })
+      const result = nextObserverState
+      expect(is(expected, result)).toBe(true)
+    })
   })
 })
 /*eslint-enable one-var, comma-dangle*/
