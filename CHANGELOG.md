@@ -1,10 +1,10 @@
 ## 1.2.0 (November 1, 2015)
 
+- **[NEW]** Exposed new API methods: `batchStart` and `batchStop`.
+- **[NEW]** Changed the transpiler to Babel.
 - **[FIXED]** Completely refactored `Reactor`, `Evaluator` and `ChangeObserver`.
 - **[FIXED]** Fixed all issues related to hash code collisions.
 - **[FIXED]** Refactored how change observation works to be much more efficient.
-- **[NEW]** Changed the transpiler to Babel.
-- **[NEW]** Exposed new API endpoints: `batchStart` and `batchStop`.
 
 ## 1.1.2 (October 5, 2015)
 
