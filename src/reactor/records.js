@@ -1,28 +1,55 @@
-import Immutable from 'immutable'
+import { Map, Set, Record } from 'immutable'
 
-const ReactorState = Immutable.Record({
+export const ReactorState = Record({
   dispatchId: 0,
-  state: Immutable.Map(),
-  stores: Immutable.Map(),
-  cache: Immutable.Map(),
+  state: Map(),
+  stores: Map(),
+  cache: Map(),
   // maintains a mapping of storeId => state id (monotomically increasing integer whenever store state changes)
-  storeStates: Immutable.Map(),
-  dirtyStores: Immutable.Set(),
+  storeStates: Map(),
+  dirtyStores: Set(),
   debug: false,
+  // production defaults
+  options: Map({}),
 })
 
-const ObserverState = Immutable.Record({
+export const ObserverState = Record({
   // observers registered to any store change
-  any: Immutable.Set([]),
+  any: Set(),
   // observers registered to specific store changes
-  stores: Immutable.Map({}),
+  stores: Map({}),
 
-  observersMap: Immutable.Map({}),
+  observersMap: Map({}),
 
   nextId: 1,
 })
 
-export default {
-  ReactorState,
-  ObserverState,
-}
+export const DEBUG_OPTIONS = Map({
+  // logs information for each dispatch
+  logDispatches: true,
+  // log the entire app state after each dispatch
+  logAppState: true,
+  // logs what stores changed after a dispatch
+  logDirtyStores: true,
+  // if false, throw an error if a store returns undefined
+  allowUndefinedDispatch: false,
+  // if false, throw an error if a store returns undefined
+  allowNonImmutableStores: false,
+  // if false throw when dispatching in dispatch
+  allowDispatchInDispatch: false,
+})
+
+export const PROD_OPTIONS = Map({
+  // logs information for each dispatch
+  logDispatches: false,
+  // log the entire app state after each dispatch
+  logAppState: false,
+  // logs what stores changed after a dispatch
+  logDirtyStores: false,
+  // if false, throw an error if a store returns undefined
+  allowUndefinedDispatch: true,
+  // if false, throw an error if a store returns undefined
+  allowNonImmutableStores: true,
+  // if false throw when dispatching in dispatch
+  allowDispatchInDispatch: true,
+})

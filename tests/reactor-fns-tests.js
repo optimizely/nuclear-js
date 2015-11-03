@@ -1,7 +1,7 @@
 /*eslint-disable one-var, comma-dangle*/
 import { Map, Set, is } from 'immutable'
 import { Store } from '../src/main'
-import fns from '../src/reactor/fns'
+import * as fns from '../src/reactor/fns'
 import { ReactorState, ObserverState } from '../src/reactor/records'
 import { toImmutable } from '../src/immutable-helpers'
 

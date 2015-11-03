@@ -1,11 +1,16 @@
 import Immutable from 'immutable'
 import createReactMixin from './create-react-mixin'
-import fns from './reactor/fns'
+import * as fns from './reactor/fns'
 import { isKeyPath } from './key-path'
 import { isGetter } from './getter'
 import { toJS } from './immutable-helpers'
 import { toFactory } from './utils'
-import { ReactorState, ObserverState } from './reactor/records'
+import {
+  ReactorState,
+  ObserverState,
+  DEBUG_OPTIONS,
+  PROD_OPTIONS,
+} from './reactor/records'
 
 /**
  * State is stored in NuclearJS Reactors.  Reactors
@@ -18,8 +23,11 @@ import { ReactorState, ObserverState } from './reactor/records'
  */
 class Reactor {
   constructor(config = {}) {
+    const baseOptions = config.debug ? DEBUG_OPTIONS : PROD_OPTIONS
     const initialReactorState = new ReactorState({
       debug: config.debug,
+      // merge config options with the defaults
+      options: baseOptions.merge(config.options || {}),
     })
 
     this.prevReactorState = initialReactorState
@@ -101,9 +109,11 @@ class Reactor {
    */
   dispatch(actionType, payload) {
     if (this.__batchDepth === 0) {
-      if (this.__isDispatching) {
-        this.__isDispatching = false
-        throw new Error('Dispatch may not be called while a dispatch is in progress')
+      if (!fns.getOption(this.reactorState, 'allowDispatchInDispatch')) {
+        if (this.__isDispatching) {
+          this.__isDispatching = false
+          throw new Error('Dispatch may not be called while a dispatch is in progress')
+        }
       }
       this.__isDispatching = true
     }

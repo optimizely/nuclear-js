@@ -764,7 +764,7 @@ describe('Reactor', () => {
       expect(function() {
         reactor.dispatch('set', 'foo')
       }).toThrow(new Error('Error during action handling'))
-      expect(logging.dispatchError).toHaveBeenCalledWith('Error during action handling')
+      expect(logging.dispatchError).toHaveBeenCalledWith(reactor.reactorState, 'Error during action handling')
     })
   })
 
