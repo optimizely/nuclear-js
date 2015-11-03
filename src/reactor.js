@@ -201,10 +201,9 @@ class Reactor {
 
       dirtyStores.forEach(id => {
         const entries = this.observerState.getIn(['stores', id])
-        if (!entries) {
-          return
+        if (entries) {
+          set.union(entries)
         }
-        set.union(entries)
       })
     })
 
@@ -219,11 +218,14 @@ class Reactor {
       const currValue = currEvaluateResult.result
 
       if (!Immutable.is(prevValue, currValue)) {
-        const handlers = this.observerState.getIn(['gettersMap', getter])
-          .map(observerId => this.observerState.getIn(['observersMap', observerId, 'handler']))
-           // don't notify here in the case a handler called unobserve on another observer
-
-        handlers.forEach(handler => handler.call(null, currValue))
+        const observerIds = this.observerState.getIn(['gettersMap', getter], [])
+        observerIds.forEach(observerId => {
+          const handler = this.observerState.getIn(['observersMap', observerId, 'handler'])
+          // don't notify here in the case a handler called unobserve on another observer
+          if (handler) {
+            handler.call(null, currValue)
+          }
+        })
       }
     })
 

@@ -177,7 +177,6 @@ exports.addObserver = function(observerState, getter, handler) {
 
   if (storeDeps.size === 0) {
     // no storeDeps means the observer is dependent on any of the state changing
-
     updatedObserverState = updatedObserverState.updateIn(['any'], getters => getters.add(getter))
   } else {
     updatedObserverState = updatedObserverState.withMutations(map => {
@@ -246,24 +245,34 @@ exports.removeObserverByEntry = function(observerState, entry) {
     const getter = entry.get('getter')
     const storeDeps = entry.get('storeDeps')
 
-    map.updateIn(['gettersMap', getter], observerIds => observerIds.remove(id));
+    const observerIds = map.getIn(['gettersMap', getter])
+    if (!observerIds) {
+      // getter doesn't exist if reactor.reset() is called before the unwatchFn()
+      return
+    }
+    const updatedObserverIds = observerIds.remove(id)
+    map.setIn(['gettersMap', getter], updatedObserverIds)
 
-    if (map.getIn(['gettersMap', getter]).size <= 0) {
-
+    if (updatedObserverIds.size === 0) {
+      // all observers have been removed for this getter, remove other entries
       if (storeDeps.size === 0) {
         // no storeDeps means the observer is dependent on any of the state changing
         map.update('any', getters => getters.remove(getter));
       } else {
         storeDeps.forEach(storeId => {
-          map.updateIn(['stores', storeId]
-            , getters => getters.remove(getter) )
+          map.updateIn(['stores', storeId], getters => {
+            if (getters) {
+              // check to make sure the getters Set exists for this store,
+              // in the case of reactor.reset() is called before the unwatchFn()
+              return getters.remove(getter)
+            }
+            return getters
+          })
         })
       }
-
     }
 
     map.removeIn(['observersMap', id])
-
   })
 }
 
