@@ -482,6 +482,28 @@ describe('Reactor', () => {
         expect(mockFn1.calls.count()).toEqual(2)
         expect(mockFn2.calls.count()).toEqual(1)
       })
+      it('should allow a notify() after an unobserve during a handler', () => {
+        var mockFn1 = jasmine.createSpy()
+        var mockFn2 = jasmine.createSpy()
+        var unwatchFn2
+        var unwatchFn1 = reactor.observe(subtotalGetter, (val) => {
+          console.log('hanlder1', unwatchFn2)
+          unwatchFn2()
+          mockFn1(val)
+        })
+
+        unwatchFn2 = reactor.observe(subtotalGetter, (val) => {
+          console.log('handler2')
+          mockFn2(val)
+        })
+
+        expect(function() {
+          checkoutActions.addItem('foo', 5)
+          expect(mockFn1.calls.count()).toEqual(1)
+          expect(mockFn2.calls.count()).toEqual(0)
+          expect(mockFn1.calls.argsFor(0)).toEqual([5])
+        }).not.toThrow()
+      })
     })
   }) // Reactor with no initial state
 
@@ -550,6 +572,16 @@ describe('Reactor', () => {
       reactor.reset()
 
       expect(reactor.evaluateToJS(['persistent'])).toEqual([item])
+    })
+
+    it('should be able to reset and call an unwatch() function without erroring', () => {
+      const spy = jasmine.createSpy()
+      const unobserve = reactor.observe(['standard'], () => spy())
+
+      reactor.reset()
+      expect(function() {
+        unobserve()
+      }).not.toThrow()
     })
   })
 
