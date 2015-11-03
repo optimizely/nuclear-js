@@ -1,3 +1,4 @@
+import './console-polyfill'
 import Store from './store'
 import Reactor from './reactor'
 import Immutable from 'immutable'

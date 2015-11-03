@@ -1,3 +1,11 @@
+## 1.2.0 (November 1, 2015)
+
+- **[NEW]** Exposed new API methods: `batchStart` and `batchStop`.
+- **[NEW]** Changed the transpiler to Babel.
+- **[FIXED]** Completely refactored `Reactor`, `Evaluator` and `ChangeObserver`.
+- **[FIXED]** Fixed all issues related to hash code collisions.
+- **[FIXED]** Refactored how change observation works to be much more efficient.
+
 ## 1.1.2 (October 5, 2015)
 
 - **[FIXED]** Fix for observer iteration when removed during notify. [Issue #151](https://github.com/optimizely/nuclear-js/issues/151)

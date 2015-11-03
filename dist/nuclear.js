@@ -54,100 +54,207 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var helpers = __webpack_require__(1)
+	'use strict';
 
-	/**
-	 * @return {Reactor}
-	 */
-	exports.Reactor = __webpack_require__(4)
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
 
-	/**
-	 * @return {Store}
-	 */
-	exports.Store = __webpack_require__(13)
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
-	// export the immutable library
-	exports.Immutable = __webpack_require__(2)
+	__webpack_require__(1);
 
-	/**
-	 * @return {boolean}
-	 */
-	exports.isKeyPath = __webpack_require__(10).isKeyPath
+	var _store = __webpack_require__(2);
 
-	/**
-	 * @return {boolean}
-	 */
-	exports.isGetter = __webpack_require__(9).isGetter
+	var _store2 = _interopRequireDefault(_store);
 
-	// expose helper functions
-	exports.toJS = helpers.toJS
-	exports.toImmutable = helpers.toImmutable
-	exports.isImmutable = helpers.isImmutable
+	var _reactor = __webpack_require__(6);
 
-	exports.createReactMixin = __webpack_require__(12)
+	var _reactor2 = _interopRequireDefault(_reactor);
 
+	var _immutable = __webpack_require__(3);
+
+	var _immutable2 = _interopRequireDefault(_immutable);
+
+	var _immutableHelpers = __webpack_require__(5);
+
+	var _keyPath = __webpack_require__(11);
+
+	var _getter = __webpack_require__(10);
+
+	var _createReactMixin = __webpack_require__(7);
+
+	var _createReactMixin2 = _interopRequireDefault(_createReactMixin);
+
+	exports['default'] = {
+	  Reactor: _reactor2['default'],
+	  Store: _store2['default'],
+	  Immutable: _immutable2['default'],
+	  isKeyPath: _keyPath.isKeyPath,
+	  isGetter: _getter.isGetter,
+	  toJS: _immutableHelpers.toJS,
+	  toImmutable: _immutableHelpers.toImmutable,
+	  isImmutable: _immutableHelpers.isImmutable,
+	  createReactMixin: _createReactMixin2['default']
+	};
+	module.exports = exports['default'];
 
 /***/ },
 /* 1 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
-	var Immutable = __webpack_require__(2)
-	var isObject = __webpack_require__(3).isObject
+	"use strict";
 
-	/**
-	 * A collection of helpers for the ImmutableJS library
-	 */
-
-	/**
-	 * @param {*} obj
-	 * @return {boolean}
-	 */
-	function isImmutable(obj) {
-	  return Immutable.Iterable.isIterable(obj)
-	}
-
-	/**
-	 * Returns true if the value is an ImmutableJS data structure
-	 * or a JavaScript primitive that is immutable (string, number, etc)
-	 * @param {*} obj
-	 * @return {boolean}
-	 */
-	function isImmutableValue(obj) {
-	  return (
-	    isImmutable(obj) ||
-	    !isObject(obj)
-	  )
-	}
-
-	/**
-	 * Converts an Immutable Sequence to JS object
-	 * Can be called on any type
-	 */
-	function toJS(arg) {
-	  // arg instanceof Immutable.Sequence is unreliable
-	  return (isImmutable(arg))
-	    ? arg.toJS()
-	    : arg
-	}
-
-	/**
-	 * Converts a JS object to an Immutable object, if it's
-	 * already Immutable its a no-op
-	 */
-	function toImmutable(arg) {
-	  return (isImmutable(arg))
-	    ? arg
-	    : Immutable.fromJS(arg)
-	}
-
-	exports.toJS = toJS
-	exports.toImmutable = toImmutable
-	exports.isImmutable = isImmutable
-	exports.isImmutableValue = isImmutableValue
-
+	try {
+	  if (!(window.console && console.log)) {
+	    console = {
+	      log: function log() {},
+	      debug: function debug() {},
+	      info: function info() {},
+	      warn: function warn() {},
+	      error: function error() {}
+	    };
+	  }
+	} catch (e) {}
 
 /***/ },
 /* 2 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	exports.isStore = isStore;
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+	var _immutable = __webpack_require__(3);
+
+	var _utils = __webpack_require__(4);
+
+	var _immutableHelpers = __webpack_require__(5);
+
+	/**
+	 * Stores define how a certain domain of the application should respond to actions
+	 * taken on the whole system.  They manage their own section of the entire app state
+	 * and have no knowledge about the other parts of the application state.
+	 */
+
+	var Store = (function () {
+	  function Store(config) {
+	    _classCallCheck(this, Store);
+
+	    this.__handlers = (0, _immutable.Map)({});
+
+	    if (config) {
+	      // allow `MyStore extends Store` syntax without throwing error
+	      (0, _utils.extend)(this, config);
+	    }
+
+	    this.initialize();
+	  }
+
+	  /**
+	   * This method is overridden by extending classes to setup message handlers
+	   * via `this.on` and to set up the initial state
+	   *
+	   * Anything returned from this function will be coerced into an ImmutableJS value
+	   * and set as the initial state for the part of the ReactorCore
+	   */
+
+	  _createClass(Store, [{
+	    key: 'initialize',
+	    value: function initialize() {}
+	    // extending classes implement to setup action handlers
+
+	    /**
+	     * Overridable method to get the initial state for this type of store
+	     */
+
+	  }, {
+	    key: 'getInitialState',
+	    value: function getInitialState() {
+	      return (0, _immutable.Map)();
+	    }
+
+	    /**
+	     * Takes a current reactor state, action type and payload
+	     * does the reaction and returns the new state
+	     */
+	  }, {
+	    key: 'handle',
+	    value: function handle(state, type, payload) {
+	      var handler = this.__handlers.get(type);
+
+	      if (typeof handler === 'function') {
+	        return handler.call(this, state, payload, type);
+	      }
+
+	      return state;
+	    }
+
+	    /**
+	     * Pure function taking the current state of store and returning
+	     * the new state after a NuclearJS reactor has been reset
+	     *
+	     * Overridable
+	     */
+	  }, {
+	    key: 'handleReset',
+	    value: function handleReset(state) {
+	      return this.getInitialState();
+	    }
+
+	    /**
+	     * Binds an action type => handler
+	     */
+	  }, {
+	    key: 'on',
+	    value: function on(actionType, handler) {
+	      this.__handlers = this.__handlers.set(actionType, handler);
+	    }
+
+	    /**
+	     * Serializes store state to plain JSON serializable JavaScript
+	     * Overridable
+	     * @param {*}
+	     * @return {*}
+	     */
+	  }, {
+	    key: 'serialize',
+	    value: function serialize(state) {
+	      return (0, _immutableHelpers.toJS)(state);
+	    }
+
+	    /**
+	     * Deserializes plain JavaScript to store state
+	     * Overridable
+	     * @param {*}
+	     * @return {*}
+	     */
+	  }, {
+	    key: 'deserialize',
+	    value: function deserialize(state) {
+	      return (0, _immutableHelpers.toImmutable)(state);
+	    }
+	  }]);
+
+	  return Store;
+	})();
+
+	function isStore(toTest) {
+	  return toTest instanceof Store;
+	}
+
+	exports['default'] = (0, _utils.toFactory)(Store);
+
+/***/ },
+/* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -5112,7 +5219,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}));
 
 /***/ },
-/* 3 */
+/* 4 */
 /***/ function(module, exports) {
 
 	/**
@@ -5120,18 +5227,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param {*} val
 	 * @return {boolean}
 	 */
-	exports.isString = function(val) {
-	  return typeof val === 'string' || objectToString(val) === '[object String]'
-	}
+	'use strict';
+
+	var _bind = Function.prototype.bind;
+	exports.isString = function (val) {
+	  return typeof val === 'string' || objectToString(val) === '[object String]';
+	};
 
 	/**
 	 * Checks if the passed in value is an array
 	 * @param {*} val
 	 * @return {boolean}
 	 */
-	exports.isArray = Array.isArray /* istanbul ignore next */|| function(val) {
-	  return objectToString(val) === '[object Array]'
-	}
+	exports.isArray = Array.isArray /* istanbul ignore next */ || function (val) {
+	  return objectToString(val) === '[object Array]';
+	};
 
 	// taken from underscore source to account for browser discrepancy
 	/* istanbul ignore if  */
@@ -5141,18 +5251,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @param {*} val
 	   * @return {boolean}
 	   */
-	  exports.isFunction = function(obj) {
-	    return typeof obj === 'function' || false
-	  }
+	  exports.isFunction = function (obj) {
+	    return typeof obj === 'function' || false;
+	  };
 	} else {
 	  /**
 	   * Checks if the passed in value is a function
 	   * @param {*} val
 	   * @return {boolean}
 	   */
-	  exports.isFunction = function(val) {
-	    return toString.call(val) === '[object Function]'
-	  }
+	  exports.isFunction = function (val) {
+	    return toString.call(val) === '[object Function]';
+	  };
 	}
 
 	/**
@@ -5160,10 +5270,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param {*} val
 	 * @return {boolean}
 	 */
-	exports.isObject = function(obj) {
-	  var type = typeof obj
-	  return type === 'function' || type === 'object' && !!obj
-	}
+	exports.isObject = function (obj) {
+	  var type = typeof obj;
+	  return type === 'function' || type === 'object' && !!obj;
+	};
 
 	/**
 	 * Extends an object with the properties of additional objects
@@ -5171,38 +5281,38 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param {object} objects
 	 * @return {object}
 	 */
-	exports.extend = function(obj) {
-	  var length = arguments.length
+	exports.extend = function (obj) {
+	  var length = arguments.length;
 
 	  if (!obj || length < 2) {
-	    return obj || {}
+	    return obj || {};
 	  }
 
 	  for (var index = 1; index < length; index++) {
-	    var source = arguments[index]
-	    var keys = Object.keys(source)
-	    var l = keys.length
+	    var source = arguments[index];
+	    var keys = Object.keys(source);
+	    var l = keys.length;
 
 	    for (var i = 0; i < l; i++) {
-	      var key = keys[i]
-	      obj[key] = source[key]
+	      var key = keys[i];
+	      obj[key] = source[key];
 	    }
 	  }
 
-	  return obj
-	}
+	  return obj;
+	};
 
 	/**
 	 * Creates a shallow clone of an object
 	 * @param {object} obj
 	 * @return {object}
 	 */
-	exports.clone = function(obj) {
+	exports.clone = function (obj) {
 	  if (!exports.isObject(obj)) {
-	    return obj
+	    return obj;
 	  }
-	  return exports.isArray(obj) ? obj.slice() : exports.extend({}, obj)
-	}
+	  return exports.isArray(obj) ? obj.slice() : exports.extend({}, obj);
+	};
 
 	/**
 	 * Iterates over a collection of elements yielding each iteration to an
@@ -5214,37 +5324,37 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param {*} context
 	 * @return {array|object|string}
 	 */
-	exports.each = function(collection, iteratee, context) {
-	  var length = collection ? collection.length : 0
-	  var i = -1
-	  var keys
-	  var origIteratee
+	exports.each = function (collection, iteratee, context) {
+	  var length = collection ? collection.length : 0;
+	  var i = -1;
+	  var keys;
+	  var origIteratee;
 
 	  if (context) {
-	    origIteratee = iteratee
-	    iteratee = function(value, index, innerCollection) {
-	      return origIteratee.call(context, value, index, innerCollection)
-	    }
+	    origIteratee = iteratee;
+	    iteratee = function (value, index, innerCollection) {
+	      return origIteratee.call(context, value, index, innerCollection);
+	    };
 	  }
 
 	  if (isLength(length)) {
 	    while (++i < length) {
 	      if (iteratee(collection[i], i, collection) === false) {
-	        break
+	        break;
 	      }
 	    }
 	  } else {
-	    keys = Object.keys(collection)
-	    length = keys.length
+	    keys = Object.keys(collection);
+	    length = keys.length;
 	    while (++i < length) {
 	      if (iteratee(collection[keys[i]], keys[i], collection) === false) {
-	        break
+	        break;
 	      }
 	    }
 	  }
 
-	  return collection
-	}
+	  return collection;
+	};
 
 	/**
 	 * Returns a new function the invokes `func` with `partialArgs` prepended to
@@ -5254,14 +5364,31 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param {*} partialArgs
 	 * @return {function}
 	 */
-	exports.partial = function(func) {
-	  var slice = Array.prototype.slice
-	  var partialArgs = slice.call(arguments, 1)
+	exports.partial = function (func) {
+	  var slice = Array.prototype.slice;
+	  var partialArgs = slice.call(arguments, 1);
 
-	  return function() {
-	    return func.apply(this, partialArgs.concat(slice.call(arguments)))
-	  }
-	}
+	  return function () {
+	    return func.apply(this, partialArgs.concat(slice.call(arguments)));
+	  };
+	};
+
+	/**
+	 * Returns a factory method that allows construction with or without `new`
+	 */
+	exports.toFactory = function (Klass) {
+	  var Factory = function Factory() {
+	    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+	      args[_key] = arguments[_key];
+	    }
+
+	    return new (_bind.apply(Klass, [null].concat(args)))();
+	  };
+
+	  Factory.__proto__ = Klass; // eslint-disable-line no-proto
+	  Factory.prototype = Klass.prototype;
+	  return Factory;
+	};
 
 	/**
 	 * Returns the text value representation of an object
@@ -5270,7 +5397,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @return {string}
 	 */
 	function objectToString(obj) {
-	  return obj && typeof obj === 'object' && toString.call(obj)
+	  return obj && typeof obj === 'object' && toString.call(obj);
 	}
 
 	/**
@@ -5280,31 +5407,113 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @return {bool}
 	 */
 	function isLength(val) {
-	  return typeof val === 'number'
-	    && val > -1
-	    && val % 1 === 0
-	    && val <= Number.MAX_VALUE
+	  return typeof val === 'number' && val > -1 && val % 1 === 0 && val <= Number.MAX_VALUE;
 	}
 
-
 /***/ },
-/* 4 */
+/* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Immutable = __webpack_require__(2)
-	var logging = __webpack_require__(5)
-	var ChangeObserver = __webpack_require__(6)
-	var Getter = __webpack_require__(9)
-	var KeyPath = __webpack_require__(10)
-	var Evaluator = __webpack_require__(11)
-	var createReactMixin = __webpack_require__(12)
+	'use strict';
 
-	// helper fns
-	var toJS = __webpack_require__(1).toJS
-	var toImmutable = __webpack_require__(1).toImmutable
-	var isImmutableValue = __webpack_require__(1).isImmutableValue
-	var each = __webpack_require__(3).each
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+	exports.isImmutable = isImmutable;
+	exports.isImmutableValue = isImmutableValue;
+	exports.toJS = toJS;
+	exports.toImmutable = toImmutable;
 
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+	var _immutable = __webpack_require__(3);
+
+	var _immutable2 = _interopRequireDefault(_immutable);
+
+	var _utils = __webpack_require__(4);
+
+	/**
+	 * A collection of helpers for the ImmutableJS library
+	 */
+
+	/**
+	 * @param {*} obj
+	 * @return {boolean}
+	 */
+
+	function isImmutable(obj) {
+	  return _immutable2['default'].Iterable.isIterable(obj);
+	}
+
+	/**
+	 * Returns true if the value is an ImmutableJS data structure
+	 * or a JavaScript primitive that is immutable (string, number, etc)
+	 * @param {*} obj
+	 * @return {boolean}
+	 */
+
+	function isImmutableValue(obj) {
+	  return isImmutable(obj) || !(0, _utils.isObject)(obj);
+	}
+
+	/**
+	 * Converts an Immutable Sequence to JS object
+	 * Can be called on any type
+	 */
+
+	function toJS(arg) {
+	  // arg instanceof Immutable.Sequence is unreliable
+	  return isImmutable(arg) ? arg.toJS() : arg;
+	}
+
+	/**
+	 * Converts a JS object to an Immutable object, if it's
+	 * already Immutable its a no-op
+	 */
+
+	function toImmutable(arg) {
+	  return isImmutable(arg) ? arg : _immutable2['default'].fromJS(arg);
+	}
+
+/***/ },
+/* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+	var _immutable = __webpack_require__(3);
+
+	var _immutable2 = _interopRequireDefault(_immutable);
+
+	var _createReactMixin = __webpack_require__(7);
+
+	var _createReactMixin2 = _interopRequireDefault(_createReactMixin);
+
+	var _reactorFns = __webpack_require__(8);
+
+	var _reactorFns2 = _interopRequireDefault(_reactorFns);
+
+	var _keyPath = __webpack_require__(11);
+
+	var _getter = __webpack_require__(10);
+
+	var _immutableHelpers = __webpack_require__(5);
+
+	var _utils = __webpack_require__(4);
+
+	var _reactorRecords = __webpack_require__(12);
 
 	/**
 	 * State is stored in NuclearJS Reactors.  Reactors
@@ -5316,38 +5525,27 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * state based on the message
 	 */
 
-	  function Reactor(config) {"use strict";
-	    if (!(this instanceof Reactor)) {
-	      return new Reactor(config)
-	    }
-	    config = config || {}
+	var Reactor = (function () {
+	  function Reactor() {
+	    var config = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
-	    this.debug = !!config.debug
+	    _classCallCheck(this, Reactor);
 
-	    this.ReactMixin = createReactMixin(this)
-	    /**
-	     * The state for the whole cluster
-	     */
-	    this.state = Immutable.Map({})
-	    /**
-	     * Holds a map of id => store instance
-	     */
-	    this.__stores = Immutable.Map({})
+	    var initialReactorState = new _reactorRecords.ReactorState({
+	      debug: config.debug
+	    });
 
-	    this.__evaluator = new Evaluator()
-	    /**
-	     * Change observer interface to observe certain keypaths
-	     * Created after __initialize so it starts with initialState
-	     */
-	    this.__changeObserver = new ChangeObserver(this.state, this.__evaluator)
+	    this.prevReactorState = initialReactorState;
+	    this.reactorState = initialReactorState;
+	    this.observerState = new _reactorRecords.ObserverState();
+
+	    this.ReactMixin = (0, _createReactMixin2['default'])(this);
 
 	    // keep track of the depth of batch nesting
-	    this.__batchDepth = 0
-	    // number of dispatches in the top most batch cycle
-	    this.__batchDispatchCount = 0
+	    this.__batchDepth = 0;
 
 	    // keep track if we are currently dispatching
-	    this.__isDispatching = false
+	    this.__isDispatching = false;
 	  }
 
 	  /**
@@ -5355,478 +5553,876 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @param {KeyPath|Getter} keyPathOrGetter
 	   * @return {*}
 	   */
-	  Object.defineProperty(Reactor.prototype,"evaluate",{writable:true,configurable:true,value:function(keyPathOrGetter) {"use strict";
-	    return this.__evaluator.evaluate(this.state, keyPathOrGetter)
-	  }});
 
-	  /**
-	   * Gets the coerced state (to JS object) of the reactor.evaluate
-	   * @param {KeyPath|Getter} keyPathOrGetter
-	   * @return {*}
-	   */
-	  Object.defineProperty(Reactor.prototype,"evaluateToJS",{writable:true,configurable:true,value:function(keyPathOrGetter) {"use strict";
-	    return toJS(this.evaluate(keyPathOrGetter))
-	  }});
+	  _createClass(Reactor, [{
+	    key: 'evaluate',
+	    value: function evaluate(keyPathOrGetter) {
+	      var _fns$evaluate = _reactorFns2['default'].evaluate(this.reactorState, keyPathOrGetter);
 
-	  /**
-	   * Adds a change observer whenever a certain part of the reactor state changes
-	   *
-	   * 1. observe(handlerFn) - 1 argument, called anytime reactor.state changes
-	   * 2. observe(keyPath, handlerFn) same as above
-	   * 3. observe(getter, handlerFn) called whenever any getter dependencies change with
-	   *    the value of the getter
-	   *
-	   * Adds a change handler whenever certain deps change
-	   * If only one argument is passed invoked the handler whenever
-	   * the reactor state changes
-	   *
-	   * @param {KeyPath|Getter} getter
-	   * @param {function} handler
-	   * @return {function} unwatch function
-	   */
-	  Object.defineProperty(Reactor.prototype,"observe",{writable:true,configurable:true,value:function(getter, handler) {"use strict";
-	    if (arguments.length === 1) {
-	      handler = getter
-	      getter = Getter.fromKeyPath([])
-	    } else if (KeyPath.isKeyPath(getter)) {
-	      getter = Getter.fromKeyPath(getter)
+	      var result = _fns$evaluate.result;
+	      var reactorState = _fns$evaluate.reactorState;
+
+	      this.reactorState = reactorState;
+	      return result;
 	    }
-	    return this.__changeObserver.onChange(getter, handler)
-	  }});
 
+	    /**
+	     * Gets the coerced state (to JS object) of the reactor.evaluate
+	     * @param {KeyPath|Getter} keyPathOrGetter
+	     * @return {*}
+	     */
+	  }, {
+	    key: 'evaluateToJS',
+	    value: function evaluateToJS(keyPathOrGetter) {
+	      return (0, _immutableHelpers.toJS)(this.evaluate(keyPathOrGetter));
+	    }
 
-	  /**
-	   * Dispatches a single message
-	   * @param {string} actionType
-	   * @param {object|undefined} payload
-	   */
-	  Object.defineProperty(Reactor.prototype,"dispatch",{writable:true,configurable:true,value:function(actionType, payload) {"use strict";
-	    if (this.__batchDepth === 0) {
-	      if (this.__isDispatching) {
-	        this.__isDispatching = false
-	        throw new Error('Dispatch may not be called while a dispatch is in progress')
+	    /**
+	     * Adds a change observer whenever a certain part of the reactor state changes
+	     *
+	     * 1. observe(handlerFn) - 1 argument, called anytime reactor.state changes
+	     * 2. observe(keyPath, handlerFn) same as above
+	     * 3. observe(getter, handlerFn) called whenever any getter dependencies change with
+	     *    the value of the getter
+	     *
+	     * Adds a change handler whenever certain deps change
+	     * If only one argument is passed invoked the handler whenever
+	     * the reactor state changes
+	     *
+	     * @param {KeyPath|Getter} getter
+	     * @param {function} handler
+	     * @return {function} unwatch function
+	     */
+	  }, {
+	    key: 'observe',
+	    value: function observe(getter, handler) {
+	      var _this = this;
+
+	      if (arguments.length === 1) {
+	        handler = getter;
+	        getter = [];
 	      }
-	      this.__isDispatching = true
+
+	      var _fns$addObserver = _reactorFns2['default'].addObserver(this.observerState, getter, handler);
+
+	      var observerState = _fns$addObserver.observerState;
+	      var entry = _fns$addObserver.entry;
+
+	      this.observerState = observerState;
+	      return function () {
+	        _this.observerState = _reactorFns2['default'].removeObserverByEntry(_this.observerState, entry);
+	      };
+	    }
+	  }, {
+	    key: 'unobserve',
+	    value: function unobserve(getter, handler) {
+	      if (arguments.length === 0) {
+	        throw new Error('Must call unobserve with a Getter');
+	      }
+	      if (!(0, _getter.isGetter)(getter) && !(0, _keyPath.isKeyPath)(getter)) {
+	        throw new Error('Must call unobserve with a Getter');
+	      }
+
+	      this.observerState = _reactorFns2['default'].removeObserver(this.observerState, getter, handler);
 	    }
 
-	    var prevState = this.state
-
-	    try {
-	      this.state = this.__handleAction(prevState, actionType, payload)
-	    } catch (e) {
-	      this.__isDispatching = false
-	      throw e
-	    }
-
-
-	    if (this.__batchDepth > 0) {
-	      this.__batchDispatchCount++
-	    } else {
-	      if (this.state !== prevState) {
-	        try {
-	          this.__notify()
-	        } catch (e) {
-	          this.__isDispatching = false
-	          throw e
+	    /**
+	     * Dispatches a single message
+	     * @param {string} actionType
+	     * @param {object|undefined} payload
+	     */
+	  }, {
+	    key: 'dispatch',
+	    value: function dispatch(actionType, payload) {
+	      if (this.__batchDepth === 0) {
+	        if (this.__isDispatching) {
+	          this.__isDispatching = false;
+	          throw new Error('Dispatch may not be called while a dispatch is in progress');
 	        }
+	        this.__isDispatching = true;
 	      }
-	      this.__isDispatching = false
+
+	      try {
+	        this.reactorState = _reactorFns2['default'].dispatch(this.reactorState, actionType, payload);
+	      } catch (e) {
+	        this.__isDispatching = false;
+	        throw e;
+	      }
+
+	      try {
+	        this.__notify();
+	      } finally {
+	        this.__isDispatching = false;
+	      }
 	    }
-	  }});
 
-	  /**
-	   * Allows batching of dispatches before notifying change observers
-	   * @param {Function} fn
-	   */
-	  Object.defineProperty(Reactor.prototype,"batch",{writable:true,configurable:true,value:function(fn) {"use strict";
-	    this.__batchStart()
-	    fn()
-	    this.__batchEnd()
-	  }});
+	    /**
+	     * Allows batching of dispatches before notifying change observers
+	     * @param {Function} fn
+	     */
+	  }, {
+	    key: 'batch',
+	    value: function batch(fn) {
+	      this.batchStart();
+	      fn();
+	      this.batchEnd();
+	    }
 
-	  /**
-	   * @deprecated
-	   * @param {String} id
-	   * @param {Store} store
-	   */
-	  Object.defineProperty(Reactor.prototype,"registerStore",{writable:true,configurable:true,value:function(id, store) {"use strict";
-	    /* eslint-disable no-console */
-	    console.warn('Deprecation warning: `registerStore` will no longer be supported in 1.1, use `registerStores` instead')
-	    /* eslint-enable no-console */
-	    var stores = {}
-	    stores[id] = store
-	    this.registerStores(stores)
-	  }});
+	    /**
+	     * @deprecated
+	     * @param {String} id
+	     * @param {Store} store
+	     */
+	  }, {
+	    key: 'registerStore',
+	    value: function registerStore(id, store) {
+	      /* eslint-disable no-console */
+	      console.warn('Deprecation warning: `registerStore` will no longer be supported in 1.1, use `registerStores` instead');
+	      /* eslint-enable no-console */
+	      this.registerStores(_defineProperty({}, id, store));
+	    }
 
-	  /**
-	   * @param {Store[]} stores
-	   */
-	  Object.defineProperty(Reactor.prototype,"registerStores",{writable:true,configurable:true,value:function(stores) {"use strict";
-	    each(stores, function(store, id)  {
-	      if (this.__stores.get(id)) {
+	    /**
+	     * @param {Store[]} stores
+	     */
+	  }, {
+	    key: 'registerStores',
+	    value: function registerStores(stores) {
+	      this.reactorState = _reactorFns2['default'].registerStores(this.reactorState, stores);
+	      this.__notify();
+	    }
+
+	    /**
+	     * Returns a plain object representing the application state
+	     * @return {Object}
+	     */
+	  }, {
+	    key: 'serialize',
+	    value: function serialize() {
+	      return _reactorFns2['default'].serialize(this.reactorState);
+	    }
+
+	    /**
+	     * @param {Object} state
+	     */
+	  }, {
+	    key: 'loadState',
+	    value: function loadState(state) {
+	      this.reactorState = _reactorFns2['default'].loadState(this.reactorState, state);
+	      this.__notify();
+	    }
+
+	    /**
+	     * Resets the state of a reactor and returns back to initial state
+	     */
+	  }, {
+	    key: 'reset',
+	    value: function reset() {
+	      var newState = _reactorFns2['default'].reset(this.reactorState);
+	      this.reactorState = newState;
+	      this.prevReactorState = newState;
+	      this.observerState = new _reactorRecords.ObserverState();
+	    }
+
+	    /**
+	     * Notifies all change observers with the current state
+	     * @private
+	     */
+	  }, {
+	    key: '__notify',
+	    value: function __notify() {
+	      var _this2 = this;
+
+	      if (this.__batchDepth > 0) {
+	        // in the middle of batch, dont notify
+	        return;
+	      }
+
+	      var dirtyStores = this.reactorState.get('dirtyStores');
+	      if (dirtyStores.size === 0) {
+	        return;
+	      }
+
+	      var observerIdsToNotify = _immutable2['default'].Set().withMutations(function (set) {
+	        // notify all observers
+	        set.union(_this2.observerState.get('any'));
+
+	        dirtyStores.forEach(function (id) {
+	          var entries = _this2.observerState.getIn(['stores', id]);
+	          if (!entries) {
+	            return;
+	          }
+	          set.union(entries);
+	        });
+	      });
+
+	      observerIdsToNotify.forEach(function (observerId) {
+	        var entry = _this2.observerState.getIn(['observersMap', observerId]);
+	        if (!entry) {
+	          // don't notify here in the case a handler called unobserve on another observer
+	          return;
+	        }
+
+	        var getter = entry.get('getter');
+	        var handler = entry.get('handler');
+
+	        var prevEvaluateResult = _reactorFns2['default'].evaluate(_this2.prevReactorState, getter);
+	        var currEvaluateResult = _reactorFns2['default'].evaluate(_this2.reactorState, getter);
+
+	        _this2.prevReactorState = prevEvaluateResult.reactorState;
+	        _this2.reactorState = currEvaluateResult.reactorState;
+
+	        var prevValue = prevEvaluateResult.result;
+	        var currValue = currEvaluateResult.result;
+
+	        if (!_immutable2['default'].is(prevValue, currValue)) {
+	          handler.call(null, currValue);
+	        }
+	      });
+
+	      var nextReactorState = _reactorFns2['default'].resetDirtyStores(this.reactorState);
+
+	      this.prevReactorState = nextReactorState;
+	      this.reactorState = nextReactorState;
+	    }
+
+	    /**
+	     * Starts batching, ie pausing notifies and batching up changes
+	     * to be notified when batchEnd() is called
+	     */
+	  }, {
+	    key: 'batchStart',
+	    value: function batchStart() {
+	      this.__batchDepth++;
+	    }
+
+	    /**
+	     * Ends a batch cycle and will notify obsevers of all changes if
+	     * the batch depth is back to 0 (outer most batch completed)
+	     */
+	  }, {
+	    key: 'batchEnd',
+	    value: function batchEnd() {
+	      this.__batchDepth--;
+
+	      if (this.__batchDepth <= 0) {
+	        // set to true to catch if dispatch called from observer
+	        this.__isDispatching = true;
+	        try {
+	          this.__notify();
+	        } catch (e) {
+	          this.__isDispatching = false;
+	          throw e;
+	        }
+	        this.__isDispatching = false;
+	      }
+	    }
+	  }]);
+
+	  return Reactor;
+	})();
+
+	exports['default'] = (0, _utils.toFactory)(Reactor);
+	module.exports = exports['default'];
+
+/***/ },
+/* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+
+	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+	var _utils = __webpack_require__(4);
+
+	/**
+	 * Returns a mapping of the getDataBinding keys to
+	 * the reactor values
+	 */
+	function getState(reactor, data) {
+	  var state = {};
+	  (0, _utils.each)(data, function (value, key) {
+	    state[key] = reactor.evaluate(value);
+	  });
+	  return state;
+	}
+
+	/**
+	 * @param {Reactor} reactor
+	 */
+
+	exports['default'] = function (reactor) {
+	  return {
+	    getInitialState: function getInitialState() {
+	      return getState(reactor, this.getDataBindings());
+	    },
+
+	    componentDidMount: function componentDidMount() {
+	      var _this = this;
+
+	      this.__unwatchFns = [];
+	      (0, _utils.each)(this.getDataBindings(), function (getter, key) {
+	        var unwatchFn = reactor.observe(getter, function (val) {
+	          _this.setState(_defineProperty({}, key, val));
+	        });
+
+	        _this.__unwatchFns.push(unwatchFn);
+	      });
+	    },
+
+	    componentWillUnmount: function componentWillUnmount() {
+	      while (this.__unwatchFns.length) {
+	        this.__unwatchFns.shift()();
+	      }
+	    }
+	  };
+	};
+
+	module.exports = exports['default'];
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+	var _immutable = __webpack_require__(3);
+
+	var _immutable2 = _interopRequireDefault(_immutable);
+
+	var _logging = __webpack_require__(9);
+
+	var _logging2 = _interopRequireDefault(_logging);
+
+	var _immutableHelpers = __webpack_require__(5);
+
+	var _getter = __webpack_require__(10);
+
+	var _keyPath = __webpack_require__(11);
+
+	var _utils = __webpack_require__(4);
+
+	/**
+	 * Immutable Types
+	 */
+	var EvaluateResult = _immutable2['default'].Record({ result: null, reactorState: null });
+
+	function evaluateResult(result, reactorState) {
+	  return new EvaluateResult({
+	    result: result,
+	    reactorState: reactorState
+	  });
+	}
+
+	/**
+	 * @param {ReactorState} reactorState
+	 * @param {Object<String, Store>} stores
+	 * @return {ReactorState}
+	 */
+	exports.registerStores = function (reactorState, stores) {
+	  var debug = reactorState.get('debug');
+
+	  return reactorState.withMutations(function (reactorState) {
+	    (0, _utils.each)(stores, function (store, id) {
+	      if (reactorState.getIn(['stores', id])) {
 	        /* eslint-disable no-console */
-	        console.warn('Store already defined for id = ' + id)
+	        console.warn('Store already defined for id = ' + id);
 	        /* eslint-enable no-console */
 	      }
 
-	      var initialState = store.getInitialState()
+	      var initialState = store.getInitialState();
 
-	      if (this.debug && !isImmutableValue(initialState)) {
-	        throw new Error('Store getInitialState() must return an immutable value, did you forget to call toImmutable')
+	      if (debug && !(0, _immutableHelpers.isImmutableValue)(initialState)) {
+	        throw new Error('Store getInitialState() must return an immutable value, did you forget to call toImmutable');
 	      }
 
-	      this.__stores = this.__stores.set(id, store)
-	      this.state = this.state.set(id, initialState)
-	    }.bind(this))
+	      reactorState.update('stores', function (stores) {
+	        return stores.set(id, store);
+	      }).update('state', function (state) {
+	        return state.set(id, initialState);
+	      }).update('dirtyStores', function (state) {
+	        return state.add(id);
+	      }).update('storeStates', function (storeStates) {
+	        return incrementStoreStates(storeStates, [id]);
+	      });
+	    });
+	    incrementId(reactorState);
+	  });
+	};
 
-	    this.__notify()
-	  }});
+	/**
+	 * @param {ReactorState} reactorState
+	 * @param {String} actionType
+	 * @param {*} payload
+	 * @return {ReactorState}
+	 */
+	exports.dispatch = function (reactorState, actionType, payload) {
+	  var currState = reactorState.get('state');
+	  var debug = reactorState.get('debug');
+	  var dirtyStores = reactorState.get('dirtyStores');
 
-	  /**
-	   * Returns a plain object representing the application state
-	   * @return {Object}
-	   */
-	  Object.defineProperty(Reactor.prototype,"serialize",{writable:true,configurable:true,value:function() {"use strict";
-	    var serialized = {}
-	    this.__stores.forEach(function(store, id)  {
-	      var storeState = this.state.get(id)
-	      var serializedState = store.serialize(storeState)
-	      if (serializedState !== undefined) {
-	        serialized[id] = serializedState
-	      }
-	    }.bind(this))
-	    return serialized
-	  }});
-
-	  /**
-	   * @param {Object} state
-	   */
-	  Object.defineProperty(Reactor.prototype,"loadState",{writable:true,configurable:true,value:function(state) {"use strict";
-	    var stateToLoad = toImmutable({}).withMutations(function(stateToLoad)  {
-	      each(state, function(serializedStoreState, storeId)  {
-	        var store = this.__stores.get(storeId)
-	        if (store) {
-	          var storeState = store.deserialize(serializedStoreState)
-	          if (storeState !== undefined) {
-	            stateToLoad.set(storeId, storeState)
-	          }
-	        }
-	      }.bind(this))
-	    }.bind(this))
-
-	    this.state = this.state.merge(stateToLoad)
-	    this.__notify()
-	  }});
-
-	  /**
-	   * Resets the state of a reactor and returns back to initial state
-	   */
-	  Object.defineProperty(Reactor.prototype,"reset",{writable:true,configurable:true,value:function() {"use strict";
-	    var debug = this.debug
-	    var prevState = this.state
-
-	    this.state = Immutable.Map().withMutations(function(state)  {
-	      this.__stores.forEach(function(store, id)  {
-	        var storeState = prevState.get(id)
-	        var resetStoreState = store.handleReset(storeState)
-	        if (debug && resetStoreState === undefined) {
-	          throw new Error('Store handleReset() must return a value, did you forget a return statement')
-	        }
-	        if (debug && !isImmutableValue(resetStoreState)) {
-	          throw new Error('Store reset state must be an immutable value, did you forget to call toImmutable')
-	        }
-	        state.set(id, resetStoreState)
-	      })
-	    }.bind(this))
-
-	    this.__evaluator.reset()
-	    this.__changeObserver.reset(this.state)
-	  }});
-
-	  /**
-	   * Notifies all change observers with the current state
-	   * @private
-	   */
-	  Object.defineProperty(Reactor.prototype,"__notify",{writable:true,configurable:true,value:function() {"use strict";
-	    this.__changeObserver.notifyObservers(this.state)
-	  }});
-
-	  /**
-	   * Reduces the current state to the new state given actionType / message
-	   * @param {string} actionType
-	   * @param {object|undefined} payload
-	   * @return {Immutable.Map}
-	   */
-	  Object.defineProperty(Reactor.prototype,"__handleAction",{writable:true,configurable:true,value:function(state, actionType, payload) {"use strict";
-	    return state.withMutations(function(state)  {
-	      if (this.debug) {
-	        logging.dispatchStart(actionType, payload)
-	      }
-
-	      // let each store handle the message
-	      this.__stores.forEach(function(store, id)  {
-	        var currState = state.get(id)
-	        var newState
-
-	        try {
-	          newState = store.handle(currState, actionType, payload)
-	        } catch(e) {
-	          // ensure console.group is properly closed
-	          logging.dispatchError(e.message)
-	          throw e
-	        }
-
-	        if (this.debug && newState === undefined) {
-	          var errorMsg = 'Store handler must return a value, did you forget a return statement'
-	          logging.dispatchError(errorMsg)
-	          throw new Error(errorMsg)
-	        }
-
-	        state.set(id, newState)
-
-	        if (this.debug) {
-	          logging.storeHandled(id, currState, newState)
-	        }
-	      }.bind(this))
-
-	      if (this.debug) {
-	        logging.dispatchEnd(state)
-	      }
-	    }.bind(this))
-	  }});
-
-	  Object.defineProperty(Reactor.prototype,"__batchStart",{writable:true,configurable:true,value:function() {"use strict";
-	    this.__batchDepth++
-	  }});
-
-	  Object.defineProperty(Reactor.prototype,"__batchEnd",{writable:true,configurable:true,value:function() {"use strict";
-	    this.__batchDepth--
-
-	    if (this.__batchDepth <= 0) {
-	      if (this.__batchDispatchCount > 0) {
-	        // set to true to catch if dispatch called from observer
-	        this.__isDispatching = true
-	        try {
-	          this.__notify()
-	        } catch (e) {
-	          this.__isDispatching = false
-	          throw e
-	        }
-	        this.__isDispatching = false
-	      }
-	      this.__batchDispatchCount = 0
+	  var nextState = currState.withMutations(function (state) {
+	    if (debug) {
+	      _logging2['default'].dispatchStart(actionType, payload);
 	    }
-	  }});
 
+	    // let each store handle the message
+	    reactorState.get('stores').forEach(function (store, id) {
+	      var currState = state.get(id);
+	      var newState = undefined;
 
-	module.exports = Reactor
+	      try {
+	        newState = store.handle(currState, actionType, payload);
+	      } catch (e) {
+	        // ensure console.group is properly closed
+	        _logging2['default'].dispatchError(e.message);
+	        throw e;
+	      }
 
+	      if (debug && newState === undefined) {
+	        var errorMsg = 'Store handler must return a value, did you forget a return statement';
+	        _logging2['default'].dispatchError(errorMsg);
+	        throw new Error(errorMsg);
+	      }
+
+	      state.set(id, newState);
+
+	      if (currState !== newState) {
+	        // if the store state changed add store to list of dirty stores
+	        dirtyStores = dirtyStores.add(id);
+	      }
+
+	      if (debug) {
+	        _logging2['default'].storeHandled(id, currState, newState);
+	      }
+	    });
+
+	    if (debug) {
+	      _logging2['default'].dispatchEnd(state);
+	    }
+	  });
+
+	  var nextReactorState = reactorState.set('state', nextState).set('dirtyStores', dirtyStores).update('storeStates', function (storeStates) {
+	    return incrementStoreStates(storeStates, dirtyStores);
+	  });
+
+	  return incrementId(nextReactorState);
+	};
+
+	/**
+	 * @param {ReactorState} reactorState
+	 * @param {Immutable.Map} state
+	 * @return {ReactorState}
+	 */
+	exports.loadState = function (reactorState, state) {
+	  var dirtyStores = [];
+	  var stateToLoad = (0, _immutableHelpers.toImmutable)({}).withMutations(function (stateToLoad) {
+	    (0, _utils.each)(state, function (serializedStoreState, storeId) {
+	      var store = reactorState.getIn(['stores', storeId]);
+	      if (store) {
+	        var storeState = store.deserialize(serializedStoreState);
+	        if (storeState !== undefined) {
+	          stateToLoad.set(storeId, storeState);
+	          dirtyStores.push(storeId);
+	        }
+	      }
+	    });
+	  });
+
+	  var dirtyStoresSet = _immutable2['default'].Set(dirtyStores);
+	  return reactorState.update('state', function (state) {
+	    return state.merge(stateToLoad);
+	  }).update('dirtyStores', function (stores) {
+	    return stores.union(dirtyStoresSet);
+	  }).update('storeStates', function (storeStates) {
+	    return incrementStoreStates(storeStates, dirtyStores);
+	  });
+	};
+
+	/**
+	 * Adds a change observer whenever a certain part of the reactor state changes
+	 *
+	 * 1. observe(handlerFn) - 1 argument, called anytime reactor.state changes
+	 * 2. observe(keyPath, handlerFn) same as above
+	 * 3. observe(getter, handlerFn) called whenever any getter dependencies change with
+	 *    the value of the getter
+	 *
+	 * Adds a change handler whenever certain deps change
+	 * If only one argument is passed invoked the handler whenever
+	 * the reactor state changes
+	 *
+	 * @param {ObserverState} observerState
+	 * @param {KeyPath|Getter} getter
+	 * @param {function} handler
+	 * @return {ObserveResult}
+	 */
+	exports.addObserver = function (observerState, getter, handler) {
+	  // use the passed in getter as the key so we can rely on a byreference call for unobserve
+	  var getterKey = getter;
+	  if ((0, _keyPath.isKeyPath)(getter)) {
+	    getter = (0, _getter.fromKeyPath)(getter);
+	  }
+
+	  var currId = observerState.get('nextId');
+	  var storeDeps = (0, _getter.getStoreDeps)(getter);
+	  var entry = _immutable2['default'].Map({
+	    id: currId,
+	    storeDeps: storeDeps,
+	    getterKey: getterKey,
+	    getter: getter,
+	    handler: handler
+	  });
+
+	  var updatedObserverState = undefined;
+	  if (storeDeps.size === 0) {
+	    // no storeDeps means the observer is dependent on any of the state changing
+	    updatedObserverState = observerState.update('any', function (observerIds) {
+	      return observerIds.add(currId);
+	    });
+	  } else {
+	    updatedObserverState = observerState.withMutations(function (map) {
+	      storeDeps.forEach(function (storeId) {
+	        var path = ['stores', storeId];
+	        if (!map.hasIn(path)) {
+	          map.setIn(path, _immutable2['default'].Set([]));
+	        }
+	        map.updateIn(['stores', storeId], function (observerIds) {
+	          return observerIds.add(currId);
+	        });
+	      });
+	    });
+	  }
+
+	  updatedObserverState = updatedObserverState.set('nextId', currId + 1).setIn(['observersMap', currId], entry);
+
+	  return {
+	    observerState: updatedObserverState,
+	    entry: entry
+	  };
+	};
+
+	/**
+	 * Use cases
+	 * removeObserver(observerState, [])
+	 * removeObserver(observerState, [], handler)
+	 * removeObserver(observerState, ['keyPath'])
+	 * removeObserver(observerState, ['keyPath'], handler)
+	 * removeObserver(observerState, getter)
+	 * removeObserver(observerState, getter, handler)
+	 * @param {ObserverState} observerState
+	 * @param {KeyPath|Getter} getter
+	 * @param {Function} handler
+	 * @return {ObserverState}
+	 */
+	exports.removeObserver = function (observerState, getter, handler) {
+	  var entriesToRemove = observerState.get('observersMap').filter(function (entry) {
+	    // use the getterKey in the case of a keyPath is transformed to a getter in addObserver
+	    var entryGetter = entry.get('getterKey');
+	    var handlersMatch = !handler || entry.get('handler') === handler;
+	    if (!handlersMatch) {
+	      return false;
+	    }
+	    // check for a by-value equality of keypaths
+	    if ((0, _keyPath.isKeyPath)(getter) && (0, _keyPath.isKeyPath)(entryGetter)) {
+	      return (0, _keyPath.isEqual)(getter, entryGetter);
+	    }
+	    // we are comparing two getters do it by reference
+	    return getter === entryGetter;
+	  });
+
+	  return observerState.withMutations(function (map) {
+	    entriesToRemove.forEach(function (entry) {
+	      return exports.removeObserverByEntry(map, entry);
+	    });
+	  });
+	};
+
+	/**
+	 * Removes an observer entry by id from the observerState
+	 * @param {ObserverState} observerState
+	 * @param {Immutable.Map} entry
+	 * @return {ObserverState}
+	 */
+	exports.removeObserverByEntry = function (observerState, entry) {
+	  return observerState.withMutations(function (map) {
+	    var id = entry.get('id');
+	    var storeDeps = entry.get('storeDeps');
+
+	    if (storeDeps.size === 0) {
+	      map.update('any', function (anyObsevers) {
+	        return anyObsevers.remove(id);
+	      });
+	    } else {
+	      storeDeps.forEach(function (storeId) {
+	        map.updateIn(['stores', storeId], function (observers) {
+	          if (observers) {
+	            // check for observers being present because reactor.reset() can be called before an unwatch fn
+	            return observers.remove(id);
+	          }
+	          return observers;
+	        });
+	      });
+	    }
+
+	    map.removeIn(['observersMap', id]);
+	  });
+	};
+
+	/**
+	 * @param {ReactorState} reactorState
+	 * @return {ReactorState}
+	 */
+	exports.reset = function (reactorState) {
+	  var debug = reactorState.get('debug');
+	  var prevState = reactorState.get('state');
+
+	  return reactorState.withMutations(function (reactorState) {
+	    var storeMap = reactorState.get('stores');
+	    var storeIds = storeMap.keySeq().toJS();
+	    storeMap.forEach(function (store, id) {
+	      var storeState = prevState.get(id);
+	      var resetStoreState = store.handleReset(storeState);
+	      if (debug && resetStoreState === undefined) {
+	        throw new Error('Store handleReset() must return a value, did you forget a return statement');
+	      }
+	      if (debug && !(0, _immutableHelpers.isImmutableValue)(resetStoreState)) {
+	        throw new Error('Store reset state must be an immutable value, did you forget to call toImmutable');
+	      }
+	      reactorState.setIn(['state', id], resetStoreState);
+	    });
+
+	    reactorState.update('storeStates', function (storeStates) {
+	      return incrementStoreStates(storeStates, storeIds);
+	    });
+	    exports.resetDirtyStores(reactorState);
+	  });
+	};
+
+	/**
+	 * @param {ReactorState} reactorState
+	 * @param {KeyPath|Gettter} keyPathOrGetter
+	 * @return {EvaluateResult}
+	 */
+	exports.evaluate = function evaluate(reactorState, keyPathOrGetter) {
+	  var state = reactorState.get('state');
+
+	  if ((0, _keyPath.isKeyPath)(keyPathOrGetter)) {
+	    // if its a keyPath simply return
+	    return evaluateResult(state.getIn(keyPathOrGetter), reactorState);
+	  } else if (!(0, _getter.isGetter)(keyPathOrGetter)) {
+	    throw new Error('evaluate must be passed a keyPath or Getter');
+	  }
+
+	  // Must be a Getter
+	  // if the value is cached for this dispatch cycle, return the cached value
+	  if (isCached(reactorState, keyPathOrGetter)) {
+	    // Cache hit
+	    return evaluateResult(getCachedValue(reactorState, keyPathOrGetter), reactorState);
+	  }
+
+	  // evaluate dependencies
+	  var args = (0, _getter.getDeps)(keyPathOrGetter).map(function (dep) {
+	    return evaluate(reactorState, dep).result;
+	  });
+	  var evaluatedValue = (0, _getter.getComputeFn)(keyPathOrGetter).apply(null, args);
+
+	  return evaluateResult(evaluatedValue, cacheValue(reactorState, keyPathOrGetter, evaluatedValue));
+	};
+
+	/**
+	 * Returns serialized state for all stores
+	 * @param {ReactorState} reactorState
+	 * @return {Object}
+	 */
+	exports.serialize = function (reactorState) {
+	  var serialized = {};
+	  reactorState.get('stores').forEach(function (store, id) {
+	    var storeState = reactorState.getIn(['state', id]);
+	    var serializedState = store.serialize(storeState);
+	    if (serializedState !== undefined) {
+	      serialized[id] = serializedState;
+	    }
+	  });
+	  return serialized;
+	};
+
+	/**
+	 * Returns serialized state for all stores
+	 * @param {ReactorState} reactorState
+	 * @return {ReactorState}
+	 */
+	exports.resetDirtyStores = function (reactorState) {
+	  return reactorState.set('dirtyStores', _immutable2['default'].Set());
+	};
+
+	/**
+	 * Currently cache keys are always getters by reference
+	 * @param {Getter} getter
+	 * @return {Getter}
+	 */
+	function getCacheKey(getter) {
+	  return getter;
+	}
+
+	/**
+	 * @param {ReactorState} reactorState
+	 * @param {Getter|KeyPath} keyPathOrGetter
+	 * @return {Immutable.Map}
+	 */
+	function getCacheEntry(reactorState, keyPathOrGetter) {
+	  var key = getCacheKey(keyPathOrGetter);
+	  return reactorState.getIn(['cache', key]);
+	}
+
+	/**
+	 * @param {ReactorState} reactorState
+	 * @param {Getter} getter
+	 * @return {Boolean}
+	 */
+	function isCached(reactorState, keyPathOrGetter) {
+	  var entry = getCacheEntry(reactorState, keyPathOrGetter);
+	  if (!entry) {
+	    return false;
+	  }
+
+	  return entry.get('storeStates').every(function (stateId, storeId) {
+	    return reactorState.getIn(['storeStates', storeId]) === stateId;
+	  });
+	}
+
+	/**
+	 * Caches the value of a getter given state, getter, args, value
+	 * @param {ReactorState} reactorState
+	 * @param {Getter} getter
+	 * @param {*} value
+	 * @return {ReactorState}
+	 */
+	function cacheValue(reactorState, getter, value) {
+	  var cacheKey = getCacheKey(getter);
+	  var dispatchId = reactorState.get('dispatchId');
+	  var storeDeps = (0, _getter.getStoreDeps)(getter);
+	  var storeStates = (0, _immutableHelpers.toImmutable)({}).withMutations(function (map) {
+	    storeDeps.forEach(function (storeId) {
+	      var stateId = reactorState.getIn(['storeStates', storeId]);
+	      map.set(storeId, stateId);
+	    });
+	  });
+
+	  return reactorState.setIn(['cache', cacheKey], _immutable2['default'].Map({
+	    value: value,
+	    storeStates: storeStates,
+	    dispatchId: dispatchId
+	  }));
+	}
+
+	/**
+	 * Pulls out the cached value for a getter
+	 */
+	function getCachedValue(reactorState, getter) {
+	  var key = getCacheKey(getter);
+	  return reactorState.getIn(['cache', key, 'value']);
+	}
+
+	/**
+	 * @param {ReactorState} reactorState
+	 * @return {ReactorState}
+	 */
+	function incrementId(reactorState) {
+	  return reactorState.update('dispatchId', function (id) {
+	    return id + 1;
+	  });
+	}
+
+	/**
+	 * @param {Immutable.Map} storeStates
+	 * @param {Array} storeIds
+	 * @return {Immutable.Map}
+	 */
+	function incrementStoreStates(storeStates, storeIds) {
+	  return storeStates.withMutations(function (map) {
+	    storeIds.forEach(function (id) {
+	      var nextId = map.has(id) ? map.get(id) + 1 : 1;
+	      map.set(id, nextId);
+	    });
+	  });
+	}
 
 /***/ },
-/* 5 */
+/* 9 */
 /***/ function(module, exports) {
 
 	/* eslint-disable no-console */
 	/**
 	 * Wraps a Reactor.react invocation in a console.group
 	*/
-	exports.dispatchStart = function(type, payload) {
-	  if (console.group) {
-	    console.groupCollapsed('Dispatch: %s', type)
-	    console.group('payload')
-	    console.debug(payload)
-	    console.groupEnd()
-	  }
-	}
+	'use strict';
 
-	exports.dispatchError = function(error) {
+	exports.dispatchStart = function (type, payload) {
 	  if (console.group) {
-	    console.debug('Dispatch error: ' + error)
-	    console.groupEnd()
+	    console.groupCollapsed('Dispatch: %s', type);
+	    console.group('payload');
+	    console.debug(payload);
+	    console.groupEnd();
 	  }
-	}
+	};
 
-	exports.storeHandled = function(id, before, after) {
+	exports.dispatchError = function (error) {
+	  if (console.group) {
+	    console.debug('Dispatch error: ' + error);
+	    console.groupEnd();
+	  }
+	};
+
+	exports.storeHandled = function (id, before, after) {
 	  if (console.group) {
 	    if (before !== after) {
-	      console.debug('Store ' + id + ' handled action')
+	      console.debug('Store ' + id + ' handled action');
 	    }
 	  }
-	}
+	};
 
-	exports.dispatchEnd = function(state) {
+	exports.dispatchEnd = function (state) {
 	  if (console.group) {
-	    console.debug('Dispatch done, new state: ', state.toJS())
-	    console.groupEnd()
+	    console.debug('Dispatch done, new state: ', state.toJS());
+	    console.groupEnd();
 	  }
-	}
+	};
 	/* eslint-enable no-console */
 
-
 /***/ },
-/* 6 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Immutable = __webpack_require__(2)
-	var hashCode = __webpack_require__(7)
-	var isEqual = __webpack_require__(8)
+	'use strict';
 
-	/**
-	 * ChangeObserver is an object that contains a set of subscriptions
-	 * to changes for keyPaths on a reactor
-	 *
-	 * Packaging the handlers together allows for easier cleanup
-	 */
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
 
-	  /**
-	   * @param {Immutable.Map} initialState
-	   * @param {Evaluator} evaluator
-	   */
-	  function ChangeObserver(initialState, evaluator) {"use strict";
-	    this.__prevState = initialState
-	    this.__evaluator = evaluator
-	    this.__prevValues = Immutable.Map()
-	    this.__observers = []
-	  }
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
-	  /**
-	   * @param {Immutable.Map} newState
-	   */
-	  Object.defineProperty(ChangeObserver.prototype,"notifyObservers",{writable:true,configurable:true,value:function(newState) {"use strict";
-	    if (this.__observers.length > 0) {
-	      var currentValues = Immutable.Map()
+	var _immutable = __webpack_require__(3);
 
-	      this.__observers.forEach(function(entry)  {
-	        var getter = entry.getter
-	        var code = hashCode(getter)
-	        var prevState = this.__prevState
-	        var prevValue
+	var _immutable2 = _interopRequireDefault(_immutable);
 
-	        if (this.__prevValues.has(code)) {
-	          prevValue = this.__prevValues.get(code)
-	        } else {
-	          prevValue = this.__evaluator.evaluate(prevState, getter)
-	          this.__prevValues = this.__prevValues.set(code, prevValue)
-	        }
+	var _utils = __webpack_require__(4);
 
-	        var currValue = this.__evaluator.evaluate(newState, getter)
-
-	        if (!isEqual(prevValue, currValue)) {
-	          entry.handler.call(null, currValue)
-	          currentValues = currentValues.set(code, currValue)
-	        }
-	      }.bind(this))
-
-	      this.__prevValues = currentValues
-	    }
-	    this.__prevState = newState
-	  }});
-
-	  /**
-	   * Specify a getter and a change handler function
-	   * Handler function is called whenever the value of the getter changes
-	   * @param {Getter} getter
-	   * @param {function} handler
-	   * @return {function} unwatch function
-	   */
-	  Object.defineProperty(ChangeObserver.prototype,"onChange",{writable:true,configurable:true,value:function(getter, handler) {"use strict";
-	    // TODO: make observers a map of <Getter> => { handlers }
-	    var entry = {
-	      getter: getter,
-	      handler: handler,
-	    }
-	    this.__observers.push(entry)
-	    // return unwatch function
-	    return function()  {
-	      // TODO: untrack from change emitter
-	      var ind = this.__observers.indexOf(entry)
-	      if (ind > -1) {
-	        this.__observers.splice(ind, 1)
-	      }
-	    }.bind(this)
-	  }});
-
-	  /**
-	   * Resets and clears all observers and reinitializes back to the supplied
-	   * previous state
-	   * @param {Immutable.Map} prevState
-	   *
-	   */
-	  Object.defineProperty(ChangeObserver.prototype,"reset",{writable:true,configurable:true,value:function(prevState) {"use strict";
-	    this.__prevState = prevState
-	    this.__prevValues = Immutable.Map()
-	    this.__observers = []
-	  }});
-
-
-	module.exports = ChangeObserver
-
-
-/***/ },
-/* 7 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var Immutable = __webpack_require__(2)
-
-	/**
-	 * Takes a getter and returns the hash code value
-	 *
-	 * If cache argument is true it will freeze the getter
-	 * and cache the hashed value
-	 *
-	 * @param {Getter} getter
-	 * @param {boolean} dontCache
-	 * @return {number}
-	 */
-	module.exports = function(getter, dontCache) {
-	  if (getter.hasOwnProperty('__hashCode')) {
-	    return getter.__hashCode
-	  }
-
-	  var hashCode = Immutable.fromJS(getter).hashCode()
-
-	  if (!dontCache) {
-	    Object.defineProperty(getter, '__hashCode', {
-	      enumerable: false,
-	      configurable: false,
-	      writable: false,
-	      value: hashCode,
-	    })
-
-	    Object.freeze(getter)
-	  }
-
-	  return hashCode
-	}
-
-
-/***/ },
-/* 8 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var Immutable = __webpack_require__(2)
-	/**
-	 * Is equal by value check
-	 */
-	module.exports = function(a, b) {
-	  return Immutable.is(a, b)
-	}
-
-
-/***/ },
-/* 9 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var isFunction = __webpack_require__(3).isFunction
-	var isArray = __webpack_require__(3).isArray
-	var isKeyPath = __webpack_require__(10).isKeyPath
+	var _keyPath = __webpack_require__(11);
 
 	/**
 	 * Getter helper functions
 	 * A getter is an array with the form:
 	 * [<KeyPath>, ...<KeyPath>, <function>]
 	 */
-	var identity = function(x)  {return x;}
+	var identity = function identity(x) {
+	  return x;
+	};
 
 	/**
 	 * Checks if something is a getter literal, ex: ['dep1', 'dep2', function(dep1, dep2) {...}]
@@ -5834,7 +6430,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @return {boolean}
 	 */
 	function isGetter(toTest) {
-	  return (isArray(toTest) && isFunction(toTest[toTest.length - 1]))
+	  return (0, _utils.isArray)(toTest) && (0, _utils.isFunction)(toTest[toTest.length - 1]);
 	}
 
 	/**
@@ -5843,7 +6439,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @return {function}
 	 */
 	function getComputeFn(getter) {
-	  return getter[getter.length - 1]
+	  return getter[getter.length - 1];
 	}
 
 	/**
@@ -5852,7 +6448,37 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @return {function}
 	 */
 	function getDeps(getter) {
-	  return getter.slice(0, getter.length - 1)
+	  return getter.slice(0, getter.length - 1);
+	}
+
+	/**
+	 * Returns an array of deps from a getter and all its deps
+	 * @param {Getter} getter
+	 * @param {Immutable.Set} existing
+	 * @return {Immutable.Set}
+	 */
+	function getFlattenedDeps(getter, existing) {
+	  if (!existing) {
+	    existing = _immutable2['default'].Set();
+	  }
+
+	  var toAdd = _immutable2['default'].Set().withMutations(function (set) {
+	    if (!isGetter(getter)) {
+	      throw new Error('getFlattenedDeps must be passed a Getter');
+	    }
+
+	    getDeps(getter).forEach(function (dep) {
+	      if ((0, _keyPath.isKeyPath)(dep)) {
+	        set.add((0, _immutable.List)(dep));
+	      } else if (isGetter(dep)) {
+	        set.union(getFlattenedDeps(dep));
+	      } else {
+	        throw new Error('Invalid getter, each dependency must be a KeyPath or Getter');
+	      }
+	    });
+	  });
+
+	  return existing.union(toAdd);
 	}
 
 	/**
@@ -5860,356 +6486,135 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @return {Getter}
 	 */
 	function fromKeyPath(keyPath) {
-	  if (!isKeyPath(keyPath)) {
-	    throw new Error('Cannot create Getter from KeyPath: ' + keyPath)
+	  if (!(0, _keyPath.isKeyPath)(keyPath)) {
+	    throw new Error('Cannot create Getter from KeyPath: ' + keyPath);
 	  }
 
-	  return [keyPath, identity]
+	  return [keyPath, identity];
 	}
 
+	/**
+	 * Adds non enumerated __storeDeps property
+	 * @param {Getter}
+	 */
+	function getStoreDeps(getter) {
+	  if (getter.hasOwnProperty('__storeDeps')) {
+	    return getter.__storeDeps;
+	  }
 
-	module.exports = {
+	  var storeDeps = getFlattenedDeps(getter).map(function (keyPath) {
+	    return keyPath.first();
+	  }).filter(function (x) {
+	    return !!x;
+	  });
+
+	  Object.defineProperty(getter, '__storeDeps', {
+	    enumerable: false,
+	    configurable: false,
+	    writable: false,
+	    value: storeDeps
+	  });
+
+	  return storeDeps;
+	}
+
+	exports['default'] = {
 	  isGetter: isGetter,
 	  getComputeFn: getComputeFn,
+	  getFlattenedDeps: getFlattenedDeps,
+	  getStoreDeps: getStoreDeps,
 	  getDeps: getDeps,
-	  fromKeyPath: fromKeyPath,
-	}
-
+	  fromKeyPath: fromKeyPath
+	};
+	module.exports = exports['default'];
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var isArray = __webpack_require__(3).isArray
-	var isFunction = __webpack_require__(3).isFunction
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+	exports.isKeyPath = isKeyPath;
+	exports.isEqual = isEqual;
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+	var _immutable = __webpack_require__(3);
+
+	var _immutable2 = _interopRequireDefault(_immutable);
+
+	var _utils = __webpack_require__(4);
 
 	/**
 	 * Checks if something is simply a keyPath and not a getter
 	 * @param {*} toTest
 	 * @return {boolean}
 	 */
-	exports.isKeyPath = function(toTest) {
-	  return (
-	    isArray(toTest) &&
-	    !isFunction(toTest[toTest.length - 1])
-	  )
+
+	function isKeyPath(toTest) {
+	  return (0, _utils.isArray)(toTest) && !(0, _utils.isFunction)(toTest[toTest.length - 1]);
 	}
 
+	/**
+	 * Checks if two keypaths are equal by value
+	 * @param {KeyPath} a
+	 * @param {KeyPath} a
+	 * @return {Boolean}
+	 */
 
-/***/ },
-/* 11 */
-/***/ function(module, exports, __webpack_require__) {
+	function isEqual(a, b) {
+	  var iA = _immutable2['default'].List(a);
+	  var iB = _immutable2['default'].List(b);
 
-	var Immutable = __webpack_require__(2)
-	var toImmutable = __webpack_require__(1).toImmutable
-	var hashCode = __webpack_require__(7)
-	var isEqual = __webpack_require__(8)
-	var getComputeFn = __webpack_require__(9).getComputeFn
-	var getDeps = __webpack_require__(9).getDeps
-	var isKeyPath = __webpack_require__(10).isKeyPath
-	var isGetter = __webpack_require__(9).isGetter
-
-	// Keep track of whether we are currently executing a Getter's computeFn
-	var __applyingComputeFn = false
-
-
-	  function Evaluator() {"use strict";
-	    /**
-	     * {
-	     *   <hashCode>: {
-	     *     stateHashCode: number,
-	     *     args: Immutable.List,
-	     *     value: any,
-	     *   }
-	     * }
-	     */
-	    this.__cachedGetters = Immutable.Map({})
-	  }
-
-	  /**
-	   * Takes either a KeyPath or Getter and evaluates
-	   *
-	   * KeyPath form:
-	   * ['foo', 'bar'] => state.getIn(['foo', 'bar'])
-	   *
-	   * Getter form:
-	   * [<KeyPath>, <KeyPath>, ..., <function>]
-	   *
-	   * @param {Immutable.Map} state
-	   * @param {string|array} getter
-	   * @return {any}
-	   */
-	  Object.defineProperty(Evaluator.prototype,"evaluate",{writable:true,configurable:true,value:function(state, keyPathOrGetter) {"use strict";
-	    if (isKeyPath(keyPathOrGetter)) {
-	      // if its a keyPath simply return
-	      return state.getIn(keyPathOrGetter)
-	    } else if (!isGetter(keyPathOrGetter)) {
-	      throw new Error('evaluate must be passed a keyPath or Getter')
-	    }
-
-	    // Must be a Getter
-	    var code = hashCode(keyPathOrGetter)
-
-	    // if the value is cached for this dispatch cycle, return the cached value
-	    if (this.__isCached(state, keyPathOrGetter)) {
-	      // Cache hit
-	      return this.__cachedGetters.getIn([code, 'value'])
-
-	    }
-
-	    // evaluate dependencies
-	    var args = getDeps(keyPathOrGetter).map(function(dep)  {return this.evaluate(state, dep);}.bind(this))
-
-	    if (this.__hasStaleValue(state, keyPathOrGetter)) {
-	      // getter deps could still be unchanged since we only looked at the unwrapped (keypath, bottom level) deps
-	      var prevArgs = this.__cachedGetters.getIn([code, 'args'])
-
-	      // since Getter is a pure functions if the args are the same its a cache hit
-	      if (isEqual(prevArgs, toImmutable(args))) {
-	        var prevValue = this.__cachedGetters.getIn([code, 'value'])
-	        this.__cacheValue(state, keyPathOrGetter, prevArgs, prevValue)
-	        return prevValue
-	      }
-	    }
-
-	    // This indicates that we have called evaluate within the body of a computeFn.
-	    // Throw an error as this will lead to inconsistent caching
-	    if (__applyingComputeFn === true) {
-	      __applyingComputeFn = false
-	      throw new Error('Evaluate may not be called within a Getters computeFn')
-	    }
-
-	    var evaluatedValue
-	    __applyingComputeFn = true
-	    try {
-	      evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
-	      __applyingComputeFn = false
-	    } catch (e) {
-	      __applyingComputeFn = false
-	      throw e
-	    }
-
-	    this.__cacheValue(state, keyPathOrGetter, args, evaluatedValue)
-
-	    return evaluatedValue
-	  }});
-
-	  /**
-	   * @param {Immutable.Map} state
-	   * @param {Getter} getter
-	   */
-	  Object.defineProperty(Evaluator.prototype,"__hasStaleValue",{writable:true,configurable:true,value:function(state, getter) {"use strict";
-	    var code = hashCode(getter)
-	    var cache = this.__cachedGetters
-	    return (
-	      cache.has(code) &&
-	      cache.getIn([code, 'stateHashCode']) !== state.hashCode()
-	    )
-	  }});
-
-	  /**
-	   * Caches the value of a getter given state, getter, args, value
-	   * @param {Immutable.Map} state
-	   * @param {Getter} getter
-	   * @param {Array} args
-	   * @param {any} value
-	   */
-	  Object.defineProperty(Evaluator.prototype,"__cacheValue",{writable:true,configurable:true,value:function(state, getter, args, value) {"use strict";
-	    var code = hashCode(getter)
-	    this.__cachedGetters = this.__cachedGetters.set(code, Immutable.Map({
-	      value: value,
-	      args: toImmutable(args),
-	      stateHashCode: state.hashCode(),
-	    }))
-	  }});
-
-	  /**
-	   * Returns boolean whether the supplied getter is cached for a given state
-	   * @param {Immutable.Map} state
-	   * @param {Getter} getter
-	   * @return {boolean}
-	   */
-	  Object.defineProperty(Evaluator.prototype,"__isCached",{writable:true,configurable:true,value:function(state, getter) {"use strict";
-	    var code = hashCode(getter)
-	    return (
-	      this.__cachedGetters.hasIn([code, 'value']) &&
-	      this.__cachedGetters.getIn([code, 'stateHashCode']) === state.hashCode()
-	    )
-	  }});
-
-	  /**
-	   * Removes all caching about a getter
-	   * @param {Getter}
-	   */
-	  Object.defineProperty(Evaluator.prototype,"untrack",{writable:true,configurable:true,value:function(getter) {"use strict";
-	    // TODO: untrack all dependencies
-	  }});
-
-	  Object.defineProperty(Evaluator.prototype,"reset",{writable:true,configurable:true,value:function() {"use strict";
-	    this.__cachedGetters = Immutable.Map({})
-	  }});
-
-
-	module.exports = Evaluator
-
+	  return _immutable2['default'].is(iA, iB);
+	}
 
 /***/ },
 /* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var each = __webpack_require__(3).each
-	/**
-	 * @param {Reactor} reactor
-	 */
-	module.exports = function(reactor) {
-	  return {
-	    getInitialState: function() {
-	      return getState(reactor, this.getDataBindings())
-	    },
+	'use strict';
 
-	    componentDidMount: function() {
-	      var component = this
-	      component.__unwatchFns = []
-	      each(this.getDataBindings(), function(getter, key) {
-	        var unwatchFn = reactor.observe(getter, function(val) {
-	          var newState = {}
-	          newState[key] = val
-	          component.setState(newState)
-	        })
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
 
-	        component.__unwatchFns.push(unwatchFn)
-	      })
-	    },
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
-	    componentWillUnmount: function() {
-	      while (this.__unwatchFns.length) {
-	        this.__unwatchFns.shift()()
-	      }
-	    },
-	  }
-	}
+	var _immutable = __webpack_require__(3);
 
-	/**
-	 * Returns a mapping of the getDataBinding keys to
-	 * the reactor values
-	 */
-	function getState(reactor, data) {
-	  var state = {}
-	  each(data, function(value, key) {
-	    state[key] = reactor.evaluate(value)
-	  })
-	  return state
-	}
+	var _immutable2 = _interopRequireDefault(_immutable);
 
+	var ReactorState = _immutable2['default'].Record({
+	  dispatchId: 0,
+	  state: _immutable2['default'].Map(),
+	  stores: _immutable2['default'].Map(),
+	  cache: _immutable2['default'].Map(),
+	  // maintains a mapping of storeId => state id (monotomically increasing integer whenever store state changes)
+	  storeStates: _immutable2['default'].Map(),
+	  dirtyStores: _immutable2['default'].Set(),
+	  debug: false
+	});
 
-/***/ },
-/* 13 */
-/***/ function(module, exports, __webpack_require__) {
+	var ObserverState = _immutable2['default'].Record({
+	  // observers registered to any store change
+	  any: _immutable2['default'].Set([]),
+	  // observers registered to specific store changes
+	  stores: _immutable2['default'].Map({}),
 
-	var Map = __webpack_require__(2).Map
-	var extend = __webpack_require__(3).extend
-	var toJS = __webpack_require__(1).toJS
-	var toImmutable = __webpack_require__(1).toImmutable
+	  observersMap: _immutable2['default'].Map({}),
 
-	/**
-	 * Stores define how a certain domain of the application should respond to actions
-	 * taken on the whole system.  They manage their own section of the entire app state
-	 * and have no knowledge about the other parts of the application state.
-	 */
+	  nextId: 1
+	});
 
-	  function Store(config) {"use strict";
-	    if (!(this instanceof Store)) {
-	      return new Store(config)
-	    }
-
-	    this.__handlers = Map({})
-
-	    if (config) {
-	      // allow `MyStore extends Store` syntax without throwing error
-	      extend(this, config)
-	    }
-
-	    this.initialize()
-	  }
-
-	  /**
-	   * This method is overridden by extending classes to setup message handlers
-	   * via `this.on` and to set up the initial state
-	   *
-	   * Anything returned from this function will be coerced into an ImmutableJS value
-	   * and set as the initial state for the part of the ReactorCore
-	   */
-	  Object.defineProperty(Store.prototype,"initialize",{writable:true,configurable:true,value:function() {"use strict";
-	    // extending classes implement to setup action handlers
-	  }});
-
-	  /**
-	   * Overridable method to get the initial state for this type of store
-	   */
-	  Object.defineProperty(Store.prototype,"getInitialState",{writable:true,configurable:true,value:function() {"use strict";
-	    return Map()
-	  }});
-
-	  /**
-	   * Takes a current reactor state, action type and payload
-	   * does the reaction and returns the new state
-	   */
-	  Object.defineProperty(Store.prototype,"handle",{writable:true,configurable:true,value:function(state, type, payload) {"use strict";
-	    var handler = this.__handlers.get(type)
-
-	    if (typeof handler === 'function') {
-	      return handler.call(this, state, payload, type)
-	    }
-
-	    return state
-	  }});
-
-	  /**
-	   * Pure function taking the current state of store and returning
-	   * the new state after a NuclearJS reactor has been reset
-	   *
-	   * Overridable
-	   */
-	  Object.defineProperty(Store.prototype,"handleReset",{writable:true,configurable:true,value:function(state) {"use strict";
-	    return this.getInitialState()
-	  }});
-
-	  /**
-	   * Binds an action type => handler
-	   */
-	  Object.defineProperty(Store.prototype,"on",{writable:true,configurable:true,value:function(actionType, handler) {"use strict";
-	    this.__handlers = this.__handlers.set(actionType, handler)
-	  }});
-
-	  /**
-	   * Serializes store state to plain JSON serializable JavaScript
-	   * Overridable
-	   * @param {*}
-	   * @return {*}
-	   */
-	  Object.defineProperty(Store.prototype,"serialize",{writable:true,configurable:true,value:function(state) {"use strict";
-	    return toJS(state)
-	  }});
-
-	  /**
-	   * Deserializes plain JavaScript to store state
-	   * Overridable
-	   * @param {*}
-	   * @return {*}
-	   */
-	  Object.defineProperty(Store.prototype,"deserialize",{writable:true,configurable:true,value:function(state) {"use strict";
-	    return toImmutable(state)
-	  }});
-
-
-	function isStore(toTest) {
-	  return (toTest instanceof Store)
-	}
-
-	module.exports = Store
-
-	module.exports.isStore = isStore
-
+	exports['default'] = {
+	  ReactorState: ReactorState,
+	  ObserverState: ObserverState
+	};
+	module.exports = exports['default'];
 
 /***/ }
 /******/ ])
