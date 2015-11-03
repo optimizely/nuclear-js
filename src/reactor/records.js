@@ -1,5 +1,20 @@
 import { Map, Set, Record } from 'immutable'
 
+export const PROD_OPTIONS = Map({
+  // logs information for each dispatch
+  logDispatches: false,
+  // log the entire app state after each dispatch
+  logAppState: false,
+  // logs what stores changed after a dispatch
+  logDirtyStores: false,
+  // if false, throw an error if a store returns undefined
+  allowUndefinedDispatch: true,
+  // if false, throw an error if a store returns undefined
+  allowNonImmutableStores: true,
+  // if false throw when dispatching in dispatch
+  allowDispatchInDispatch: true,
+})
+
 export const ReactorState = Record({
   dispatchId: 0,
   state: Map(),
@@ -10,7 +25,7 @@ export const ReactorState = Record({
   dirtyStores: Set(),
   debug: false,
   // production defaults
-  options: Map({}),
+  options: PROD_OPTIONS,
 })
 
 export const ObserverState = Record({
@@ -39,17 +54,3 @@ export const DEBUG_OPTIONS = Map({
   allowDispatchInDispatch: false,
 })
 
-export const PROD_OPTIONS = Map({
-  // logs information for each dispatch
-  logDispatches: false,
-  // log the entire app state after each dispatch
-  logAppState: false,
-  // logs what stores changed after a dispatch
-  logDirtyStores: false,
-  // if false, throw an error if a store returns undefined
-  allowUndefinedDispatch: true,
-  // if false, throw an error if a store returns undefined
-  allowNonImmutableStores: true,
-  // if false throw when dispatching in dispatch
-  allowDispatchInDispatch: true,
-})

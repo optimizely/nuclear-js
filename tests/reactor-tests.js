@@ -1,12 +1,57 @@
 import Immutable, { Map, List, is } from 'immutable'
 import { Reactor, Store } from '../src/main'
+import { getOption } from '../src/reactor/fns'
 import { toImmutable } from '../src/immutable-helpers'
+import { PROD_OPTIONS, DEBUG_OPTIONS } from '../src/reactor/records'
 import logging from '../src/logging'
 
 describe('Reactor', () => {
   it('should construct without \'new\'', () => {
     var reactor = Reactor()
     expect(reactor instanceof Reactor).toBe(true)
+  })
+
+  describe('debug and options flags', () => {
+    it('should create a reactor with PROD_OPTIONS', () => {
+      var reactor = new Reactor()
+      expect(reactor.reactorState.get('debug')).toBe(false)
+      expect(is(reactor.reactorState.get('options'), PROD_OPTIONS)).toBe(true)
+    })
+    it('should create a reactor with DEBUG_OPTIONS', () => {
+      var reactor = new Reactor({
+        debug: true,
+      })
+      expect(reactor.reactorState.get('debug')).toBe(true)
+      expect(is(reactor.reactorState.get('options'), DEBUG_OPTIONS)).toBe(true)
+    })
+    it('should override PROD options', () => {
+      var reactor = new Reactor({
+        options: {
+          logDispatches: true,
+        }
+      })
+      expect(getOption(reactor.reactorState, 'logDispatches')).toBe(true)
+      expect(getOption(reactor.reactorState, 'logAppState')).toBe(false)
+      expect(getOption(reactor.reactorState, 'logDirtyStores')).toBe(false)
+      expect(getOption(reactor.reactorState, 'allowUndefinedDispatch')).toBe(true)
+      expect(getOption(reactor.reactorState, 'allowNonImmutableStores')).toBe(true)
+      expect(getOption(reactor.reactorState, 'allowDispatchInDispatch')).toBe(true)
+    })
+    it('should override DEBUG options', () => {
+      var reactor = new Reactor({
+        debug: true,
+        options: {
+          logDispatches: false,
+          allowDispatchInDispatch: true,
+        }
+      })
+      expect(getOption(reactor.reactorState, 'logDispatches')).toBe(false)
+      expect(getOption(reactor.reactorState, 'logAppState')).toBe(true)
+      expect(getOption(reactor.reactorState, 'logDirtyStores')).toBe(true)
+      expect(getOption(reactor.reactorState, 'allowUndefinedDispatch')).toBe(false)
+      expect(getOption(reactor.reactorState, 'allowNonImmutableStores')).toBe(false)
+      expect(getOption(reactor.reactorState, 'allowDispatchInDispatch')).toBe(true)
+    })
   })
 
   describe('Reactor with no initial state', () => {

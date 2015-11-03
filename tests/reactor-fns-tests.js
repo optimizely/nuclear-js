@@ -2,7 +2,7 @@
 import { Map, Set, is } from 'immutable'
 import { Store } from '../src/main'
 import * as fns from '../src/reactor/fns'
-import { ReactorState, ObserverState } from '../src/reactor/records'
+import { ReactorState, ObserverState, DEBUG_OPTIONS } from '../src/reactor/records'
 import { toImmutable } from '../src/immutable-helpers'
 
 describe('reactor fns', () => {
@@ -499,6 +499,30 @@ describe('reactor fns', () => {
         const result = nextObserverState
         expect(is(expected, result)).toBe(true)
       })
+    })
+  })
+  describe('#getDebugOption', () => {
+    it('should parse the option value in a reactorState', () => {
+      const reactorState = new ReactorState({
+        options: Map({
+          allowUndefinedDispatch: true,
+        }),
+      })
+
+      const result = fns.getOption(reactorState, 'allowUndefinedDispatch')
+      expect(result).toBe(true)
+    })
+
+    it('should throw an error if the option doesn\'t', () => {
+      const reactorState = new ReactorState({
+        options: Map({
+          allowUndefinedDispatch: true,
+        }),
+      })
+
+      expect(function() {
+        const result = fns.getOption(reactorState, 'unknownOption')
+      }).toThrow()
     })
   })
 })

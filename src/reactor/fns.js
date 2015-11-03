@@ -192,7 +192,11 @@ export function addObserver(observerState, getter, handler) {
  * @return {Boolean}
  */
 export function getOption(reactorState, option) {
-  return reactorState.getIn(['options', option], false)
+  const value = reactorState.getIn(['options', option])
+  if (value === undefined) {
+    throw new Error('Invalid option: ' + option)
+  }
+  return value
 }
 
 /**

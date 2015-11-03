@@ -23,9 +23,10 @@ import {
  */
 class Reactor {
   constructor(config = {}) {
-    const baseOptions = config.debug ? DEBUG_OPTIONS : PROD_OPTIONS
+    const debug = !!config.debug
+    const baseOptions = debug ? DEBUG_OPTIONS : PROD_OPTIONS
     const initialReactorState = new ReactorState({
-      debug: config.debug,
+      debug: debug,
       // merge config options with the defaults
       options: baseOptions.merge(config.options || {}),
     })
