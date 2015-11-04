@@ -34,7 +34,7 @@ export function registerStores(reactorState, stores) {
 
       const initialState = store.getInitialState()
 
-      if (!getOption(reactorState, 'allowNonImmutableStores') && !isImmutableValue(initialState)) {
+      if (getOption(reactorState, 'throwOnNonImmutableStore') && !isImmutableValue(initialState)) {
         throw new Error('Store getInitialState() must return an immutable value, did you forget to call toImmutable')
       }
 
@@ -74,7 +74,7 @@ export function dispatch(reactorState, actionType, payload) {
         throw e
       }
 
-      if (!getOption(reactorState, 'allowUndefinedDispatch') && newState === undefined) {
+      if (getOption(reactorState, 'throwOnUndefinedDispatch') && newState === undefined) {
         const errorMsg = 'Store handler must return a value, did you forget a return statement'
         logging.dispatchError(reactorState, errorMsg)
         throw new Error(errorMsg)
@@ -275,10 +275,10 @@ export function reset(reactorState) {
     storeMap.forEach((store, id) => {
       const storeState = prevState.get(id)
       const resetStoreState = store.handleReset(storeState)
-      if (!getOption(reactorState, 'allowUndefinedDispatch') && resetStoreState === undefined) {
+      if (getOption(reactorState, 'throwOnUndefinedDispatch') && resetStoreState === undefined) {
         throw new Error('Store handleReset() must return a value, did you forget a return statement')
       }
-      if (!getOption(reactorState, 'allowNonImmutableStores') && !isImmutableValue(resetStoreState)) {
+      if (getOption(reactorState, 'throwOnNonImmutableStore') && !isImmutableValue(resetStoreState)) {
         throw new Error('Store reset state must be an immutable value, did you forget to call toImmutable')
       }
       reactorState.setIn(['state', id], resetStoreState)

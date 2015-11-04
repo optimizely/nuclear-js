@@ -7,12 +7,27 @@ export const PROD_OPTIONS = Map({
   logAppState: false,
   // logs what stores changed after a dispatch
   logDirtyStores: false,
-  // if false, throw an error if a store returns undefined
-  allowUndefinedDispatch: true,
-  // if false, throw an error if a store returns undefined
-  allowNonImmutableStores: true,
-  // if false throw when dispatching in dispatch
-  allowDispatchInDispatch: true,
+  // if true, throws an error if a store returns undefined
+  throwOnUndefinedDispatch: false,
+  // if true, throws an error if a store returns undefined
+  throwOnNonImmutableStore: false,
+  // if true, throws when dispatching in dispatch
+  throwOnDispatchInDispatch: false,
+})
+
+export const DEBUG_OPTIONS = Map({
+  // logs information for each dispatch
+  logDispatches: true,
+  // log the entire app state after each dispatch
+  logAppState: true,
+  // logs what stores changed after a dispatch
+  logDirtyStores: true,
+  // if true, throws an error if a store returns undefined
+  throwOnUndefinedDispatch: true,
+  // if true, throws an error if a store returns undefined
+  throwOnNonImmutableStore: true,
+  // if true, throws when dispatching in dispatch
+  throwOnDispatchInDispatch: true,
 })
 
 export const ReactorState = Record({
@@ -38,19 +53,3 @@ export const ObserverState = Record({
 
   nextId: 1,
 })
-
-export const DEBUG_OPTIONS = Map({
-  // logs information for each dispatch
-  logDispatches: true,
-  // log the entire app state after each dispatch
-  logAppState: true,
-  // logs what stores changed after a dispatch
-  logDirtyStores: true,
-  // if false, throw an error if a store returns undefined
-  allowUndefinedDispatch: false,
-  // if false, throw an error if a store returns undefined
-  allowNonImmutableStores: false,
-  // if false throw when dispatching in dispatch
-  allowDispatchInDispatch: false,
-})
-

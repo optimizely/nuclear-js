@@ -33,24 +33,24 @@ describe('Reactor', () => {
       expect(getOption(reactor.reactorState, 'logDispatches')).toBe(true)
       expect(getOption(reactor.reactorState, 'logAppState')).toBe(false)
       expect(getOption(reactor.reactorState, 'logDirtyStores')).toBe(false)
-      expect(getOption(reactor.reactorState, 'allowUndefinedDispatch')).toBe(true)
-      expect(getOption(reactor.reactorState, 'allowNonImmutableStores')).toBe(true)
-      expect(getOption(reactor.reactorState, 'allowDispatchInDispatch')).toBe(true)
+      expect(getOption(reactor.reactorState, 'throwOnUndefinedDispatch')).toBe(false)
+      expect(getOption(reactor.reactorState, 'throwOnNonImmutableStore')).toBe(false)
+      expect(getOption(reactor.reactorState, 'throwOnDispatchInDispatch')).toBe(false)
     })
     it('should override DEBUG options', () => {
       var reactor = new Reactor({
         debug: true,
         options: {
           logDispatches: false,
-          allowDispatchInDispatch: true,
+          throwOnDispatchInDispatch: false,
         }
       })
       expect(getOption(reactor.reactorState, 'logDispatches')).toBe(false)
       expect(getOption(reactor.reactorState, 'logAppState')).toBe(true)
       expect(getOption(reactor.reactorState, 'logDirtyStores')).toBe(true)
-      expect(getOption(reactor.reactorState, 'allowUndefinedDispatch')).toBe(false)
-      expect(getOption(reactor.reactorState, 'allowNonImmutableStores')).toBe(false)
-      expect(getOption(reactor.reactorState, 'allowDispatchInDispatch')).toBe(true)
+      expect(getOption(reactor.reactorState, 'throwOnUndefinedDispatch')).toBe(true)
+      expect(getOption(reactor.reactorState, 'throwOnNonImmutableStore')).toBe(true)
+      expect(getOption(reactor.reactorState, 'throwOnDispatchInDispatch')).toBe(false)
     })
   })
 

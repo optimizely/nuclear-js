@@ -19,7 +19,38 @@ var reactor = Nuclear.Reactor(config)
 
 **Configuration Options**
 
-`config.debug` Boolean - if true it will log the entire app state for every dispatch.
+`config.debug` Boolean - if true it will enabled logging for dispatches and throw Errors in various circumstances described below.
+
+**config.options** (added in 1.3)
+
+If `config.debug` is true then all of the options below will be enabled.
+
+`logDispatches` (default=`false`) console.logs for every action. If disabled `logAppState` and `logDirtyStores` will be ignored, as no dispatch logging is occurring.
+
+`logAppState` (default=`false`) console.logs a snapshot of the entire app state after every dispatch.  Disabling this can improve performance.
+
+`logDirtyStores` (default=`false`) console.logs what stores have changed after each dispatched action.
+
+`throwOnUndefinedDispatch` (default=`false`) if true, throws an Error if a store ever returns undefined.
+
+`throwOnNonImmutableStore` (default=`false`) if true, throws an Error if a store returns a non-immutable value. Javascript primitive such as `String`, `Boolean` and `Number` count as immutable.
+
+`throwOnDispatchInDispatch` (default=`true`) if true, throws an Error if a dispatch occurs in a change observer.
+
+**Example**
+
+```javascript
+var reactor = new Nuclear.Reactor({
+  debug: true,
+  options: {
+    // do not log entire app state
+    logAppState: false,
+    // allow dispatch in dispatch
+    throwOnDispatchInDispatch: false,
+  },
+})
+```
+
 
 #### `Reactor#dispatch(messageType, messagePayload)`
 

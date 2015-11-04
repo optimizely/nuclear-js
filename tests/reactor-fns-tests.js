@@ -505,18 +505,18 @@ describe('reactor fns', () => {
     it('should parse the option value in a reactorState', () => {
       const reactorState = new ReactorState({
         options: Map({
-          allowUndefinedDispatch: true,
+          throwOnUndefinedDispatch: true,
         }),
       })
 
-      const result = fns.getOption(reactorState, 'allowUndefinedDispatch')
+      const result = fns.getOption(reactorState, 'throwOnUndefinedDispatch')
       expect(result).toBe(true)
     })
 
     it('should throw an error if the option doesn\'t', () => {
       const reactorState = new ReactorState({
         options: Map({
-          allowUndefinedDispatch: true,
+          throwOnUndefinedDispatch: true,
         }),
       })
 

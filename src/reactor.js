@@ -110,7 +110,7 @@ class Reactor {
    */
   dispatch(actionType, payload) {
     if (this.__batchDepth === 0) {
-      if (!fns.getOption(this.reactorState, 'allowDispatchInDispatch')) {
+      if (fns.getOption(this.reactorState, 'throwOnDispatchInDispatch')) {
         if (this.__isDispatching) {
           this.__isDispatching = false
           throw new Error('Dispatch may not be called while a dispatch is in progress')
