@@ -396,6 +396,61 @@ describe('Reactor', () => {
 
         expect(mockFn.calls.count()).toEqual(0)
       })
+
+      it('should trigger an observer for a late registered store', () => {
+        var mockFn = jasmine.createSpy()
+        var reactor = new Reactor()
+        reactor.observe(['test'], mockFn)
+
+        expect(mockFn.calls.count()).toEqual(0)
+
+        reactor.registerStores({
+          test: Store({
+            getInitialState() {
+              return 1
+            }
+          })
+        })
+
+        expect(mockFn.calls.count()).toEqual(1)
+        expect(mockFn.calls.argsFor(0)).toEqual([1])
+      })
+
+      it('should trigger an observer for a late registered store for the identity getter', () => {
+        var mockFn = jasmine.createSpy()
+        var reactor = new Reactor()
+        reactor.observe([], mockFn)
+
+        expect(mockFn.calls.count()).toEqual(0)
+
+        reactor.registerStores({
+          test: Store({
+            getInitialState() {
+              return 1
+            },
+            initialize() {
+              this.on('increment', (state) => state + 1)
+            }
+          })
+        })
+
+        // it should call the observer after the store has been registered
+        expect(mockFn.calls.count()).toEqual(1)
+        var observedValue = mockFn.calls.argsFor(0)[0]
+        var expectedHandlerValue = Map({
+          test: 1
+        })
+        expect(is(observedValue, expectedHandlerValue)).toBe(true)
+
+        // it should call the observer again when the store handles an action
+        reactor.dispatch('increment')
+        expect(mockFn.calls.count()).toEqual(2)
+        var observedValue = mockFn.calls.argsFor(1)[0]
+        var expectedHandlerValue = Map({
+          test: 2
+        })
+        expect(is(observedValue, expectedHandlerValue)).toBe(true)
+      })
     })
 
     describe('#unobserve', () => {
