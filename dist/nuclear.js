@@ -6291,7 +6291,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return false;
 	  }
 
-	  return entry.get('storeStates').every(function (stateId, storeId) {
+	  var storeStates = entry.get('storeStates');
+	  if (storeStates.size === 0) {
+	    // if there are no store states for this entry then it was never cached before
+	    return false;
+	  }
+
+	  return storeStates.every(function (stateId, storeId) {
 	    return reactorState.getIn(['storeStates', storeId]) === stateId;
 	  });
 	}

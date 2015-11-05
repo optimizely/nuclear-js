@@ -1,3 +1,7 @@
+## 1.2.1 (November 5, 2015)
+
+- **[FIXED]** Observers of the entire app state not triggering on actions from a late registered store
+
 ## 1.2.0 (November 1, 2015)
 
 - **[NEW]** Exposed new API methods: `batchStart` and `batchStop`.
