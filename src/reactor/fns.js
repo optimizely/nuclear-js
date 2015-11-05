@@ -382,7 +382,13 @@ function isCached(reactorState, keyPathOrGetter) {
     return false
   }
 
-  return entry.get('storeStates').every((stateId, storeId) => {
+  const storeStates = entry.get('storeStates')
+  if (storeStates.size === 0) {
+    // if there are no store states for this entry then it was never cached before
+    return false
+  }
+
+  return storeStates.every((stateId, storeId) => {
     return reactorState.getIn(['storeStates', storeId]) === stateId
   })
 }
