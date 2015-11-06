@@ -21,7 +21,6 @@ exports.dispatchStart = function(reactorState, type, payload) {
 }
 
 exports.dispatchError = function(reactorState, error) {
-  console.log('dispatchError, shoud do', getOption(reactorState, 'logDispatches'))
   if (!getOption(reactorState, 'logDispatches')) {
     return
   }
