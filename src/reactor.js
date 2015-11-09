@@ -195,29 +195,19 @@ class Reactor {
       return
     }
 
-    let observerIdsToNotify = Immutable.Set().withMutations(set => {
+    let gettersToNotify = Immutable.Set().withMutations(set => {
       // notify all observers
       set.union(this.observerState.get('any'))
 
       dirtyStores.forEach(id => {
         const entries = this.observerState.getIn(['stores', id])
-        if (!entries) {
-          return
+        if (entries) {
+          set.union(entries)
         }
-        set.union(entries)
       })
     })
 
-    observerIdsToNotify.forEach((observerId) => {
-      const entry = this.observerState.getIn(['observersMap', observerId])
-      if (!entry) {
-        // don't notify here in the case a handler called unobserve on another observer
-        return
-      }
-
-      const getter = entry.get('getter')
-      const handler = entry.get('handler')
-
+    gettersToNotify.forEach(getter => {
       const prevEvaluateResult = fns.evaluate(this.prevReactorState, getter)
       const currEvaluateResult = fns.evaluate(this.reactorState, getter)
 
@@ -228,7 +218,14 @@ class Reactor {
       const currValue = currEvaluateResult.result
 
       if (!Immutable.is(prevValue, currValue)) {
-        handler.call(null, currValue)
+        const observerIds = this.observerState.getIn(['gettersMap', getter], [])
+        observerIds.forEach(observerId => {
+          const handler = this.observerState.getIn(['observersMap', observerId, 'handler'])
+          // don't notify here in the case a handler called unobserve on another observer
+          if (handler) {
+            handler.call(null, currValue)
+          }
+        })
       }
     })
 

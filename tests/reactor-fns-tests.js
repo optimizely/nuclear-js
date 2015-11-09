@@ -321,12 +321,12 @@ describe('reactor fns', () => {
         entry = result.entry
 
       })
-      it('should update the "any" observers', () => {
-        const expected = Set.of(1)
+      it('should update the "any" with getter reference', () => {
+        const expected = Set.of(getter)
         const result = nextObserverState.get('any')
         expect(is(expected, result)).toBe(true)
       })
-      it('should not update the "store" observers', () => {
+      it('should not update the "store" with getter reference', () => {
         const expected = Map({})
         const result = nextObserverState.get('stores')
         expect(is(expected, result)).toBe(true)
@@ -334,6 +334,11 @@ describe('reactor fns', () => {
       it('should increment the nextId', () => {
         const expected = 2
         const result = nextObserverState.get('nextId')
+        expect(is(expected, result)).toBe(true)
+      })
+      it('should update the gettersMap with getter as ref, id as value', () => {
+        const expected = Set.of(1)
+        const result = nextObserverState.getIn(['gettersMap', getter])
         expect(is(expected, result)).toBe(true)
       })
       it('should update the observerMap', () => {
@@ -375,18 +380,23 @@ describe('reactor fns', () => {
         nextObserverState = result.observerState
         entry = result.entry
       })
-      it('should not update the "any" observers', () => {
+      it('should not update the "any" getters', () => {
         const expected = Set.of()
         const result = nextObserverState.get('any')
         expect(is(expected, result)).toBe(true)
       })
-      it('should not update the "store" observers', () => {
+      it('should update the "store" with getter reference', () => {
         const expected = Map({
-          store1: Set.of(1),
-          store2: Set.of(1),
+          store1: Set.of(getter),
+          store2: Set.of(getter),
         })
 
         const result = nextObserverState.get('stores')
+        expect(is(expected, result)).toBe(true)
+      })
+      it('should update the gettersMap with getter as ref, id as value', () => {
+        const expected = Set.of(1)
+        const result = nextObserverState.getIn(['gettersMap', getter])
         expect(is(expected, result)).toBe(true)
       })
       it('should increment the nextId', () => {
@@ -448,12 +458,16 @@ describe('reactor fns', () => {
       it('should return a new ObserverState with all entries containing the getter removed', () => {
         nextObserverState = fns.removeObserver(initialObserverState, getter1)
         const expected = Map({
-          any: Set.of(3),
+          any: Set.of(getter2),
           stores: Map({
             store1: Set(),
             store2: Set(),
           }),
           nextId: 4,
+          gettersMap: Map([
+            [getter1, Set()],
+            [getter2, Set.of(3)]
+          ]),
           observersMap: Map([
             [3, Map({
               id: 3,
@@ -475,10 +489,14 @@ describe('reactor fns', () => {
         const expected = Map({
           any: Set(),
           stores: Map({
-            store1: Set.of(1, 2),
-            store2: Set.of(1, 2),
+            store1: Set.of(getter1),
+            store2: Set.of(getter1),
           }),
           nextId: 4,
+          gettersMap: Map([
+            [getter1, Set.of(1, 2)],
+            [getter2, Set()]
+          ]),
           observersMap: Map([
             [1, Map({
               id: 1,
@@ -499,6 +517,40 @@ describe('reactor fns', () => {
         const result = nextObserverState
         expect(is(expected, result)).toBe(true)
       })
+    })
+
+    it('should not remove the getter reference in store when there is still listeners for the getter', () => {
+      nextObserverState = fns.removeObserver(initialObserverState, getter1, handler2)
+      const expected = Map({
+        any: Set.of(getter2),
+        stores: Map({
+          store1: Set.of(getter1),
+          store2: Set.of(getter1),
+        }),
+        nextId: 4,
+        gettersMap: Map([
+          [getter1, Set.of(1)],
+          [getter2, Set.of(3)]
+        ]),
+        observersMap: Map([
+          [1, Map({
+            id: 1,
+            storeDeps: Set.of('store1', 'store2'),
+            getterKey: getter1,
+            getter: getter1,
+            handler: handler1,
+          })],
+          [3, Map({
+            id: 3,
+            storeDeps: Set(),
+            getterKey: getter2,
+            getter: getter2,
+            handler: handler3,
+          })]
+        ])
+      })
+      const result = nextObserverState
+      expect(is(expected, result)).toBe(true)
     })
   })
 })

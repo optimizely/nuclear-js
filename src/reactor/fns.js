@@ -171,18 +171,19 @@ exports.addObserver = function(observerState, getter, handler) {
     handler: handler,
   })
 
-  let updatedObserverState
+  let updatedObserverState = observerState.updateIn(['gettersMap', getter], observerIds => {
+    return observerIds ? observerIds.add(currId) : Immutable.Set.of(currId)
+  })
+
   if (storeDeps.size === 0) {
     // no storeDeps means the observer is dependent on any of the state changing
-    updatedObserverState = observerState.update('any', observerIds => observerIds.add(currId))
+    updatedObserverState = updatedObserverState.updateIn(['any'], getters => getters.add(getter))
   } else {
-    updatedObserverState = observerState.withMutations(map => {
+    updatedObserverState = updatedObserverState.withMutations(map => {
       storeDeps.forEach(storeId => {
-        let path = ['stores', storeId]
-        if (!map.hasIn(path)) {
-          map.setIn(path, Immutable.Set([]))
-        }
-        map.updateIn(['stores', storeId], observerIds => observerIds.add(currId))
+        map.updateIn(['stores', storeId], getters => {
+          return getters ? getters.add(getter) : Immutable.Set.of(getter)
+        })
       })
     })
   }
@@ -195,6 +196,7 @@ exports.addObserver = function(observerState, getter, handler) {
     observerState: updatedObserverState,
     entry: entry,
   }
+
 }
 
 /**
@@ -240,20 +242,34 @@ exports.removeObserver = function(observerState, getter, handler) {
 exports.removeObserverByEntry = function(observerState, entry) {
   return observerState.withMutations(map => {
     const id = entry.get('id')
+    const getter = entry.get('getter')
     const storeDeps = entry.get('storeDeps')
 
-    if (storeDeps.size === 0) {
-      map.update('any', anyObsevers => anyObsevers.remove(id))
-    } else {
-      storeDeps.forEach(storeId => {
-        map.updateIn(['stores', storeId], observers => {
-          if (observers) {
-            // check for observers being present because reactor.reset() can be called before an unwatch fn
-            return observers.remove(id)
-          }
-          return observers
+    const observerIds = map.getIn(['gettersMap', getter])
+    if (!observerIds) {
+      // getter doesn't exist if reactor.reset() is called before the unwatchFn()
+      return
+    }
+    const updatedObserverIds = observerIds.remove(id)
+    map.setIn(['gettersMap', getter], updatedObserverIds)
+
+    if (updatedObserverIds.size === 0) {
+      // all observers have been removed for this getter, remove other entries
+      if (storeDeps.size === 0) {
+        // no storeDeps means the observer is dependent on any of the state changing
+        map.update('any', getters => getters.remove(getter));
+      } else {
+        storeDeps.forEach(storeId => {
+          map.updateIn(['stores', storeId], getters => {
+            if (getters) {
+              // check to make sure the getters Set exists for this store,
+              // in the case of reactor.reset() is called before the unwatchFn()
+              return getters.remove(getter)
+            }
+            return getters
+          })
         })
-      })
+      }
     }
 
     map.removeIn(['observersMap', id])
