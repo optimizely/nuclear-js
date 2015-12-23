@@ -7,7 +7,7 @@ const reactor = new Reactor({
 reactor.registerStores(stores)
 
 if (module.hot) {
-  // Enable Webpack hot module replacement for reducers
+  // Enable Webpack hot module replacement for stores
   module.hot.accept('./stores', () => {
     reactor.replaceStores(require('./stores'))
   })
