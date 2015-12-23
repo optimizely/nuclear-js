@@ -1,8 +1,17 @@
+import { getOption } from './reactor/fns'
+
 /* eslint-disable no-console */
 /**
  * Wraps a Reactor.react invocation in a console.group
+ * @param {ReactorState} reactorState
+ * @param {String} type
+ * @param {*} payload
 */
-exports.dispatchStart = function(type, payload) {
+exports.dispatchStart = function(reactorState, type, payload) {
+  if (!getOption(reactorState, 'logDispatches')) {
+    return
+  }
+
   if (console.group) {
     console.groupCollapsed('Dispatch: %s', type)
     console.group('payload')
@@ -11,24 +20,30 @@ exports.dispatchStart = function(type, payload) {
   }
 }
 
-exports.dispatchError = function(error) {
+exports.dispatchError = function(reactorState, error) {
+  if (!getOption(reactorState, 'logDispatches')) {
+    return
+  }
+
   if (console.group) {
     console.debug('Dispatch error: ' + error)
     console.groupEnd()
   }
 }
 
-exports.storeHandled = function(id, before, after) {
-  if (console.group) {
-    if (before !== after) {
-      console.debug('Store ' + id + ' handled action')
-    }
+exports.dispatchEnd = function(reactorState, state, dirtyStores) {
+  if (!getOption(reactorState, 'logDispatches')) {
+    return
   }
-}
 
-exports.dispatchEnd = function(state) {
   if (console.group) {
-    console.debug('Dispatch done, new state: ', state.toJS())
+    if (getOption(reactorState, 'logDirtyStores')) {
+      console.log('Stores updated:', dirtyStores.toList().toJS())
+    }
+
+    if (getOption(reactorState, 'logAppState')) {
+      console.debug('Dispatch done, new state: ', state.toJS())
+    }
     console.groupEnd()
   }
 }
