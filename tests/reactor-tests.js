@@ -1531,4 +1531,85 @@ describe('Reactor', () => {
       expect(output).toEqual([6, 5])
     })
   })
+
+  describe('#replaceStores', () => {
+    let counter1Store
+    let counter2Store
+    let counter1StoreReplaced
+    let reactor
+
+    beforeEach(() => {
+      reactor = new Reactor()
+      counter1Store = new Store({
+        getInitialState: () => 1,
+        initialize() {
+          this.on('increment1', (state) => state + 1)
+        }
+      })
+      counter2Store = new Store({
+        getInitialState: () => 1,
+        initialize() {
+          this.on('increment2', (state) => state + 1)
+        }
+      })
+
+      reactor.registerStores({
+        counter1: counter1Store,
+        counter2: counter2Store,
+      })
+    })
+
+    it('should replace the store implementation without mutating the value', () => {
+      let newStore = new Store({
+        getInitialState: () => 1,
+        initialize() {
+          this.on('increment1', (state) => state + 10)
+        }
+      })
+
+      expect(reactor.evaluate(['counter1'])).toBe(1)
+      reactor.dispatch('increment1')
+      expect(reactor.evaluate(['counter1'])).toBe(2)
+
+      reactor.replaceStores({
+        counter1: newStore,
+      })
+
+      expect(reactor.evaluate(['counter1'])).toBe(2)
+      reactor.dispatch('increment1')
+      expect(reactor.evaluate(['counter1'])).toBe(12)
+      expect(reactor.evaluate(['counter2'])).toBe(1)
+    })
+
+    it('should replace multiple stores', () => {
+      let newStore1 = new Store({
+        getInitialState: () => 1,
+        initialize() {
+          this.on('increment1', (state) => state + 10)
+        }
+      })
+      let newStore2 = new Store({
+        getInitialState: () => 1,
+        initialize() {
+          this.on('increment2', (state) => state + 20)
+        }
+      })
+
+      expect(reactor.evaluate(['counter1'])).toBe(1)
+      reactor.dispatch('increment1')
+      expect(reactor.evaluate(['counter1'])).toBe(2)
+
+      reactor.replaceStores({
+        counter1: newStore1,
+        counter2: newStore2,
+      })
+
+      expect(reactor.evaluate(['counter1'])).toBe(2)
+      expect(reactor.evaluate(['counter2'])).toBe(1)
+      reactor.dispatch('increment1')
+      reactor.dispatch('increment2')
+      expect(reactor.evaluate(['counter1'])).toBe(12)
+      expect(reactor.evaluate(['counter2'])).toBe(21)
+    })
+  })
 })
