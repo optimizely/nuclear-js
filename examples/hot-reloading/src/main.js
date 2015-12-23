@@ -3,7 +3,6 @@ import { render } from 'react-dom'
 import { Provider } from 'nuclear-js-react-addons'
 import App from './containers/App'
 import reactor from './reactor'
-debugger
 
 render(
   <Provider reactor={reactor}>
