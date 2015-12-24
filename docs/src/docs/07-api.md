@@ -5,11 +5,11 @@ section: "Guide"
 
 # API Documentation
 
-### Reactor
+### <a name='Reactor'>Reactor</a>
 
-#### Constructor
+#### <a name='Reactor.Constructor'>Constructor</a>
 
-#### `Nuclear.Reactor`
+#### <a name='Nuclear.Reactor'>`Nuclear.Reactor`</a>
 
 ```javascript
 var reactor = new Nuclear.Reactor(config)
@@ -52,7 +52,7 @@ var reactor = new Nuclear.Reactor({
 ```
 
 
-#### `Reactor#dispatch(messageType, messagePayload)`
+#### <a name='Reactor.dispatch'>`Reactor#dispatch(messageType, messagePayload)`</a>
 
 Dispatches a message to all registered Stores. This process is done synchronously, all registered `Store`s are passed this message and all components are re-evaluated (efficiently).  After a dispatch, a Reactor will emit the new state on the `reactor.changeEmitter`
 
@@ -60,7 +60,7 @@ Dispatches a message to all registered Stores. This process is done synchronousl
 reactor.dispatch('addUser', { name: 'jordan' })
 ```
 
-#### `Reactor#evaluate(Getter | KeyPath)`
+#### <a name='Reactor.evaluate'>`Reactor#evaluate(Getter | KeyPath)`</a>
 
 Returns the immutable value for some KeyPath or Getter in the reactor state. Returns `undefined` if a keyPath doesn't have a value.
 
@@ -82,11 +82,11 @@ reactor.evaluate([
 ])
 ```
 
-#### `Reactor#evaluateToJS(...keyPath, [transformFn])`
+#### <a name='Reactor.evaluateToJS'>`Reactor#evaluateToJS(...keyPath, [transformFn])`</a>
 
 Same as `evaluate` but coerces the value to a plain JS before returning.
 
-#### `Reactor#observe(keyPathOrGetter, handlerFn)`
+#### <a name='Reactor.observe'>`Reactor#observe(keyPathOrGetter, handlerFn)`</a>
 
 Takes a getter or keyPath and calls the handlerFn with the evaluated value whenever the getter or keyPath changes.
 
@@ -101,7 +101,7 @@ reactor.observe([
 ])
 ```
 
-#### `Reactor#batch(fn)`
+#### <a name='Reactor.batch'>`Reactor#batch(fn)`</a>
 
 _added in 1.1_
 
@@ -116,7 +116,7 @@ reactor.batch(function() {
 // does a single notify to all observers
 ```
 
-#### `Reactor#batchStart()`
+#### <a name='Reactor.batchStart'>`Reactor#batchStart()`</a>
 
 _added in 1.2_
 
@@ -130,13 +130,13 @@ reactor.dispatch('addUser', { name: 'james' })
 reactor.batchEnd()
 ```
 
-#### `Reactor#batchEnd()`
+#### <a name='Reactor.batchEnd'>`Reactor#batchEnd()`</a>
 
 _added in 1.2_
 
 Signifies the end of reactor batching and will notify all observers of the changes that happened since `batchStart`
 
-#### `Reactor#serialize()`
+#### <a name='Reactor.serialize'>`Reactor#serialize()`</a>
 
 _added in 1.1_
 
@@ -146,7 +146,7 @@ Returns a plain JavaScript object representing the application state.  By defaul
 reactor.loadState(reactor.serialize())
 ```
 
-#### `Reactor#loadState( state )`
+#### <a name='Reactor.loadState'>`Reactor#loadState( state )`</a>
 
 _added in 1.1_
 
@@ -161,7 +161,7 @@ reactor.loadState({
 })
 ```
 
-#### `Reactor#registerStores(stores)`
+#### <a name='Reactor.registerStores'>`Reactor#registerStores(stores)`</a>
 
 `stores` - an object of storeId => store instance
 
@@ -172,11 +172,11 @@ reactor.registerStores({
 })
 ```
 
-#### `Reactor#reset()`
+#### <a name='Reactor.reset'>`Reactor#reset()`</a>
 
 Causes all stores to be reset to their initial state.  Extremely useful for testing, just put a `reactor.reset()` call in your `afterEach` blocks.
 
-#### `Reactor#ReactMixin`
+#### <a name='Reactor.ReactMixin'>`Reactor#ReactMixin`</a>
 
 Exposes the ReactMixin to do automatic data binding.
 
@@ -220,9 +220,9 @@ var ThreadSection = React.createClass({
 });
 ```
 
-### Store
+### <a name='Store'>Store</a>
 
-#### Constructor
+#### <a name='Store.Constructor'>Constructor</a>
 
 ```javascript
 module.exports = new Nuclear.Store({
@@ -240,15 +240,15 @@ module.exports = new Nuclear.Store({
 })
 ```
 
-#### `Store#getInitialState`
+#### <a name='Store.getInitialState'>`Store#getInitialState`</a>
 
 Defines the starting state for a store.  Must return an immutable value.  By default it returns an `Immutable.Map`
 
-#### `Store#initialize`
+#### <a name='Store.initialize'>`Store#initialize`</a>
 
 Responsible for setting up action handlers for the store using `this.on(actionTypes, handlerFn)`
 
-#### `Store#serialize`
+#### <a name='Store.serialize'>`Store#serialize`</a>
 
 _added in 1.1_
 
@@ -269,7 +269,7 @@ Nuclear.Store({
 })
 ```
 
-#### `Store#deserialize`
+#### <a name='Store.deserialize'>`Store#deserialize`</a>
 
 _added in 1.1_
 
@@ -287,30 +287,30 @@ Nuclear.Store({
 })
 ```
 
-### Utilities
+### <a name='Utilities'>Utilities</a>
 
 NuclearJS comes with several utility functions that are exposed on the `Nuclear` variable.
 
-#### `Nuclear.Immutable`
+#### <a name='Nuclear.Immutable'>`Nuclear.Immutable`</a>
 
 Provides access to the ImmutableJS `Immutable` object.
 
-#### `Nuclear.toImmutable(value)`
+#### <a name='Nuclear.toImmutable'>`Nuclear.toImmutable(value)`</a>
 
 Coerces a value to its immutable counterpart, can be called on any type safely.  It will convert Objects to `Immutable.Map` and Arrays to `Immutable.List`.
 
-#### `Nuclear.toJS(value)`
+#### <a name='Nuclear.toJS'>`Nuclear.toJS(value)`</a>
 
 Will coerce an Immutable value to its mutable counterpart.  Can be called on non-immutable values safely.
 
-#### `Nuclear.isImmutable(value)` : Boolean
+#### <a name='Nuclear.isImmutable'>`Nuclear.isImmutable(value)` : Boolean</a>
 
 Returns true if the value is an ImmutableJS data structure.
 
-#### `Nuclear.isKeyPath(value)` : Boolean
+#### <a name='Nuclear.isKeyPath'>`Nuclear.isKeyPath(value)` : Boolean</a>
 
 Returns true if the value is the format of a valid keyPath.
 
-#### `Nuclear.isGetter(value)` : Boolean
+#### <a name='Nuclear.isGetter'>`Nuclear.isGetter(value)` : Boolean</a>
 
 Returns true if the value is the format of a valid getter.
