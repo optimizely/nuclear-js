@@ -1,4 +1,4 @@
-# NuclearJS
+ NuclearJS
 
 [![Build Status](https://travis-ci.org/optimizely/nuclear-js.svg?branch=master)](https://travis-ci.org/optimizely/nuclear-js)
 [![Coverage Status](https://coveralls.io/repos/optimizely/nuclear-js/badge.svg?branch=master)](https://coveralls.io/r/optimizely/nuclear-js?branch=master)
@@ -37,6 +37,7 @@ npm install nuclear-js
 - [Shopping Cart Example](./examples/shopping-cart) - Provides a general overview of basic NuclearJS concepts: actions, stores and getters with ReactJS.
 - [Flux Chat Example](./examples/flux-chat) - A classic Facebook flux chat example written in NuclearJS.
 - [Rest API Example](./examples/rest-api) - Shows how to deal with fetching data from an API using NuclearJS conventions.
+- [Hot reloadable stores](./examples/hot-reloading) - Shows how to setup stores to be hot reloadable using webpack hot module replacement.
 
 ## How NuclearJS differs from other Flux implementations
 

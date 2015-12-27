@@ -74,6 +74,56 @@ describe('reactor fns', () => {
     })
   })
 
+  describe('#registerStores', () => {
+    let reactorState
+    let store1
+    let store2
+    let newStore1
+    let originalReactorState
+    let nextReactorState
+
+    beforeEach(() => {
+      reactorState = new ReactorState()
+      store1 = new Store({
+        getInitialState() {
+          return toImmutable({
+            foo: 'bar',
+          })
+        },
+      })
+      store2 = new Store({
+        getInitialState() {
+          return 2
+        },
+      })
+
+      newStore1 = new Store({
+        getInitialState() {
+          return toImmutable({
+            foo: 'newstore',
+          })
+        },
+      })
+
+      originalReactorState = fns.registerStores(reactorState, {
+        store1,
+        store2,
+      })
+
+      nextReactorState = fns.replaceStores(originalReactorState, {
+        store1: newStore1
+      })
+    })
+
+    it('should update reactorState.stores', () => {
+      const expectedReactorState = originalReactorState.set('stores', Map({
+        store1: newStore1,
+        store2: store2,
+      }))
+      expect(is(nextReactorState, expectedReactorState)).toBe(true)
+    })
+  })
+
   describe('#dispatch', () => {
     let initialReactorState, store1, store2
     let nextReactorState

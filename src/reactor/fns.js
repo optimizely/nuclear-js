@@ -49,6 +49,28 @@ export function registerStores(reactorState, stores) {
 }
 
 /**
+ * Overrides the store implementation without resetting the value of that particular part of the app state
+ * this is useful when doing hot reloading of stores.
+ * @param {ReactorState} reactorState
+ * @param {Object<String, Store>} stores
+ * @return {ReactorState}
+ */
+export function replaceStores(reactorState, stores) {
+  return reactorState.withMutations((reactorState) => {
+    each(stores, (store, id) => {
+      const initialState = store.getInitialState()
+
+      if (getOption(reactorState, 'throwOnNonImmutableStore') && !isImmutableValue(initialState)) {
+        throw new Error('Store getInitialState() must return an immutable value, did you forget to call toImmutable')
+      }
+
+      reactorState
+        .update('stores', stores => stores.set(id, store))
+    })
+  })
+}
+
+/**
  * @param {ReactorState} reactorState
  * @param {String} actionType
  * @param {*} payload

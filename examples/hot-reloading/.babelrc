@@ -1,0 +1,7 @@
+{
+  presets: ['es2015', 'react'],
+  plugins: ['transform-decorators-legacy', 'syntax-decorators'],
+  ignore: [
+    '**/nuclear-js-react-addons/**',
+                                   ]
+}

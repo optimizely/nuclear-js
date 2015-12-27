@@ -158,11 +158,20 @@ class Reactor {
   }
 
   /**
-   * @param {Store[]} stores
+   * @param {Object} stores
    */
   registerStores(stores) {
     this.reactorState = fns.registerStores(this.reactorState, stores)
     this.__notify()
+  }
+
+  /**
+   * Replace store implementation (handlers) without modifying the app state or calling getInitialState
+   * Useful for hot reloading
+   * @param {Object} stores
+   */
+  replaceStores(stores) {
+    this.reactorState = fns.replaceStores(this.reactorState, stores)
   }
 
   /**

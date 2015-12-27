@@ -172,6 +172,19 @@ reactor.registerStores({
 })
 ```
 
+#### `Reactor#replacStores(stores)`
+
+`stores` - an object of storeId => store instance
+
+Replace the implementation only of specified stores without resetting to their initial state.  This is useful when doing store hot reloading.
+
+```javascript
+reactor.replaceStores({
+  'threads': require('./stores/thread-store'),
+  'currentThreadID': require('./stores/current-thread-id-store'),
+})
+```
+
 #### `Reactor#reset()`
 
 Causes all stores to be reset to their initial state.  Extremely useful for testing, just put a `reactor.reset()` call in your `afterEach` blocks.
