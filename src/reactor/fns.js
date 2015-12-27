@@ -34,6 +34,9 @@ export function registerStores(reactorState, stores) {
 
       const initialState = store.getInitialState()
 
+      if (initialState === undefined && getOption(reactorState, 'throwOnUndefinedStoreReturnValue')) {
+        throw new Error('Store getInitialState() must return a value, did you forget a return statement')
+      }
       if (getOption(reactorState, 'throwOnNonImmutableStore') && !isImmutableValue(initialState)) {
         throw new Error('Store getInitialState() must return an immutable value, did you forget to call toImmutable')
       }
@@ -58,14 +61,7 @@ export function registerStores(reactorState, stores) {
 export function replaceStores(reactorState, stores) {
   return reactorState.withMutations((reactorState) => {
     each(stores, (store, id) => {
-      const initialState = store.getInitialState()
-
-      if (getOption(reactorState, 'throwOnNonImmutableStore') && !isImmutableValue(initialState)) {
-        throw new Error('Store getInitialState() must return an immutable value, did you forget to call toImmutable')
-      }
-
-      reactorState
-        .update('stores', stores => stores.set(id, store))
+      reactorState.update('stores', stores => stores.set(id, store))
     })
   })
 }
@@ -77,6 +73,10 @@ export function replaceStores(reactorState, stores) {
  * @return {ReactorState}
  */
 export function dispatch(reactorState, actionType, payload) {
+  if (actionType === undefined && getOption(reactorState, 'throwOnUndefinedActionType')) {
+    throw new Error('`dispatch` cannot be called with an `undefined` action type.');
+  }
+
   const currState = reactorState.get('state')
   let dirtyStores = reactorState.get('dirtyStores')
 
@@ -96,7 +96,7 @@ export function dispatch(reactorState, actionType, payload) {
         throw e
       }
 
-      if (getOption(reactorState, 'throwOnUndefinedDispatch') && newState === undefined) {
+      if (newState === undefined && getOption(reactorState, 'throwOnUndefinedStoreReturnValue')) {
         const errorMsg = 'Store handler must return a value, did you forget a return statement'
         logging.dispatchError(reactorState, errorMsg)
         throw new Error(errorMsg)
@@ -297,7 +297,7 @@ export function reset(reactorState) {
     storeMap.forEach((store, id) => {
       const storeState = prevState.get(id)
       const resetStoreState = store.handleReset(storeState)
-      if (getOption(reactorState, 'throwOnUndefinedDispatch') && resetStoreState === undefined) {
+      if (resetStoreState === undefined && getOption(reactorState, 'throwOnUndefinedStoreReturnValue')) {
         throw new Error('Store handleReset() must return a value, did you forget a return statement')
       }
       if (getOption(reactorState, 'throwOnNonImmutableStore') && !isImmutableValue(resetStoreState)) {

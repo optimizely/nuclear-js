@@ -33,7 +33,8 @@ describe('Reactor', () => {
       expect(getOption(reactor.reactorState, 'logDispatches')).toBe(true)
       expect(getOption(reactor.reactorState, 'logAppState')).toBe(false)
       expect(getOption(reactor.reactorState, 'logDirtyStores')).toBe(false)
-      expect(getOption(reactor.reactorState, 'throwOnUndefinedDispatch')).toBe(false)
+      expect(getOption(reactor.reactorState, 'throwOnUndefinedActionType')).toBe(false)
+      expect(getOption(reactor.reactorState, 'throwOnUndefinedStoreReturnValue')).toBe(false)
       expect(getOption(reactor.reactorState, 'throwOnNonImmutableStore')).toBe(false)
       expect(getOption(reactor.reactorState, 'throwOnDispatchInDispatch')).toBe(false)
     })
@@ -48,9 +49,250 @@ describe('Reactor', () => {
       expect(getOption(reactor.reactorState, 'logDispatches')).toBe(false)
       expect(getOption(reactor.reactorState, 'logAppState')).toBe(true)
       expect(getOption(reactor.reactorState, 'logDirtyStores')).toBe(true)
-      expect(getOption(reactor.reactorState, 'throwOnUndefinedDispatch')).toBe(true)
+      expect(getOption(reactor.reactorState, 'throwOnUndefinedActionType')).toBe(true)
+      expect(getOption(reactor.reactorState, 'throwOnUndefinedStoreReturnValue')).toBe(true)
       expect(getOption(reactor.reactorState, 'throwOnNonImmutableStore')).toBe(true)
       expect(getOption(reactor.reactorState, 'throwOnDispatchInDispatch')).toBe(false)
+    })
+  })
+
+  describe('options', () => {
+    describe('throwOnUndefinedActionType', () => {
+      it('should NOT throw when `false`', () => {
+        var reactor = new Reactor({
+          options: {
+            throwOnUndefinedActionType: false,
+          },
+        })
+
+        expect(() => {
+          reactor.dispatch(undefined)
+        }).not.toThrow()
+      })
+
+      it('should throw when `true`', () => {
+        var reactor = new Reactor({
+          options: {
+            throwOnUndefinedActionType: true,
+          },
+        })
+
+        expect(() => {
+          reactor.dispatch(undefined)
+        }).toThrow()
+      })
+    })
+
+    describe('throwOnUndefinedStoreReturnValue', () => {
+      it('should NOT throw during `registerStores`, `dispatch` or `reset` when `false`', () => {
+        var reactor = new Reactor({
+          options: {
+            throwOnUndefinedStoreReturnValue: false,
+          },
+        })
+
+        expect(() => {
+          reactor.registerStores({
+            store: Store({
+              getInitialState() {
+                return undefined
+              },
+              initialize() {
+                this.on('action', () => undefined)
+              },
+            })
+          })
+          reactor.dispatch('action')
+          reactor.reset()
+        }).not.toThrow()
+      })
+
+      it('should throw during `registerStores` when `true`', () => {
+        var reactor = new Reactor({
+          options: {
+            throwOnUndefinedStoreReturnValue: true,
+          },
+        })
+
+        expect(() => {
+          reactor.registerStores({
+            store: Store({
+              getInitialState() {
+                return undefined
+              },
+              initialize() {
+                this.on('action', () => undefined)
+              },
+            })
+          })
+        }).toThrow()
+      })
+
+      it('should throw during `dispatch` when `true`', () => {
+        var reactor = new Reactor({
+          options: {
+            throwOnUndefinedStoreReturnValue: true,
+          },
+        })
+
+        expect(() => {
+          reactor.registerStores({
+            store: Store({
+              getInitialState() {
+                return undefined
+              },
+              initialize() {
+                this.on('action', () => undefined)
+              },
+            })
+          })
+        }).toThrow()
+      })
+
+      it('should throw during `reset` when `true`', () => {
+        var reactor = new Reactor({
+          options: {
+            throwOnUndefinedStoreReturnValue: true,
+          },
+        })
+
+        expect(() => {
+          reactor.registerStores({
+            store: Store({
+              getInitialState() {
+                return 1
+              },
+              handleReset() {
+                return undefined
+              }
+            })
+          })
+          reactor.reset()
+        }).toThrow()
+      })
+    })
+
+    describe('throwOnNonImmutableStore', () => {
+      it('should NOT throw during `registerStores` or `reset` when `false`', () => {
+        var reactor = new Reactor({
+          options: {
+            throwOnNonImmutableStore: false,
+          },
+        })
+
+        expect(() => {
+          reactor.registerStores({
+            store: Store({
+              getInitialState() {
+                return { foo: 'bar' }
+              },
+              handleReset() {
+                return { foo: 'baz' }
+              },
+            })
+          })
+          reactor.reset()
+        }).not.toThrow()
+      })
+
+      it('should throw during `registerStores` when `true`', () => {
+        var reactor = new Reactor({
+          options: {
+            throwOnNonImmutableStore: true,
+          },
+        })
+
+        expect(() => {
+          reactor.registerStores({
+            store: Store({
+              getInitialState() {
+                return { foo: 'bar' }
+              },
+            })
+          })
+        }).toThrow()
+      })
+
+      it('should throw during `reset` when `true`', () => {
+        var reactor = new Reactor({
+          options: {
+            throwOnNonImmutableStore: true,
+          },
+        })
+
+        expect(() => {
+          reactor.registerStores({
+            store: Store({
+              getInitialState() {
+                return 123
+              },
+              handleReset() {
+                return { foo: 'baz' }
+              },
+            })
+          })
+          reactor.reset()
+        }).toThrow()
+      })
+    })
+
+    describe('throwOnDispatchInDispatch', () => {
+      it('should NOT throw when `false`', () => {
+        var reactor = new Reactor({
+          options: {
+            throwOnDispatchInDispatch: false,
+          },
+        })
+
+        expect(() => {
+          reactor.registerStores({
+            count: Store({
+              getInitialState() {
+                return 1
+              },
+              initialize() {
+                this.on('increment', curr => curr + 1)
+              }
+            })
+          })
+
+          reactor.observe(['count'], (val) => {
+            if (val % 2 === 0) {
+              reactor.dispatch('increment')
+            }
+          })
+          reactor.dispatch('increment')
+          expect(reactor.evaluate(['count'])).toBe(3)
+        }).not.toThrow()
+      })
+
+      it('should throw when `true`', () => {
+        var reactor = new Reactor({
+          options: {
+            throwOnDispatchInDispatch: true,
+          },
+        })
+
+        expect(() => {
+          reactor.registerStores({
+            count: Store({
+              getInitialState() {
+                return 1
+              },
+              initialize() {
+                this.on('increment', curr => curr + 1)
+              }
+            })
+          })
+
+          reactor.observe(['count'], (val) => {
+            if (val % 2 === 0) {
+              reactor.dispatch('increment')
+            }
+          })
+          reactor.dispatch('increment')
+        }).toThrow()
+      })
     })
   })
 

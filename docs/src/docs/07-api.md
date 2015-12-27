@@ -31,11 +31,13 @@ If `config.debug` is true then all of the options below will be enabled.
 
 `logDirtyStores` (default=`false`) console.logs what stores have changed after each dispatched action.
 
-`throwOnUndefinedDispatch` (default=`false`) if true, throws an Error if a store ever returns undefined.
+`throwOnUndefinedActionType` (default=`false`) if true, throws an Error when dispatch is called with an undefined action type.
+
+`throwOnUndefinedStoreReturnValue` (default=`false`) if true, throws an Error if a store handler or `getInitialState()` ever returns `undefined`.
 
 `throwOnNonImmutableStore` (default=`false`) if true, throws an Error if a store returns a non-immutable value. Javascript primitive such as `String`, `Boolean` and `Number` count as immutable.
 
-`throwOnDispatchInDispatch` (default=`true`) if true, throws an Error if a dispatch occurs in a change observer.
+`throwOnDispatchInDispatch` (default=`false`) if true, throws an Error if a dispatch occurs in a change observer.
 
 **Example**
 
