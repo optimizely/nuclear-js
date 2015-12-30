@@ -7,9 +7,11 @@ export const PROD_OPTIONS = Map({
   logAppState: false,
   // logs what stores changed after a dispatch
   logDirtyStores: false,
+  // if true, throws an error when dispatching an `undefined` actionType
+  throwOnUndefinedActionType: false,
   // if true, throws an error if a store returns undefined
-  throwOnUndefinedDispatch: false,
-  // if true, throws an error if a store returns undefined
+  throwOnUndefinedStoreReturnValue: false,
+  // if true, throws an error if a store.getInitialState() returns a non immutable value
   throwOnNonImmutableStore: false,
   // if true, throws when dispatching in dispatch
   throwOnDispatchInDispatch: false,
@@ -22,9 +24,11 @@ export const DEBUG_OPTIONS = Map({
   logAppState: true,
   // logs what stores changed after a dispatch
   logDirtyStores: true,
+  // if true, throws an error when dispatching an `undefined` actionType
+  throwOnUndefinedActionType: true,
   // if true, throws an error if a store returns undefined
-  throwOnUndefinedDispatch: true,
-  // if true, throws an error if a store returns undefined
+  throwOnUndefinedStoreReturnValue: true,
+  // if true, throws an error if a store.getInitialState() returns a non immutable value
   throwOnNonImmutableStore: true,
   // if true, throws when dispatching in dispatch
   throwOnDispatchInDispatch: true,
