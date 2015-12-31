@@ -1,3 +1,8 @@
+## 1.3.0 (December 31, 2015)
+
+- **[NEW]** Store hot-reloading via `reactor.replaceStores(stores)` which replaces the implementation of a store without resetting its underlying state value.  See [hot reloading example](https://github.com/optimizely/nuclear-js/tree/master/examples/hot-reloading).
+- **[NEW]** Support for more granular options for logging and triggering invariants in the NuclearJS runtime.  See [API Docs](https://github.com/optimizely/nuclear-js/blob/master/docs/src/docs/07-api.md) for details.
+
 ## 1.2.1 (November 5, 2015)
 
 - **[FIXED]** Observers of the entire app state not triggering on actions from a late registered store
