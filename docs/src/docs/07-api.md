@@ -174,7 +174,7 @@ reactor.registerStores({
 })
 ```
 
-#### `Reactor#replacStores(stores)`
+#### `Reactor#replaceStores(stores)`
 
 `stores` - an object of storeId => store instance
 
