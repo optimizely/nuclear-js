@@ -5487,6 +5487,8 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
 	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
@@ -5503,7 +5505,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _reactorFns = __webpack_require__(8);
 
-	var _reactorFns2 = _interopRequireDefault(_reactorFns);
+	var fns = _interopRequireWildcard(_reactorFns);
 
 	var _keyPath = __webpack_require__(11);
 
@@ -5531,8 +5533,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    _classCallCheck(this, Reactor);
 
+	    var debug = !!config.debug;
+	    var baseOptions = debug ? _reactorRecords.DEBUG_OPTIONS : _reactorRecords.PROD_OPTIONS;
 	    var initialReactorState = new _reactorRecords.ReactorState({
-	      debug: config.debug
+	      debug: debug,
+	      // merge config options with the defaults
+	      options: baseOptions.merge(config.options || {})
 	    });
 
 	    this.prevReactorState = initialReactorState;
@@ -5557,7 +5563,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  _createClass(Reactor, [{
 	    key: 'evaluate',
 	    value: function evaluate(keyPathOrGetter) {
-	      var _fns$evaluate = _reactorFns2['default'].evaluate(this.reactorState, keyPathOrGetter);
+	      var _fns$evaluate = fns.evaluate(this.reactorState, keyPathOrGetter);
 
 	      var result = _fns$evaluate.result;
 	      var reactorState = _fns$evaluate.reactorState;
@@ -5603,14 +5609,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	        getter = [];
 	      }
 
-	      var _fns$addObserver = _reactorFns2['default'].addObserver(this.observerState, getter, handler);
+	      var _fns$addObserver = fns.addObserver(this.observerState, getter, handler);
 
 	      var observerState = _fns$addObserver.observerState;
 	      var entry = _fns$addObserver.entry;
 
 	      this.observerState = observerState;
 	      return function () {
-	        _this.observerState = _reactorFns2['default'].removeObserverByEntry(_this.observerState, entry);
+	        _this.observerState = fns.removeObserverByEntry(_this.observerState, entry);
 	      };
 	    }
 	  }, {
@@ -5623,7 +5629,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        throw new Error('Must call unobserve with a Getter');
 	      }
 
-	      this.observerState = _reactorFns2['default'].removeObserver(this.observerState, getter, handler);
+	      this.observerState = fns.removeObserver(this.observerState, getter, handler);
 	    }
 
 	    /**
@@ -5635,15 +5641,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	    key: 'dispatch',
 	    value: function dispatch(actionType, payload) {
 	      if (this.__batchDepth === 0) {
-	        if (this.__isDispatching) {
-	          this.__isDispatching = false;
-	          throw new Error('Dispatch may not be called while a dispatch is in progress');
+	        if (fns.getOption(this.reactorState, 'throwOnDispatchInDispatch')) {
+	          if (this.__isDispatching) {
+	            this.__isDispatching = false;
+	            throw new Error('Dispatch may not be called while a dispatch is in progress');
+	          }
 	        }
 	        this.__isDispatching = true;
 	      }
 
 	      try {
-	        this.reactorState = _reactorFns2['default'].dispatch(this.reactorState, actionType, payload);
+	        this.reactorState = fns.dispatch(this.reactorState, actionType, payload);
 	      } catch (e) {
 	        this.__isDispatching = false;
 	        throw e;
@@ -5683,13 +5691,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    /**
-	     * @param {Store[]} stores
+	     * @param {Object} stores
 	     */
 	  }, {
 	    key: 'registerStores',
 	    value: function registerStores(stores) {
-	      this.reactorState = _reactorFns2['default'].registerStores(this.reactorState, stores);
+	      this.reactorState = fns.registerStores(this.reactorState, stores);
 	      this.__notify();
+	    }
+
+	    /**
+	     * Replace store implementation (handlers) without modifying the app state or calling getInitialState
+	     * Useful for hot reloading
+	     * @param {Object} stores
+	     */
+	  }, {
+	    key: 'replaceStores',
+	    value: function replaceStores(stores) {
+	      this.reactorState = fns.replaceStores(this.reactorState, stores);
 	    }
 
 	    /**
@@ -5699,7 +5718,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: 'serialize',
 	    value: function serialize() {
-	      return _reactorFns2['default'].serialize(this.reactorState);
+	      return fns.serialize(this.reactorState);
 	    }
 
 	    /**
@@ -5708,7 +5727,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: 'loadState',
 	    value: function loadState(state) {
-	      this.reactorState = _reactorFns2['default'].loadState(this.reactorState, state);
+	      this.reactorState = fns.loadState(this.reactorState, state);
 	      this.__notify();
 	    }
 
@@ -5718,7 +5737,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: 'reset',
 	    value: function reset() {
-	      var newState = _reactorFns2['default'].reset(this.reactorState);
+	      var newState = fns.reset(this.reactorState);
 	      this.reactorState = newState;
 	      this.prevReactorState = newState;
 	      this.observerState = new _reactorRecords.ObserverState();
@@ -5766,8 +5785,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var getter = entry.get('getter');
 	        var handler = entry.get('handler');
 
-	        var prevEvaluateResult = _reactorFns2['default'].evaluate(_this2.prevReactorState, getter);
-	        var currEvaluateResult = _reactorFns2['default'].evaluate(_this2.reactorState, getter);
+	        var prevEvaluateResult = fns.evaluate(_this2.prevReactorState, getter);
+	        var currEvaluateResult = fns.evaluate(_this2.reactorState, getter);
 
 	        _this2.prevReactorState = prevEvaluateResult.reactorState;
 	        _this2.reactorState = currEvaluateResult.reactorState;
@@ -5780,7 +5799,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	      });
 
-	      var nextReactorState = _reactorFns2['default'].resetDirtyStores(this.reactorState);
+	      var nextReactorState = fns.resetDirtyStores(this.reactorState);
 
 	      this.prevReactorState = nextReactorState;
 	      this.reactorState = nextReactorState;
@@ -5890,6 +5909,22 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+	exports.registerStores = registerStores;
+	exports.replaceStores = replaceStores;
+	exports.dispatch = dispatch;
+	exports.loadState = loadState;
+	exports.addObserver = addObserver;
+	exports.getOption = getOption;
+	exports.removeObserver = removeObserver;
+	exports.removeObserverByEntry = removeObserverByEntry;
+	exports.reset = reset;
+	exports.evaluate = evaluate;
+	exports.serialize = serialize;
+	exports.resetDirtyStores = resetDirtyStores;
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
 	var _immutable = __webpack_require__(3);
@@ -5925,9 +5960,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param {Object<String, Store>} stores
 	 * @return {ReactorState}
 	 */
-	exports.registerStores = function (reactorState, stores) {
-	  var debug = reactorState.get('debug');
 
+	function registerStores(reactorState, stores) {
 	  return reactorState.withMutations(function (reactorState) {
 	    (0, _utils.each)(stores, function (store, id) {
 	      if (reactorState.getIn(['stores', id])) {
@@ -5938,7 +5972,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      var initialState = store.getInitialState();
 
-	      if (debug && !(0, _immutableHelpers.isImmutableValue)(initialState)) {
+	      if (initialState === undefined && getOption(reactorState, 'throwOnUndefinedStoreReturnValue')) {
+	        throw new Error('Store getInitialState() must return a value, did you forget a return statement');
+	      }
+	      if (getOption(reactorState, 'throwOnNonImmutableStore') && !(0, _immutableHelpers.isImmutableValue)(initialState)) {
 	        throw new Error('Store getInitialState() must return an immutable value, did you forget to call toImmutable');
 	      }
 
@@ -5954,7 +5991,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	    });
 	    incrementId(reactorState);
 	  });
-	};
+	}
+
+	/**
+	 * Overrides the store implementation without resetting the value of that particular part of the app state
+	 * this is useful when doing hot reloading of stores.
+	 * @param {ReactorState} reactorState
+	 * @param {Object<String, Store>} stores
+	 * @return {ReactorState}
+	 */
+
+	function replaceStores(reactorState, stores) {
+	  return reactorState.withMutations(function (reactorState) {
+	    (0, _utils.each)(stores, function (store, id) {
+	      reactorState.update('stores', function (stores) {
+	        return stores.set(id, store);
+	      });
+	    });
+	  });
+	}
 
 	/**
 	 * @param {ReactorState} reactorState
@@ -5962,15 +6017,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param {*} payload
 	 * @return {ReactorState}
 	 */
-	exports.dispatch = function (reactorState, actionType, payload) {
+
+	function dispatch(reactorState, actionType, payload) {
+	  if (actionType === undefined && getOption(reactorState, 'throwOnUndefinedActionType')) {
+	    throw new Error('`dispatch` cannot be called with an `undefined` action type.');
+	  }
+
 	  var currState = reactorState.get('state');
-	  var debug = reactorState.get('debug');
 	  var dirtyStores = reactorState.get('dirtyStores');
 
 	  var nextState = currState.withMutations(function (state) {
-	    if (debug) {
-	      _logging2['default'].dispatchStart(actionType, payload);
-	    }
+	    _logging2['default'].dispatchStart(reactorState, actionType, payload);
 
 	    // let each store handle the message
 	    reactorState.get('stores').forEach(function (store, id) {
@@ -5981,13 +6038,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	        newState = store.handle(currState, actionType, payload);
 	      } catch (e) {
 	        // ensure console.group is properly closed
-	        _logging2['default'].dispatchError(e.message);
+	        _logging2['default'].dispatchError(reactorState, e.message);
 	        throw e;
 	      }
 
-	      if (debug && newState === undefined) {
+	      if (newState === undefined && getOption(reactorState, 'throwOnUndefinedStoreReturnValue')) {
 	        var errorMsg = 'Store handler must return a value, did you forget a return statement';
-	        _logging2['default'].dispatchError(errorMsg);
+	        _logging2['default'].dispatchError(reactorState, errorMsg);
 	        throw new Error(errorMsg);
 	      }
 
@@ -5997,15 +6054,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        // if the store state changed add store to list of dirty stores
 	        dirtyStores = dirtyStores.add(id);
 	      }
-
-	      if (debug) {
-	        _logging2['default'].storeHandled(id, currState, newState);
-	      }
 	    });
 
-	    if (debug) {
-	      _logging2['default'].dispatchEnd(state);
-	    }
+	    _logging2['default'].dispatchEnd(reactorState, state, dirtyStores);
 	  });
 
 	  var nextReactorState = reactorState.set('state', nextState).set('dirtyStores', dirtyStores).update('storeStates', function (storeStates) {
@@ -6013,14 +6064,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	  });
 
 	  return incrementId(nextReactorState);
-	};
+	}
 
 	/**
 	 * @param {ReactorState} reactorState
 	 * @param {Immutable.Map} state
 	 * @return {ReactorState}
 	 */
-	exports.loadState = function (reactorState, state) {
+
+	function loadState(reactorState, state) {
 	  var dirtyStores = [];
 	  var stateToLoad = (0, _immutableHelpers.toImmutable)({}).withMutations(function (stateToLoad) {
 	    (0, _utils.each)(state, function (serializedStoreState, storeId) {
@@ -6043,7 +6095,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }).update('storeStates', function (storeStates) {
 	    return incrementStoreStates(storeStates, dirtyStores);
 	  });
-	};
+	}
 
 	/**
 	 * Adds a change observer whenever a certain part of the reactor state changes
@@ -6062,7 +6114,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param {function} handler
 	 * @return {ObserveResult}
 	 */
-	exports.addObserver = function (observerState, getter, handler) {
+
+	function addObserver(observerState, getter, handler) {
 	  // use the passed in getter as the key so we can rely on a byreference call for unobserve
 	  var getterKey = getter;
 	  if ((0, _keyPath.isKeyPath)(getter)) {
@@ -6090,7 +6143,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      storeDeps.forEach(function (storeId) {
 	        var path = ['stores', storeId];
 	        if (!map.hasIn(path)) {
-	          map.setIn(path, _immutable2['default'].Set([]));
+	          map.setIn(path, _immutable2['default'].Set());
 	        }
 	        map.updateIn(['stores', storeId], function (observerIds) {
 	          return observerIds.add(currId);
@@ -6105,7 +6158,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	    observerState: updatedObserverState,
 	    entry: entry
 	  };
-	};
+	}
+
+	/**
+	 * @param {ReactorState} reactorState
+	 * @param {String} option
+	 * @return {Boolean}
+	 */
+
+	function getOption(reactorState, option) {
+	  var value = reactorState.getIn(['options', option]);
+	  if (value === undefined) {
+	    throw new Error('Invalid option: ' + option);
+	  }
+	  return value;
+	}
 
 	/**
 	 * Use cases
@@ -6120,7 +6187,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param {Function} handler
 	 * @return {ObserverState}
 	 */
-	exports.removeObserver = function (observerState, getter, handler) {
+
+	function removeObserver(observerState, getter, handler) {
 	  var entriesToRemove = observerState.get('observersMap').filter(function (entry) {
 	    // use the getterKey in the case of a keyPath is transformed to a getter in addObserver
 	    var entryGetter = entry.get('getterKey');
@@ -6138,10 +6206,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  return observerState.withMutations(function (map) {
 	    entriesToRemove.forEach(function (entry) {
-	      return exports.removeObserverByEntry(map, entry);
+	      return removeObserverByEntry(map, entry);
 	    });
 	  });
-	};
+	}
 
 	/**
 	 * Removes an observer entry by id from the observerState
@@ -6149,7 +6217,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param {Immutable.Map} entry
 	 * @return {ObserverState}
 	 */
-	exports.removeObserverByEntry = function (observerState, entry) {
+
+	function removeObserverByEntry(observerState, entry) {
 	  return observerState.withMutations(function (map) {
 	    var id = entry.get('id');
 	    var storeDeps = entry.get('storeDeps');
@@ -6172,14 +6241,14 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    map.removeIn(['observersMap', id]);
 	  });
-	};
+	}
 
 	/**
 	 * @param {ReactorState} reactorState
 	 * @return {ReactorState}
 	 */
-	exports.reset = function (reactorState) {
-	  var debug = reactorState.get('debug');
+
+	function reset(reactorState) {
 	  var prevState = reactorState.get('state');
 
 	  return reactorState.withMutations(function (reactorState) {
@@ -6188,10 +6257,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    storeMap.forEach(function (store, id) {
 	      var storeState = prevState.get(id);
 	      var resetStoreState = store.handleReset(storeState);
-	      if (debug && resetStoreState === undefined) {
+	      if (resetStoreState === undefined && getOption(reactorState, 'throwOnUndefinedStoreReturnValue')) {
 	        throw new Error('Store handleReset() must return a value, did you forget a return statement');
 	      }
-	      if (debug && !(0, _immutableHelpers.isImmutableValue)(resetStoreState)) {
+	      if (getOption(reactorState, 'throwOnNonImmutableStore') && !(0, _immutableHelpers.isImmutableValue)(resetStoreState)) {
 	        throw new Error('Store reset state must be an immutable value, did you forget to call toImmutable');
 	      }
 	      reactorState.setIn(['state', id], resetStoreState);
@@ -6200,16 +6269,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	    reactorState.update('storeStates', function (storeStates) {
 	      return incrementStoreStates(storeStates, storeIds);
 	    });
-	    exports.resetDirtyStores(reactorState);
+	    resetDirtyStores(reactorState);
 	  });
-	};
+	}
 
 	/**
 	 * @param {ReactorState} reactorState
 	 * @param {KeyPath|Gettter} keyPathOrGetter
 	 * @return {EvaluateResult}
 	 */
-	exports.evaluate = function evaluate(reactorState, keyPathOrGetter) {
+
+	function evaluate(reactorState, keyPathOrGetter) {
 	  var state = reactorState.get('state');
 
 	  if ((0, _keyPath.isKeyPath)(keyPathOrGetter)) {
@@ -6233,14 +6303,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	  var evaluatedValue = (0, _getter.getComputeFn)(keyPathOrGetter).apply(null, args);
 
 	  return evaluateResult(evaluatedValue, cacheValue(reactorState, keyPathOrGetter, evaluatedValue));
-	};
+	}
 
 	/**
 	 * Returns serialized state for all stores
 	 * @param {ReactorState} reactorState
 	 * @return {Object}
 	 */
-	exports.serialize = function (reactorState) {
+
+	function serialize(reactorState) {
 	  var serialized = {};
 	  reactorState.get('stores').forEach(function (store, id) {
 	    var storeState = reactorState.getIn(['state', id]);
@@ -6250,16 +6321,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  });
 	  return serialized;
-	};
+	}
 
 	/**
 	 * Returns serialized state for all stores
 	 * @param {ReactorState} reactorState
 	 * @return {ReactorState}
 	 */
-	exports.resetDirtyStores = function (reactorState) {
+
+	function resetDirtyStores(reactorState) {
 	  return reactorState.set('dirtyStores', _immutable2['default'].Set());
-	};
+	}
 
 	/**
 	 * Currently cache keys are always getters by reference
@@ -6361,15 +6433,24 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 9 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _reactorFns = __webpack_require__(8);
 
 	/* eslint-disable no-console */
 	/**
 	 * Wraps a Reactor.react invocation in a console.group
+	 * @param {ReactorState} reactorState
+	 * @param {String} type
+	 * @param {*} payload
 	*/
-	'use strict';
+	exports.dispatchStart = function (reactorState, type, payload) {
+	  if (!(0, _reactorFns.getOption)(reactorState, 'logDispatches')) {
+	    return;
+	  }
 
-	exports.dispatchStart = function (type, payload) {
 	  if (console.group) {
 	    console.groupCollapsed('Dispatch: %s', type);
 	    console.group('payload');
@@ -6378,24 +6459,30 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	};
 
-	exports.dispatchError = function (error) {
+	exports.dispatchError = function (reactorState, error) {
+	  if (!(0, _reactorFns.getOption)(reactorState, 'logDispatches')) {
+	    return;
+	  }
+
 	  if (console.group) {
 	    console.debug('Dispatch error: ' + error);
 	    console.groupEnd();
 	  }
 	};
 
-	exports.storeHandled = function (id, before, after) {
-	  if (console.group) {
-	    if (before !== after) {
-	      console.debug('Store ' + id + ' handled action');
-	    }
+	exports.dispatchEnd = function (reactorState, state, dirtyStores) {
+	  if (!(0, _reactorFns.getOption)(reactorState, 'logDispatches')) {
+	    return;
 	  }
-	};
 
-	exports.dispatchEnd = function (state) {
 	  if (console.group) {
-	    console.debug('Dispatch done, new state: ', state.toJS());
+	    if ((0, _reactorFns.getOption)(reactorState, 'logDirtyStores')) {
+	      console.log('Stores updated:', dirtyStores.toList().toJS());
+	    }
+
+	    if ((0, _reactorFns.getOption)(reactorState, 'logAppState')) {
+	      console.debug('Dispatch done, new state: ', state.toJS());
+	    }
 	    console.groupEnd();
 	  }
 	};
@@ -6588,39 +6675,69 @@ return /******/ (function(modules) { // webpackBootstrap
 	  value: true
 	});
 
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
-
 	var _immutable = __webpack_require__(3);
 
-	var _immutable2 = _interopRequireDefault(_immutable);
-
-	var ReactorState = _immutable2['default'].Record({
-	  dispatchId: 0,
-	  state: _immutable2['default'].Map(),
-	  stores: _immutable2['default'].Map(),
-	  cache: _immutable2['default'].Map(),
-	  // maintains a mapping of storeId => state id (monotomically increasing integer whenever store state changes)
-	  storeStates: _immutable2['default'].Map(),
-	  dirtyStores: _immutable2['default'].Set(),
-	  debug: false
+	var PROD_OPTIONS = (0, _immutable.Map)({
+	  // logs information for each dispatch
+	  logDispatches: false,
+	  // log the entire app state after each dispatch
+	  logAppState: false,
+	  // logs what stores changed after a dispatch
+	  logDirtyStores: false,
+	  // if true, throws an error when dispatching an `undefined` actionType
+	  throwOnUndefinedActionType: false,
+	  // if true, throws an error if a store returns undefined
+	  throwOnUndefinedStoreReturnValue: false,
+	  // if true, throws an error if a store.getInitialState() returns a non immutable value
+	  throwOnNonImmutableStore: false,
+	  // if true, throws when dispatching in dispatch
+	  throwOnDispatchInDispatch: false
 	});
 
-	var ObserverState = _immutable2['default'].Record({
-	  // observers registered to any store change
-	  any: _immutable2['default'].Set([]),
-	  // observers registered to specific store changes
-	  stores: _immutable2['default'].Map({}),
+	exports.PROD_OPTIONS = PROD_OPTIONS;
+	var DEBUG_OPTIONS = (0, _immutable.Map)({
+	  // logs information for each dispatch
+	  logDispatches: true,
+	  // log the entire app state after each dispatch
+	  logAppState: true,
+	  // logs what stores changed after a dispatch
+	  logDirtyStores: true,
+	  // if true, throws an error when dispatching an `undefined` actionType
+	  throwOnUndefinedActionType: true,
+	  // if true, throws an error if a store returns undefined
+	  throwOnUndefinedStoreReturnValue: true,
+	  // if true, throws an error if a store.getInitialState() returns a non immutable value
+	  throwOnNonImmutableStore: true,
+	  // if true, throws when dispatching in dispatch
+	  throwOnDispatchInDispatch: true
+	});
 
-	  observersMap: _immutable2['default'].Map({}),
+	exports.DEBUG_OPTIONS = DEBUG_OPTIONS;
+	var ReactorState = (0, _immutable.Record)({
+	  dispatchId: 0,
+	  state: (0, _immutable.Map)(),
+	  stores: (0, _immutable.Map)(),
+	  cache: (0, _immutable.Map)(),
+	  // maintains a mapping of storeId => state id (monotomically increasing integer whenever store state changes)
+	  storeStates: (0, _immutable.Map)(),
+	  dirtyStores: (0, _immutable.Set)(),
+	  debug: false,
+	  // production defaults
+	  options: PROD_OPTIONS
+	});
+
+	exports.ReactorState = ReactorState;
+	var ObserverState = (0, _immutable.Record)({
+	  // observers registered to any store change
+	  any: (0, _immutable.Set)(),
+	  // observers registered to specific store changes
+	  stores: (0, _immutable.Map)({}),
+
+	  observersMap: (0, _immutable.Map)({}),
 
 	  nextId: 1
 	});
-
-	exports['default'] = {
-	  ReactorState: ReactorState,
-	  ObserverState: ObserverState
-	};
-	module.exports = exports['default'];
+	exports.ObserverState = ObserverState;
 
 /***/ }
 /******/ ])
