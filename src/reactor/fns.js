@@ -10,6 +10,7 @@ import { each } from '../utils'
  * Immutable Types
  */
 const EvaluateResult = Immutable.Record({ result: null, reactorState: null})
+export const CACHE_CLEAR_RATIO = .8;
 
 function evaluateResult(result, reactorState) {
   return new EvaluateResult({
@@ -335,14 +336,13 @@ export function evaluate(reactorState, keyPathOrGetter) {
     // Cache hit
     return evaluateResult(
       getCachedValue(reactorState, keyPathOrGetter),
-      reactorState
+      updateCacheRecency(reactorState, keyPathOrGetter)
     )
   }
 
   // evaluate dependencies
   const args = getDeps(keyPathOrGetter).map(dep => evaluate(reactorState, dep).result)
   const evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
-
   return evaluateResult(
     evaluatedValue,
     cacheValue(reactorState, keyPathOrGetter, evaluatedValue)
@@ -434,11 +434,32 @@ function cacheValue(reactorState, getter, value) {
     })
   })
 
-  return reactorState.setIn(['cache', cacheKey], Immutable.Map({
-    value: value,
-    storeStates: storeStates,
-    dispatchId: dispatchId,
-  }))
+  const maxItemsToCache = reactorState.get('maxItemsToCache')
+  const itemsToCache = maxItemsToCache * CACHE_CLEAR_RATIO
+
+  return reactorState.withMutations(state => {
+    if (maxItemsToCache && maxItemsToCache <= state.get('cache').size) {
+      do {
+        let key = state.get('cacheRecency').first()
+        state.deleteIn(['cache', key])
+        state.deleteIn(['cacheRecency', key])
+      } while (itemsToCache < state.get('cache').size)
+    }
+
+    state.setIn(['cacheRecency', cacheKey], cacheKey)
+    state.setIn(['cache', cacheKey], Immutable.Map({
+      value: value,
+      storeStates: storeStates,
+      dispatchId: dispatchId,
+    }))
+  })
+}
+
+function updateCacheRecency(reactorState, cacheKey) {
+  return reactorState.withMutations(state => {
+    state.deleteIn(['cacheRecency', cacheKey])
+    state.setIn(['cacheRecency', cacheKey], cacheKey)
+  })
 }
 
 /**

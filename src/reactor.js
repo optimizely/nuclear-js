@@ -24,9 +24,12 @@ import {
 class Reactor {
   constructor(config = {}) {
     const debug = !!config.debug
+    const itemsToCache = Number(config.maxItemsToCache)
+    const maxItemsToCache = itemsToCache && itemsToCache > 1 ? itemsToCache : null
     const baseOptions = debug ? DEBUG_OPTIONS : PROD_OPTIONS
     const initialReactorState = new ReactorState({
       debug: debug,
+      maxItemsToCache: maxItemsToCache,
       // merge config options with the defaults
       options: baseOptions.merge(config.options || {}),
     })

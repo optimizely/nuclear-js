@@ -1,6 +1,6 @@
 import Immutable, { Map, List, is } from 'immutable'
 import { Reactor, Store } from '../src/main'
-import { getOption } from '../src/reactor/fns'
+import { getOption, CACHE_CLEAR_RATIO } from '../src/reactor/fns'
 import { toImmutable } from '../src/immutable-helpers'
 import { PROD_OPTIONS, DEBUG_OPTIONS } from '../src/reactor/records'
 import logging from '../src/logging'
@@ -15,6 +15,7 @@ describe('Reactor', () => {
     it('should create a reactor with PROD_OPTIONS', () => {
       var reactor = new Reactor()
       expect(reactor.reactorState.get('debug')).toBe(false)
+      expect(reactor.reactorState.get('maxItemsToCache')).toBe(null)
       expect(is(reactor.reactorState.get('options'), PROD_OPTIONS)).toBe(true)
     })
     it('should create a reactor with DEBUG_OPTIONS', () => {
@@ -22,7 +23,22 @@ describe('Reactor', () => {
         debug: true,
       })
       expect(reactor.reactorState.get('debug')).toBe(true)
+      expect(reactor.reactorState.get('maxItemsToCache')).toBe(null)
       expect(is(reactor.reactorState.get('options'), DEBUG_OPTIONS)).toBe(true)
+    })
+    it('should create a reactor that overrides maxItemsToCache', () => {
+      var reactor = new Reactor({
+        maxItemsToCache: 20,
+      })
+      expect(reactor.reactorState.get('maxItemsToCache')).toBe(20)
+      reactor = new Reactor({
+        maxItemsToCache: -20,
+      })
+      expect(reactor.reactorState.get('maxItemsToCache')).toBe(null)
+      reactor = new Reactor({
+        maxItemsToCache: 'abc',
+      })
+      expect(reactor.reactorState.get('maxItemsToCache')).toBe(null)
     })
     it('should override PROD options', () => {
       var reactor = new Reactor({
@@ -594,6 +610,55 @@ describe('Reactor', () => {
 
         expect(taxPercentSpy.calls.count()).toEqual(2)
         expect(subtotalSpy.calls.count()).toEqual(1)
+      })
+
+
+      describe('recency caching', () => {
+        var getters = Array.from(new Array(100), () => {
+          var z = Math.random()
+          return [['price'], function() {
+            return z
+          }]
+        })
+        var cacheReactor
+        const maxItemsToCache = 50
+
+        beforeEach(() => {
+          cacheReactor = new Reactor({
+            maxItemsToCache: maxItemsToCache
+          })
+        })
+
+        it('should add getters to the recency cache map', () => {
+          for (let x = 0; x < 50; x++) {
+            cacheReactor.evaluate(getters[x])
+          }
+          expect(cacheReactor.reactorState.get('cacheRecency').size).toBe(50)
+          expect(cacheReactor.reactorState.get('cacheRecency').first()).toBe(getters[0])
+          expect(cacheReactor.reactorState.get('cacheRecency').last()).toBe(getters[49])
+        })
+
+        it('should prioritize the recency cache by when getters were added', () => {
+          for (let x = 0; x < 10; x++) {
+            cacheReactor.evaluate(getters[x])
+          }
+          cacheReactor.evaluate(getters[0])
+          expect(cacheReactor.reactorState.get('cacheRecency').size).toBe(10)
+          expect(cacheReactor.reactorState.get('cacheRecency').last()).toBe(getters[0])
+          expect(cacheReactor.reactorState.get('cacheRecency').first()).toBe(getters[1])
+        })
+
+        it('should clear the appropriate ratio of items from cache when the maxItemsToCache limit is exceeded', () => {
+          for (let x = 0; x <= maxItemsToCache; x++) {
+            cacheReactor.evaluate(getters[x])
+          }
+          expect(cacheReactor.reactorState.get('cacheRecency').size).toBe(cacheReactor.reactorState.get('cache').size)
+          expect(cacheReactor.reactorState.get('cacheRecency').size).toBe(Math.floor(CACHE_CLEAR_RATIO * maxItemsToCache) + 1)
+          expect(cacheReactor.reactorState.getIn(['cacheRecency', getters[0]])).toBe(undefined)
+          expect(cacheReactor.reactorState.getIn(['cacheRecency', getters[50]])).toBe(getters[50])
+
+
+        })
       })
     })
 
