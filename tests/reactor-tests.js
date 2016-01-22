@@ -612,7 +612,6 @@ describe('Reactor', () => {
         expect(subtotalSpy.calls.count()).toEqual(1)
       })
 
-
       describe('recency caching', () => {
         var getters = Array.from(new Array(100), () => {
           var z = Math.random()
@@ -656,8 +655,6 @@ describe('Reactor', () => {
           expect(cacheReactor.reactorState.get('cacheRecency').size).toBe(Math.floor(CACHE_CLEAR_RATIO * maxItemsToCache) + 1)
           expect(cacheReactor.reactorState.getIn(['cacheRecency', getters[0]])).toBe(undefined)
           expect(cacheReactor.reactorState.getIn(['cacheRecency', getters[50]])).toBe(getters[50])
-
-
         })
       })
     })

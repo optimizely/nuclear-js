@@ -455,6 +455,12 @@ function cacheValue(reactorState, getter, value) {
   })
 }
 
+/**
+ * Readds the key for the item in cache to update recency
+ * @param {ReactorState} reactorState
+ * @param {cacheKey} cacheKey
+ * @return {ReactorState}
+ */
 function updateCacheRecency(reactorState, cacheKey) {
   return reactorState.withMutations(state => {
     state.deleteIn(['cacheRecency', cacheKey])
