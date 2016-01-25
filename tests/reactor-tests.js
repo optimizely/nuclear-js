@@ -1990,4 +1990,31 @@ describe('Reactor', () => {
       expect(reactor.getCacheValues().get(getter).get('value')).toEqual(1)
     })
   })
+
+
+  describe('#clearCacheValues', () => {
+    let reactor
+    let store1
+    beforeEach(() => {
+      reactor = new Reactor()
+      store1 = new Store({
+        getInitialState: () => 1,
+        initialize() {
+          this.on('increment1', (state) => state + 1)
+        }
+      })
+
+      reactor.registerStores({
+        store1: store1,
+      })
+    })
+
+    it('should return all cached values', () => {
+      let getter = [['test'], () => 1]
+      reactor.evaluate(getter)
+      expect(reactor.getCacheValues().size).toEqual(1)
+      reactor.clearCacheValues()
+      expect(reactor.getCacheValues().toJS()).toEqual({})
+    })
+  })
 })

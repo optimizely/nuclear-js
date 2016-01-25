@@ -298,6 +298,13 @@ class Reactor {
   getCacheValues() {
     return this.reactorState.get('cache')
   }
+
+  /**
+   * Clear all cached values
+   */
+  clearCacheValues() {
+    this.reactorState = this.reactorState.set('cache', Immutable.Map())
+  }
 }
 
 export default toFactory(Reactor)
