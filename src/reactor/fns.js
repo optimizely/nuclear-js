@@ -429,6 +429,7 @@ function isCached(reactorState, keyPathOrGetter) {
 function cacheValue(reactorState, getter, value) {
   const hasGetterUseCacheSpecified = getter.__options && getter.__options.useCache !== undefined
 
+  // Prefer getter settings over reactor settings
   if (hasGetterUseCacheSpecified) {
     if (!getter.__options.useCache) {
       return reactorState

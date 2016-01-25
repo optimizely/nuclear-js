@@ -293,7 +293,7 @@ class Reactor {
 
   /**
    * Retrieve cache values
-   *
+   * @returns {Immutable.Map}
    */
   getCacheValues() {
     return this.reactorState.get('cache')
