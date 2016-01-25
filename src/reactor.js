@@ -24,6 +24,7 @@ import {
 class Reactor {
   constructor(config = {}) {
     const debug = !!config.debug
+    const useCache = config.useCache === undefined ? true : !!config.useCache
     const itemsToCache = Number(config.maxItemsToCache)
     const maxItemsToCache = itemsToCache && itemsToCache > 1 ? itemsToCache : null
     const baseOptions = debug ? DEBUG_OPTIONS : PROD_OPTIONS
@@ -32,6 +33,7 @@ class Reactor {
       maxItemsToCache: maxItemsToCache,
       // merge config options with the defaults
       options: baseOptions.merge(config.options || {}),
+      useCache: useCache
     })
 
     this.prevReactorState = initialReactorState
@@ -287,6 +289,14 @@ class Reactor {
       }
       this.__isDispatching = false
     }
+  }
+
+  /**
+   * Retrieve cache values
+   *
+   */
+  getCacheValues() {
+    return this.reactorState.get('cache')
   }
 }
 

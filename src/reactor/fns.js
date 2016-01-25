@@ -381,6 +381,9 @@ export function resetDirtyStores(reactorState) {
  * @return {Getter}
  */
 function getCacheKey(getter) {
+  if (getter.__options && getter.__options.cacheKey !== undefined) {
+    return getter.__options.cacheKey
+  }
   return getter
 }
 
@@ -424,6 +427,16 @@ function isCached(reactorState, keyPathOrGetter) {
  * @return {ReactorState}
  */
 function cacheValue(reactorState, getter, value) {
+  const hasGetterUseCacheSpecified = getter.__options && getter.__options.useCache !== undefined
+
+  if (hasGetterUseCacheSpecified) {
+    if (!getter.__options.useCache) {
+      return reactorState
+    }
+  } else if (!reactorState.get('useCache')) {
+    return reactorState
+  }
+
   const cacheKey = getCacheKey(getter)
   const dispatchId = reactorState.get('dispatchId')
   const storeDeps = getStoreDeps(getter)

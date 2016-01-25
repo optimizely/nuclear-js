@@ -4,6 +4,7 @@ import { getOption, CACHE_CLEAR_RATIO } from '../src/reactor/fns'
 import { toImmutable } from '../src/immutable-helpers'
 import { PROD_OPTIONS, DEBUG_OPTIONS } from '../src/reactor/records'
 import logging from '../src/logging'
+import { addGetterOptions } from '../src/getter'
 
 describe('Reactor', () => {
   it('should construct without \'new\'', () => {
@@ -11,7 +12,7 @@ describe('Reactor', () => {
     expect(reactor instanceof Reactor).toBe(true)
   })
 
-  describe('debug and options flags', () => {
+  describe('debug, cache, and options flags', () => {
     it('should create a reactor with PROD_OPTIONS', () => {
       var reactor = new Reactor()
       expect(reactor.reactorState.get('debug')).toBe(false)
@@ -25,20 +26,6 @@ describe('Reactor', () => {
       expect(reactor.reactorState.get('debug')).toBe(true)
       expect(reactor.reactorState.get('maxItemsToCache')).toBe(null)
       expect(is(reactor.reactorState.get('options'), DEBUG_OPTIONS)).toBe(true)
-    })
-    it('should create a reactor that overrides maxItemsToCache', () => {
-      var reactor = new Reactor({
-        maxItemsToCache: 20,
-      })
-      expect(reactor.reactorState.get('maxItemsToCache')).toBe(20)
-      reactor = new Reactor({
-        maxItemsToCache: -20,
-      })
-      expect(reactor.reactorState.get('maxItemsToCache')).toBe(null)
-      reactor = new Reactor({
-        maxItemsToCache: 'abc',
-      })
-      expect(reactor.reactorState.get('maxItemsToCache')).toBe(null)
     })
     it('should override PROD options', () => {
       var reactor = new Reactor({
@@ -69,6 +56,28 @@ describe('Reactor', () => {
       expect(getOption(reactor.reactorState, 'throwOnUndefinedStoreReturnValue')).toBe(true)
       expect(getOption(reactor.reactorState, 'throwOnNonImmutableStore')).toBe(true)
       expect(getOption(reactor.reactorState, 'throwOnDispatchInDispatch')).toBe(false)
+    })
+    it('should create a reactor that overrides maxItemsToCache', () => {
+      var reactor = new Reactor({
+        maxItemsToCache: 20,
+      })
+      expect(reactor.reactorState.get('maxItemsToCache')).toBe(20)
+      reactor = new Reactor({
+        maxItemsToCache: -20,
+      })
+      expect(reactor.reactorState.get('maxItemsToCache')).toBe(null)
+      reactor = new Reactor({
+        maxItemsToCache: 'abc',
+      })
+      expect(reactor.reactorState.get('maxItemsToCache')).toBe(null)
+    })
+    it('should override caching by default', () => {
+      let reactor = new Reactor({})
+      expect(reactor.reactorState.get('useCache')).toBe(true)
+      reactor = new Reactor({
+        useCache: false,
+      })
+      expect(reactor.reactorState.get('useCache')).toBe(false)
     })
   })
 
@@ -612,13 +621,53 @@ describe('Reactor', () => {
         expect(subtotalSpy.calls.count()).toEqual(1)
       })
 
+      it('should not cache if useCache is set to false', () => {
+        let cacheReactor = new Reactor({
+          useCache: true,
+        })
+        cacheReactor.evaluate([['test'], () => 1])
+        expect(cacheReactor.getCacheValues().size).toBe(1)
+        cacheReactor = new Reactor({
+          useCache: false,
+        })
+        cacheReactor.evaluate([['test'], () => 1])
+        expect(cacheReactor.getCacheValues().size).toBe(0)
+      })
+
+      it('should respect individual getter cache settings over global settings', () => {
+        let cacheReactor = new Reactor({
+          useCache: true,
+        })
+
+        let getter = addGetterOptions([['test2'], () => 1], { useCache: false })
+        cacheReactor.evaluate(getter)
+        expect(cacheReactor.getCacheValues().size).toBe(0)
+
+        cacheReactor = new Reactor({
+          useCache: false,
+        })
+        getter = addGetterOptions([['test2'], () => 1], { useCache: true })
+        cacheReactor.evaluate(getter)
+        expect(cacheReactor.getCacheValues().size).toBe(1)
+      })
+
+      it('should use cache key supplied by getter if it is present in options', () => {
+        let cacheReactor = new Reactor({
+          useCache: true,
+        })
+
+        let getter = addGetterOptions([['test'], () => 1], { cacheKey: 'test' })
+        cacheReactor.evaluate(getter)
+        expect(Object.keys(cacheReactor.getCacheValues().toJS())).toEqual(['test'])
+      })
+
       describe('recency caching', () => {
-        var getters = Array.from(new Array(100), () => {
-          var z = Math.random()
+        var getters = Array.apply(null, new Array(100)).map(() => {
           return [['price'], function() {
-            return z
+            return 1;
           }]
         })
+
         var cacheReactor
         const maxItemsToCache = 50
 
@@ -1914,6 +1963,31 @@ describe('Reactor', () => {
       reactor.dispatch('increment2')
       expect(reactor.evaluate(['counter1'])).toBe(12)
       expect(reactor.evaluate(['counter2'])).toBe(21)
+    })
+  })
+
+  describe('#getCacheValues', () => {
+    let reactor
+    let store1
+    beforeEach(() => {
+      reactor = new Reactor()
+      store1 = new Store({
+        getInitialState: () => 1,
+        initialize() {
+          this.on('increment1', (state) => state + 1)
+        }
+      })
+
+      reactor.registerStores({
+        store1: store1,
+      })
+    })
+
+    it('should return all cached values', () => {
+      expect(reactor.getCacheValues().toJS()).toEqual({})
+      let getter = [['test'], () => 1]
+      reactor.evaluate(getter)
+      expect(reactor.getCacheValues().get(getter).get('value')).toEqual(1)
     })
   })
 })

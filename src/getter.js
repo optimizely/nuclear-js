@@ -102,6 +102,35 @@ function getStoreDeps(getter) {
   return storeDeps
 }
 
+/**
+ * Add override options to a getter
+ * @param {getter} getter
+ * @param {object} options
+ * @param {boolean} options.useCache
+ * @param {*} options.cacheKey
+ * @returns {getter}
+ */
+function addGetterOptions(getter, options) {
+  if (!isKeyPath(getter) && !isGetter(getter)) {
+    throw new Error('createGetter must be passed a keyPath or Getter')
+  }
+
+  if (getter.hasOwnProperty('__options')) {
+    throw new Error('Cannot reassign options to getter')
+  }
+
+  getter.__options = {}
+
+  if (options.useCache !== undefined) {
+    getter.__options.useCache = !!options.useCache
+  }
+
+  if (options.cacheKey !== undefined) {
+    getter.__options.cacheKey = options.cacheKey
+  }
+  return getter
+}
+
 export default {
   isGetter,
   getComputeFn,
@@ -109,4 +138,5 @@ export default {
   getStoreDeps,
   getDeps,
   fromKeyPath,
+  addGetterOptions,
 }

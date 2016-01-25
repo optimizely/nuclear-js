@@ -1,4 +1,4 @@
-import { isGetter, getFlattenedDeps, fromKeyPath } from '../src/getter'
+import { isGetter, getFlattenedDeps, fromKeyPath, addGetterOptions } from '../src/getter'
 import { Set, List, is } from 'immutable'
 
 describe('Getter', () => {
@@ -29,6 +29,39 @@ describe('Getter', () => {
       expect(function() {
         fromKeyPath(invalidKeypath)
       }).toThrow()
+    })
+  })
+
+  describe('#addGetterOptions', () => {
+    it('should throw an error if not passed a getter', () => {
+      expect(() => { addGetterOptions('test', {}) }).toThrow()
+    })
+
+    it('should throw an error if options are added more than once', () => {
+      let getter = ['test']
+      getter = addGetterOptions(getter, {})
+      expect(() => { addGetterOptions(getter, {}) }).toThrow()
+    })
+
+    it('should not add options if they are not explicitly supplied or are not valid options', () => {
+      let getter = ['test']
+      getter = addGetterOptions(getter, {})
+      expect(getter.__options).toEqual({})
+      getter = ['test']
+      getter = addGetterOptions(getter, { fakeOption: true })
+      expect(getter.__options).toEqual({})
+    })
+
+    it('should add the use cache option', () => {
+      let getter = ['test']
+      getter = addGetterOptions(getter, { useCache: false })
+      expect(getter.__options.useCache).toBe(false)
+    })
+
+    it('should add the cacheKey option', () => {
+      let getter = ['test']
+      getter = addGetterOptions(getter, { cacheKey: 100 })
+      expect(getter.__options.cacheKey).toBe(100)
     })
   })
 

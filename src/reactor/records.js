@@ -47,6 +47,7 @@ export const ReactorState = Record({
   maxItemsToCache: null,
   // production defaults
   options: PROD_OPTIONS,
+  useCache: true,
 })
 
 export const ObserverState = Record({
