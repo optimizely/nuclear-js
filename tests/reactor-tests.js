@@ -1,5 +1,6 @@
 import Immutable, { Map, List, is } from 'immutable'
 import { Reactor, Store } from '../src/main'
+import { DEFAULT_MAX_ITEMS_TO_CACHE } from '../src/reactor'
 import { getOption, CACHE_CLEAR_RATIO } from '../src/reactor/fns'
 import { toImmutable } from '../src/immutable-helpers'
 import { PROD_OPTIONS, DEBUG_OPTIONS } from '../src/reactor/records'
@@ -16,7 +17,7 @@ describe('Reactor', () => {
     it('should create a reactor with PROD_OPTIONS', () => {
       var reactor = new Reactor()
       expect(reactor.reactorState.get('debug')).toBe(false)
-      expect(reactor.reactorState.get('maxItemsToCache')).toBe(null)
+      expect(reactor.reactorState.get('maxItemsToCache')).toBe(DEFAULT_MAX_ITEMS_TO_CACHE)
       expect(is(reactor.reactorState.get('options'), PROD_OPTIONS)).toBe(true)
     })
     it('should create a reactor with DEBUG_OPTIONS', () => {
@@ -24,7 +25,7 @@ describe('Reactor', () => {
         debug: true,
       })
       expect(reactor.reactorState.get('debug')).toBe(true)
-      expect(reactor.reactorState.get('maxItemsToCache')).toBe(null)
+      expect(reactor.reactorState.get('maxItemsToCache')).toBe(DEFAULT_MAX_ITEMS_TO_CACHE)
       expect(is(reactor.reactorState.get('options'), DEBUG_OPTIONS)).toBe(true)
     })
     it('should override PROD options', () => {

@@ -12,6 +12,8 @@ import {
   PROD_OPTIONS,
 } from './reactor/records'
 
+export const DEFAULT_MAX_ITEMS_TO_CACHE = 1000
+
 /**
  * State is stored in NuclearJS Reactors.  Reactors
  * contain a 'state' object which is an Immutable.Map
@@ -25,8 +27,16 @@ class Reactor {
   constructor(config = {}) {
     const debug = !!config.debug
     const useCache = config.useCache === undefined ? true : !!config.useCache
-    const itemsToCache = Number(config.maxItemsToCache)
-    const maxItemsToCache = itemsToCache && itemsToCache > 1 ? itemsToCache : null
+
+    // use default # of items in cache
+    let maxItemsToCache = DEFAULT_MAX_ITEMS_TO_CACHE
+
+    // if user has defined maxItemsToCache, use the number provide or set to null (ie no max)
+    if (config.maxItemsToCache !== undefined) {
+       maxItemsToCache = Number(config.maxItemsToCache)
+       maxItemsToCache = maxItemsToCache && maxItemsToCache > 0 ? maxItemsToCache : null
+    }
+
     const baseOptions = debug ? DEBUG_OPTIONS : PROD_OPTIONS
     const initialReactorState = new ReactorState({
       debug: debug,
