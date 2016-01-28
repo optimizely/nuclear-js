@@ -497,9 +497,6 @@ function cacheValue(reactorState, getter, value) {
  * @return {ReactorState}
  */
 function removeCacheValue(reactorState, getter) {
-  if (!isGetterObject(getter) && !isGetter(getter)) {
-    return reactorState
-  }
   const cacheKey = getCacheKey(getter)
   return reactorState.withMutations(rState => {
     rState.deleteIn(['cache', cacheKey])

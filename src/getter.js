@@ -13,11 +13,9 @@ const identity = (x) => x
 
 class GetterClass {
   constructor(getter, config = {}) {
-
     if (!isKeyPath(getter) && !isGetter(getter)) {
       throw new Error('Getter must be passed a keyPath or Getter')
     }
-
     this.getter = getter
     this.cache = CACHE_OPTIONS.indexOf(config.cache) > -1 ? config.cache : 'default'
     this.cacheKey = config.cacheKey !== undefined ? config.cacheKey : null
@@ -143,7 +141,7 @@ function convertToGetterLiteral(getter) {
   } else if (isKeyPath(getter) || isGetter(getter)) {
     return getter
   } else {
-    throw new Error('Getter must be passed a keyPath or Getter')
+    throw new Error('convertToGetterLiteral must be passed a keyPath or Getter')
   }
 }
 
