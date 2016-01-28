@@ -42,8 +42,10 @@ describe('Getter', () => {
   describe('#convertToGetterLiteral', () => {
     it('should return supplied getter if not a getter object', () => {
       const getter = ['test']
+      const getter2 = [['test'], x => x]
       const getterObject = Getter(getter)
       expect(convertToGetterLiteral(getter)).toBe(getter)
+      expect(convertToGetterLiteral(getter2)).toBe(getter2)
       expect(convertToGetterLiteral(getterObject)).toBe(getter)
     })
   })

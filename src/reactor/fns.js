@@ -169,6 +169,8 @@ export function loadState(reactorState, state) {
 export function addObserver(observerState, getter, handler) {
   // use the passed in getter as the key so we can rely on a byreference call for unobserve
   const getterKey = getter
+
+  getter = convertToGetterLiteral(getter)
   if (isKeyPath(getter)) {
     getter = fromKeyPath(getter)
   }
@@ -234,19 +236,20 @@ export function getOption(reactorState, option) {
  * @param {ReactorState} reactorState
  * @param {KeyPath|Getter} getter
  * @param {Function} handler
- * @return {Object}
+ * @return {Array}
  */
 export function removeObserver(observerState, reactorState, getter, handler) {
   const entriesToRemove = observerState.get('observersMap').filter(entry => {
     // use the getterKey in the case of a keyPath is transformed to a getter in addObserver
-    let entryGetter = entry.get('getterKey')
+    const entryGetter = entry.get('getterKey')
+    const entryGetterLiteral = convertToGetterLiteral(entryGetter)
     let handlersMatch = (!handler || entry.get('handler') === handler)
     if (!handlersMatch) {
       return false
     }
     // check for a by-value equality of keypaths
-    if (isKeyPath(getter) && isKeyPath(entryGetter)) {
-      return isEqual(getter, entryGetter)
+    if (isKeyPath(getter) && isKeyPath(entryGetterLiteral)) {
+      return isEqual(getter, entryGetterLiteral)
     }
     // we are comparing two getters do it by reference
     return (getter === entryGetter)
@@ -269,7 +272,7 @@ export function removeObserver(observerState, reactorState, getter, handler) {
  * @param {ObserverState} observerState
  * @param {ReactorState} reactorState
  * @param {Immutable.Map} entry
- * @return {Object}
+ * @return {Array}
  */
 export function removeObserverByEntry(observerState, reactorState, entry) {
   return [
@@ -334,18 +337,18 @@ export function reset(reactorState) {
  */
 export function evaluate(reactorState, keyPathOrGetter) {
   const state = reactorState.get('state')
+  const getter = convertToGetterLiteral(keyPathOrGetter)
 
-  if (isKeyPath(keyPathOrGetter)) {
+  if (isKeyPath(getter)) {
     // if its a keyPath simply return
     return evaluateResult(
-      state.getIn(keyPathOrGetter),
+      state.getIn(getter),
       reactorState
     )
   } else if (!isGetter(keyPathOrGetter) && !isGetterObject(keyPathOrGetter)) {
     throw new Error('evaluate must be passed a keyPath or Getter')
   }
 
-  // Must be a Getter
   // if the value is cached for this dispatch cycle, return the cached value
   if (isCached(reactorState, keyPathOrGetter)) {
     // Cache hit
@@ -354,8 +357,6 @@ export function evaluate(reactorState, keyPathOrGetter) {
       updateCacheRecency(reactorState, keyPathOrGetter)
     )
   }
-
-  const getter = convertToGetterLiteral(keyPathOrGetter)
 
   // evaluate dependencies
   const args = getDeps(getter).map(dep => evaluate(reactorState, dep).result)

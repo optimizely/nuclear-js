@@ -4,6 +4,7 @@ import { Store } from '../src/main'
 import * as fns from '../src/reactor/fns'
 import { ReactorState, ObserverState, DEBUG_OPTIONS } from '../src/reactor/records'
 import { toImmutable } from '../src/immutable-helpers'
+import { Getter, convertToGetterLiteral } from '../src/getter'
 
 describe('reactor fns', () => {
   describe('#registerStores', () => {
@@ -491,7 +492,7 @@ describe('reactor fns', () => {
         ['store2'],
         (a, b) => a + b
       ]
-      getter2 = [[], x => x]
+      getter2 = Getter([[], x => x])
 
       initialReactorState = new ReactorState()
 
@@ -528,7 +529,7 @@ describe('reactor fns', () => {
               id: 3,
               storeDeps: Set(),
               getterKey: getter2,
-              getter: getter2,
+              getter: convertToGetterLiteral(getter2),
               handler: handler3,
             })]
           ])

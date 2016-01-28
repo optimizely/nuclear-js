@@ -661,6 +661,21 @@ describe('Reactor', () => {
         expect(Object.keys(cacheReactor.reactorState.get('cache').toJS())).toEqual(['test'])
       })
 
+      it('should not cache keyPaths', () => {
+        let cacheReactor = new Reactor({
+          useCache: true,
+        })
+
+        let getter = ['test']
+        cacheReactor.evaluate(getter)
+        expect(Object.keys(cacheReactor.reactorState.get('cache').toJS())).toEqual([])
+
+        getter = Getter(['test'])
+        cacheReactor.evaluate(getter)
+        expect(Object.keys(cacheReactor.reactorState.get('cache').toJS())).toEqual([])
+
+      })
+
       describe('recency caching', () => {
         var getters = Array.apply(null, new Array(100)).map(() => {
           return [['price'], function() {
@@ -712,6 +727,15 @@ describe('Reactor', () => {
       it('should invoke a change handler if the specific keyPath changes', () => {
         var mockFn = jasmine.createSpy()
         reactor.observe(['taxPercent'], mockFn)
+
+        checkoutActions.setTaxPercent(5)
+
+        expect(mockFn.calls.count()).toEqual(1)
+        expect(mockFn.calls.argsFor(0)).toEqual([5])
+      })
+      it('should observe a Getter object', () => {
+        var mockFn = jasmine.createSpy()
+        reactor.observe(Getter(['taxPercent']), mockFn)
 
         checkoutActions.setTaxPercent(5)
 
