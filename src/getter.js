@@ -138,11 +138,11 @@ function getStoreDeps(getter) {
 function convertToGetterLiteral(getter) {
   if (isGetterObject(getter)) {
     return getter.getter
-  } else if (isKeyPath(getter) || isGetter(getter)) {
-    return getter
-  } else {
-    throw new Error('convertToGetterLiteral must be passed a keyPath or Getter')
   }
+  if (isKeyPath(getter) || isGetter(getter)) {
+    return getter
+  }
+  throw new Error('convertToGetterLiteral must be passed a keyPath or Getter')
 }
 
 export default {

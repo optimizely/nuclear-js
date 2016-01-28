@@ -33,8 +33,8 @@ class Reactor {
 
     // if user has defined maxItemsToCache, use the number provide or set to null (ie no max)
     if (config.maxItemsToCache !== undefined) {
-       maxItemsToCache = Number(config.maxItemsToCache)
-       maxItemsToCache = maxItemsToCache && maxItemsToCache > 0 ? maxItemsToCache : null
+      maxItemsToCache = Number(config.maxItemsToCache)
+      maxItemsToCache = maxItemsToCache && maxItemsToCache > 0 ? maxItemsToCache : null
     }
 
     const baseOptions = debug ? DEBUG_OPTIONS : PROD_OPTIONS
@@ -43,7 +43,7 @@ class Reactor {
       maxItemsToCache: maxItemsToCache,
       // merge config options with the defaults
       options: baseOptions.merge(config.options || {}),
-      useCache: useCache
+      useCache: useCache,
     })
 
     this.prevReactorState = initialReactorState

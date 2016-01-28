@@ -10,7 +10,7 @@ import { each } from '../utils'
  * Immutable Types
  */
 const EvaluateResult = Immutable.Record({ result: null, reactorState: null})
-export const CACHE_CLEAR_RATIO = .8;
+export const CACHE_CLEAR_RATIO = 0.8
 
 function evaluateResult(result, reactorState) {
   return new EvaluateResult({
@@ -75,7 +75,7 @@ export function replaceStores(reactorState, stores) {
  */
 export function dispatch(reactorState, actionType, payload) {
   if (actionType === undefined && getOption(reactorState, 'throwOnUndefinedActionType')) {
-    throw new Error('`dispatch` cannot be called with an `undefined` action type.');
+    throw new Error('`dispatch` cannot be called with an `undefined` action type.')
   }
 
   const currState = reactorState.get('state')
