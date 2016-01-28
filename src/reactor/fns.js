@@ -252,7 +252,7 @@ export function removeObserver(observerState, reactorState, getter, handler) {
     return (getter === entryGetter)
   })
 
-
+  // Update both observer and reactor state
   observerState = observerState.withMutations(oState => {
     reactorState = reactorState.withMutations(rState => {
       entriesToRemove.forEach(entry => { removeObserverByEntry(oState, rState, entry) })
@@ -293,6 +293,7 @@ export function removeObserverByEntry(observerState, reactorState, entry) {
 
       map.removeIn(['observersMap', id])
     }),
+    // remove cache values for getter
     removeCacheValue(reactorState, entry.get('getterKey')),
   ]
 }
@@ -488,7 +489,13 @@ function cacheValue(reactorState, getter, value) {
   })
 }
 
-export function removeCacheValue(reactorState, getter) {
+/**
+ * Remove getter cache value from cache and recency cache
+ * @param {ReactorState} reactorState
+ * @param {getter} getter
+ * @return {ReactorState}
+ */
+function removeCacheValue(reactorState, getter) {
   if (!isGetterObject(getter) && !isGetter(getter)) {
     return reactorState
   }
@@ -528,7 +535,6 @@ function getCachedValue(reactorState, getter) {
 function incrementId(reactorState) {
   return reactorState.update('dispatchId', id => id + 1)
 }
-
 
 /**
  * @param {Immutable.Map} storeStates
