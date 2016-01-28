@@ -1,5 +1,5 @@
 /*eslint-disable one-var, comma-dangle*/
-import { Map, Set, is } from 'immutable'
+import { Map, Set, is, OrderedMap } from 'immutable'
 import { Store } from '../src/main'
 import * as fns from '../src/reactor/fns'
 import { ReactorState, ObserverState, DEBUG_OPTIONS } from '../src/reactor/records'
@@ -355,6 +355,13 @@ describe('reactor fns', () => {
       })
       expect(is(expected, result)).toBe(true)
     })
+
+    it('should clear cache', () => {
+      const resultCache = nextReactorState.get('cache')
+      const resultCacheRecency = nextReactorState.get('cacheRecency')
+      expect(resultCache.toJS()).toEqual({})
+      expect(resultCacheRecency.toJS()).toEqual({})
+    })
   })
 
   describe('#addObserver', () => {
@@ -471,7 +478,8 @@ describe('reactor fns', () => {
   })
 
   describe('#removeObserver', () => {
-    let initialObserverState, nextObserverState, getter1, getter2, handler1, handler2, handler3
+    let initialObserverState, initialReactorState, nextObserverState, nextReactorState,
+        getter1, getter2, handler1, handler2, handler3
 
     beforeEach(() => {
       handler1 = () => 1
@@ -485,6 +493,14 @@ describe('reactor fns', () => {
       ]
       getter2 = [[], x => x]
 
+      initialReactorState = new ReactorState()
+
+      // Add some dummy cache values
+      initialReactorState = initialReactorState.setIn(['cache', getter1], 'test1')
+      initialReactorState = initialReactorState.setIn(['cacheRecency', getter1], 'test1')
+      initialReactorState = initialReactorState.setIn(['cache', getter2], 'test2')
+      initialReactorState = initialReactorState.setIn(['cacheRecency', getter2], 'test2')
+
       const initialObserverState1 = new ObserverState()
       const result1 = fns.addObserver(initialObserverState1, getter1, handler1)
       const initialObserverState2 = result1.observerState
@@ -496,8 +512,11 @@ describe('reactor fns', () => {
 
     describe('when removing by getter', () => {
       it('should return a new ObserverState with all entries containing the getter removed', () => {
-        nextObserverState = fns.removeObserver(initialObserverState, getter1)
-        const expected = Map({
+        expect(initialReactorState.getIn(['cache', getter1])).toBe('test1')
+        expect(initialReactorState.getIn(['cacheRecency', getter1])).toBe('test1')
+
+        let [ observerState, reactorState ] = fns.removeObserver(initialObserverState, initialReactorState, getter1)
+        const expectedObserverState = Map({
           any: Set.of(3),
           stores: Map({
             store1: Set(),
@@ -514,14 +533,17 @@ describe('reactor fns', () => {
             })]
           ])
         })
-        const result = nextObserverState
-        expect(is(expected, result)).toBe(true)
+        expect(is(expectedObserverState, observerState)).toBe(true)
+        expect(reactorState.getIn(['cache', getter1])).toBe(undefined)
+        expect(reactorState.getIn(['cacheRecency', getter1])).toBe(undefined)
+        expect(reactorState.getIn(['cache', getter2])).toBe('test2')
+        expect(reactorState.getIn(['cacheRecency', getter2])).toBe('test2')
       })
     })
 
     describe('when removing by getter / handler', () => {
       it('should return a new ObserverState with all entries containing the getter removed', () => {
-        nextObserverState = fns.removeObserver(initialObserverState, getter2, handler3)
+        let [ observerState, reactorState ]  = fns.removeObserver(initialObserverState, initialReactorState, getter2, handler3)
         const expected = Map({
           any: Set(),
           stores: Map({
@@ -546,8 +568,11 @@ describe('reactor fns', () => {
             })]
           ])
         })
-        const result = nextObserverState
-        expect(is(expected, result)).toBe(true)
+        expect(is(expected, observerState)).toBe(true)
+        expect(reactorState.getIn(['cache', getter2])).toBe(undefined)
+        expect(reactorState.getIn(['cacheRecency', getter2])).toBe(undefined)
+        expect(reactorState.getIn(['cache', getter1])).toBe('test1')
+        expect(reactorState.getIn(['cacheRecency', getter1])).toBe('test1')
       })
     })
   })

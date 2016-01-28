@@ -2,7 +2,7 @@ import Immutable from 'immutable'
 import logging from '../logging'
 import { isImmutableValue } from '../immutable-helpers'
 import { toImmutable } from '../immutable-helpers'
-import { fromKeyPath, getStoreDeps, getComputeFn, getDeps, isGetter } from '../getter'
+import { fromKeyPath, getStoreDeps, getComputeFn, getDeps, isGetter, isGetterObject, convertToGetterLiteral } from '../getter'
 import { isEqual, isKeyPath } from '../key-path'
 import { each } from '../utils'
 
@@ -224,18 +224,19 @@ export function getOption(reactorState, option) {
 
 /**
  * Use cases
- * removeObserver(observerState, [])
- * removeObserver(observerState, [], handler)
- * removeObserver(observerState, ['keyPath'])
- * removeObserver(observerState, ['keyPath'], handler)
- * removeObserver(observerState, getter)
- * removeObserver(observerState, getter, handler)
+ * removeObserver(observerState, reactorState, [])
+ * removeObserver(observerState, reactorState, [], handler)
+ * removeObserver(observerState, reactorState, ['keyPath'])
+ * removeObserver(observerState, reactorState, ['keyPath'], handler)
+ * removeObserver(observerState, reactorState, getter)
+ * removeObserver(observerState, reactorState, getter, handler)
  * @param {ObserverState} observerState
+ * @param {ReactorState} reactorState
  * @param {KeyPath|Getter} getter
  * @param {Function} handler
- * @return {ObserverState}
+ * @return {Object}
  */
-export function removeObserver(observerState, getter, handler) {
+export function removeObserver(observerState, reactorState, getter, handler) {
   const entriesToRemove = observerState.get('observersMap').filter(entry => {
     // use the getterKey in the case of a keyPath is transformed to a getter in addObserver
     let entryGetter = entry.get('getterKey')
@@ -251,38 +252,49 @@ export function removeObserver(observerState, getter, handler) {
     return (getter === entryGetter)
   })
 
-  return observerState.withMutations(map => {
-    entriesToRemove.forEach(entry => removeObserverByEntry(map, entry))
+
+  observerState = observerState.withMutations(oState => {
+    reactorState = reactorState.withMutations(rState => {
+      entriesToRemove.forEach(entry => { removeObserverByEntry(oState, rState, entry) })
+    })
   })
+  return [
+    observerState,
+    reactorState,
+  ]
 }
 
 /**
  * Removes an observer entry by id from the observerState
  * @param {ObserverState} observerState
+ * @param {ReactorState} reactorState
  * @param {Immutable.Map} entry
- * @return {ObserverState}
+ * @return {Object}
  */
-export function removeObserverByEntry(observerState, entry) {
-  return observerState.withMutations(map => {
-    const id = entry.get('id')
-    const storeDeps = entry.get('storeDeps')
+export function removeObserverByEntry(observerState, reactorState, entry) {
+  return [
+    observerState.withMutations(map => {
+      const id = entry.get('id')
+      const storeDeps = entry.get('storeDeps')
 
-    if (storeDeps.size === 0) {
-      map.update('any', anyObsevers => anyObsevers.remove(id))
-    } else {
-      storeDeps.forEach(storeId => {
-        map.updateIn(['stores', storeId], observers => {
-          if (observers) {
-            // check for observers being present because reactor.reset() can be called before an unwatch fn
-            return observers.remove(id)
-          }
-          return observers
+      if (storeDeps.size === 0) {
+        map.update('any', anyObsevers => anyObsevers.remove(id))
+      } else {
+        storeDeps.forEach(storeId => {
+          map.updateIn(['stores', storeId], observers => {
+            if (observers) {
+              // check for observers being present because reactor.reset() can be called before an unwatch fn
+              return observers.remove(id)
+            }
+            return observers
+          })
         })
-      })
-    }
+      }
 
-    map.removeIn(['observersMap', id])
-  })
+      map.removeIn(['observersMap', id])
+    }),
+    removeCacheValue(reactorState, entry.get('getterKey')),
+  ]
 }
 
 /**
@@ -309,6 +321,8 @@ export function reset(reactorState) {
 
     reactorState.update('storeStates', storeStates => incrementStoreStates(storeStates, storeIds))
     resetDirtyStores(reactorState)
+    reactorState.set('cache', Immutable.Map())
+    reactorState.set('cacheRecency', Immutable.OrderedMap())
   })
 }
 
@@ -326,7 +340,7 @@ export function evaluate(reactorState, keyPathOrGetter) {
       state.getIn(keyPathOrGetter),
       reactorState
     )
-  } else if (!isGetter(keyPathOrGetter)) {
+  } else if (!isGetter(keyPathOrGetter) && !isGetterObject(keyPathOrGetter)) {
     throw new Error('evaluate must be passed a keyPath or Getter')
   }
 
@@ -340,9 +354,11 @@ export function evaluate(reactorState, keyPathOrGetter) {
     )
   }
 
+  const getter = convertToGetterLiteral(keyPathOrGetter)
+
   // evaluate dependencies
-  const args = getDeps(keyPathOrGetter).map(dep => evaluate(reactorState, dep).result)
-  const evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
+  const args = getDeps(getter).map(dep => evaluate(reactorState, dep).result)
+  const evaluatedValue = getComputeFn(getter).apply(null, args)
   return evaluateResult(
     evaluatedValue,
     cacheValue(reactorState, keyPathOrGetter, evaluatedValue)
@@ -381,8 +397,8 @@ export function resetDirtyStores(reactorState) {
  * @return {Getter}
  */
 function getCacheKey(getter) {
-  if (getter.__options && getter.__options.cacheKey !== undefined) {
-    return getter.__options.cacheKey
+  if (isGetterObject(getter) && getter.cacheKey !== null) {
+    return getter.cacheKey
   }
   return getter
 }
@@ -427,14 +443,17 @@ function isCached(reactorState, keyPathOrGetter) {
  * @return {ReactorState}
  */
 function cacheValue(reactorState, getter, value) {
-  const hasGetterUseCacheSpecified = getter.__options && getter.__options.useCache !== undefined
 
-  // Prefer getter settings over reactor settings
-  if (hasGetterUseCacheSpecified) {
-    if (!getter.__options.useCache) {
-      return reactorState
-    }
-  } else if (!reactorState.get('useCache')) {
+  // Check global cache settings
+  const globalCacheEnabled = !!reactorState.get('useCache')
+  let useCache = globalCacheEnabled
+
+  // Check cache settings on a getter basis
+  if (isGetterObject(getter) && getter.cache !== 'default') {
+    useCache = getter.cache === 'always' ? true : false
+  }
+
+  if (!useCache) {
     return reactorState
   }
 
@@ -469,13 +488,25 @@ function cacheValue(reactorState, getter, value) {
   })
 }
 
+export function removeCacheValue(reactorState, getter) {
+  if (!isGetterObject(getter) && !isGetter(getter)) {
+    return reactorState
+  }
+  const cacheKey = getCacheKey(getter)
+  return reactorState.withMutations(rState => {
+    rState.deleteIn(['cache', cacheKey])
+    rState.deleteIn(['cacheRecency', cacheKey])
+  })
+}
+
 /**
  * Readds the key for the item in cache to update recency
  * @param {ReactorState} reactorState
- * @param {cacheKey} cacheKey
+ * @param {getter} getter
  * @return {ReactorState}
  */
-function updateCacheRecency(reactorState, cacheKey) {
+function updateCacheRecency(reactorState, getter) {
+  const cacheKey = getCacheKey(getter)
   return reactorState.withMutations(state => {
     state.deleteIn(['cacheRecency', cacheKey])
     state.setIn(['cacheRecency', cacheKey], cacheKey)

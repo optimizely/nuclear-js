@@ -1,4 +1,4 @@
-import { isGetter, getFlattenedDeps, fromKeyPath, addGetterOptions } from '../src/getter'
+import { isGetter, getFlattenedDeps, fromKeyPath, isGetterObject, Getter, convertToGetterLiteral } from '../src/getter'
 import { Set, List, is } from 'immutable'
 
 describe('Getter', () => {
@@ -23,6 +23,31 @@ describe('Getter', () => {
     })
   })
 
+  describe('#isGetterObject', () => {
+    it('should return false for getter literal and primitives', () => {
+      expect(isGetterObject(1)).toBe(false)
+      expect(isGetterObject('foo')).toBe(false)
+      expect(isGetterObject(false)).toBe(false)
+      expect(isGetterObject(null)).toBe(false)
+      expect(isGetterObject([['foo'], (x) => x])).toBe(false)
+      expect(isGetterObject([['foo', 'bar'], (x) => x])).toBe(false)
+    })
+
+    it('should return true for Getter instances', () => {
+      const getter = Getter(['test'])
+      expect(isGetterObject(getter)).toBe(true)
+    })
+  })
+
+  describe('#convertToGetterLiteral', () => {
+    it('should return supplied getter if not a getter object', () => {
+      const getter = ['test']
+      const getterObject = Getter(getter)
+      expect(convertToGetterLiteral(getter)).toBe(getter)
+      expect(convertToGetterLiteral(getterObject)).toBe(getter)
+    })
+  })
+
   describe('fromKeyPath', () => {
     it('should throw an Error for a nonvalid KeyPath', () => {
       var invalidKeypath = 'foo.bar'
@@ -32,36 +57,48 @@ describe('Getter', () => {
     })
   })
 
-  describe('#addGetterOptions', () => {
+  describe('#Getter', () => {
     it('should throw an error if not passed a getter', () => {
-      expect(() => { addGetterOptions('test', {}) }).toThrow()
+      expect(() => { Getter(false) }).toThrow()
     })
 
-    it('should throw an error if options are added more than once', () => {
-      let getter = ['test']
-      getter = addGetterOptions(getter, {})
-      expect(() => { addGetterOptions(getter, {}) }).toThrow()
+    it('should accept a keyPath as a getter argument', () => {
+      const keyPath = ['test']
+      expect(Getter(keyPath).getter).toBe(keyPath)
     })
 
-    it('should not add options if they are not explicitly supplied or are not valid options', () => {
-      let getter = ['test']
-      getter = addGetterOptions(getter, {})
-      expect(getter.__options).toEqual({})
-      getter = ['test']
-      getter = addGetterOptions(getter, { fakeOption: true })
-      expect(getter.__options).toEqual({})
+    it('should accept a getter as a getter argument', () => {
+      const getter = ['test', () => 1]
+      expect(Getter(getter).getter).toBe(getter)
     })
 
-    it('should add the use cache option', () => {
-      let getter = ['test']
-      getter = addGetterOptions(getter, { useCache: false })
-      expect(getter.__options.useCache).toBe(false)
+
+    it('should use "default" as the default cache option', () => {
+      const getter = ['test']
+      const getterObject = Getter(getter, {})
+      expect(getterObject.cache).toBe('default')
+      const getterObject1 = Getter(getter, { cache: 'fakeOption' })
+      expect(getterObject1.cache).toBe('default')
     })
 
-    it('should add the cacheKey option', () => {
-      let getter = ['test']
-      getter = addGetterOptions(getter, { cacheKey: 100 })
-      expect(getter.__options.cacheKey).toBe(100)
+    it('should set "always" and "never" as cache options', () => {
+      const getter = ['test']
+      const getterObject = Getter(getter, { cache: 'never' })
+      expect(getterObject.cache).toBe('never')
+      const getterObject1 = Getter(getter, { cache: 'always' })
+      expect(getterObject1.cache).toBe('always')
+    })
+
+    it('should default cacheKey to null', () => {
+      const getter = ['test']
+      const getterObject = Getter(getter, {})
+      expect(getterObject.cacheKey).toBe(null)
+    })
+
+    it('should set cacheKey to supplied value', () => {
+      const getter = ['test']
+      const getterObject = Getter(getter, { cacheKey: getter })
+      expect(getterObject.cacheKey).toBe(getter)
     })
   })
 

@@ -2,7 +2,7 @@ import Immutable from 'immutable'
 import createReactMixin from './create-react-mixin'
 import * as fns from './reactor/fns'
 import { isKeyPath } from './key-path'
-import { isGetter } from './getter'
+import { isGetter, isGetterObject } from './getter'
 import { toJS } from './immutable-helpers'
 import { toFactory } from './utils'
 import {
@@ -93,7 +93,9 @@ class Reactor {
     let { observerState, entry } = fns.addObserver(this.observerState, getter, handler)
     this.observerState = observerState
     return () => {
-      this.observerState = fns.removeObserverByEntry(this.observerState, entry)
+      let [ observerState, reactorState ] = fns.removeObserverByEntry(this.observerState, this.reactorState, entry)
+      this.observerState = observerState
+      this.reactorState = reactorState
     }
   }
 
@@ -101,11 +103,13 @@ class Reactor {
     if (arguments.length === 0) {
       throw new Error('Must call unobserve with a Getter')
     }
-    if (!isGetter(getter) && !isKeyPath(getter)) {
+    if (!isGetterObject(getter) && !isGetter(getter) && !isKeyPath(getter)) {
       throw new Error('Must call unobserve with a Getter')
     }
 
-    this.observerState = fns.removeObserver(this.observerState, getter, handler)
+    let [ observerState, reactorState ] = fns.removeObserver(this.observerState, this.reactorState, getter, handler)
+    this.observerState = observerState
+    this.reactorState = reactorState
   }
 
   /**
@@ -289,21 +293,6 @@ class Reactor {
       }
       this.__isDispatching = false
     }
-  }
-
-  /**
-   * Retrieve cache values
-   * @returns {Immutable.Map}
-   */
-  getCacheValues() {
-    return this.reactorState.get('cache')
-  }
-
-  /**
-   * Clear all cached values
-   */
-  clearCacheValues() {
-    this.reactorState = this.reactorState.set('cache', Immutable.Map())
   }
 }
 

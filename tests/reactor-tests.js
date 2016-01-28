@@ -4,7 +4,7 @@ import { getOption, CACHE_CLEAR_RATIO } from '../src/reactor/fns'
 import { toImmutable } from '../src/immutable-helpers'
 import { PROD_OPTIONS, DEBUG_OPTIONS } from '../src/reactor/records'
 import logging from '../src/logging'
-import { addGetterOptions } from '../src/getter'
+import { Getter } from '../src/getter'
 
 describe('Reactor', () => {
   it('should construct without \'new\'', () => {
@@ -626,12 +626,12 @@ describe('Reactor', () => {
           useCache: true,
         })
         cacheReactor.evaluate([['test'], () => 1])
-        expect(cacheReactor.getCacheValues().size).toBe(1)
+        expect(cacheReactor.reactorState.get('cache').size).toBe(1)
         cacheReactor = new Reactor({
           useCache: false,
         })
         cacheReactor.evaluate([['test'], () => 1])
-        expect(cacheReactor.getCacheValues().size).toBe(0)
+        expect(cacheReactor.reactorState.get('cache').size).toBe(0)
       })
 
       it('should respect individual getter cache settings over global settings', () => {
@@ -639,16 +639,16 @@ describe('Reactor', () => {
           useCache: true,
         })
 
-        let getter = addGetterOptions([['test2'], () => 1], { useCache: false })
+        let getter = Getter([['test2'], () => 1], { cache: 'never' })
         cacheReactor.evaluate(getter)
-        expect(cacheReactor.getCacheValues().size).toBe(0)
+        expect(cacheReactor.reactorState.get('cache').size).toBe(0)
 
         cacheReactor = new Reactor({
           useCache: false,
         })
-        getter = addGetterOptions([['test2'], () => 1], { useCache: true })
+        getter = Getter([['test2'], () => 1], { cache: 'always' })
         cacheReactor.evaluate(getter)
-        expect(cacheReactor.getCacheValues().size).toBe(1)
+        expect(cacheReactor.reactorState.get('cache').size).toBe(1)
       })
 
       it('should use cache key supplied by getter if it is present in options', () => {
@@ -656,9 +656,9 @@ describe('Reactor', () => {
           useCache: true,
         })
 
-        let getter = addGetterOptions([['test'], () => 1], { cacheKey: 'test' })
+        let getter = Getter([['test'], () => 1], { cacheKey: 'test' })
         cacheReactor.evaluate(getter)
-        expect(Object.keys(cacheReactor.getCacheValues().toJS())).toEqual(['test'])
+        expect(Object.keys(cacheReactor.reactorState.get('cache').toJS())).toEqual(['test'])
       })
 
       describe('recency caching', () => {
@@ -1963,58 +1963,6 @@ describe('Reactor', () => {
       reactor.dispatch('increment2')
       expect(reactor.evaluate(['counter1'])).toBe(12)
       expect(reactor.evaluate(['counter2'])).toBe(21)
-    })
-  })
-
-  describe('#getCacheValues', () => {
-    let reactor
-    let store1
-    beforeEach(() => {
-      reactor = new Reactor()
-      store1 = new Store({
-        getInitialState: () => 1,
-        initialize() {
-          this.on('increment1', (state) => state + 1)
-        }
-      })
-
-      reactor.registerStores({
-        store1: store1,
-      })
-    })
-
-    it('should return all cached values', () => {
-      expect(reactor.getCacheValues().toJS()).toEqual({})
-      let getter = [['test'], () => 1]
-      reactor.evaluate(getter)
-      expect(reactor.getCacheValues().get(getter).get('value')).toEqual(1)
-    })
-  })
-
-
-  describe('#clearCacheValues', () => {
-    let reactor
-    let store1
-    beforeEach(() => {
-      reactor = new Reactor()
-      store1 = new Store({
-        getInitialState: () => 1,
-        initialize() {
-          this.on('increment1', (state) => state + 1)
-        }
-      })
-
-      reactor.registerStores({
-        store1: store1,
-      })
-    })
-
-    it('should return all cached values', () => {
-      let getter = [['test'], () => 1]
-      reactor.evaluate(getter)
-      expect(reactor.getCacheValues().size).toEqual(1)
-      reactor.clearCacheValues()
-      expect(reactor.getCacheValues().toJS()).toEqual({})
     })
   })
 })
