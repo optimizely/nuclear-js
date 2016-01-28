@@ -23,8 +23,6 @@
     "nuclear-js": "^1.0.5",
     "webpack": "^1.9.11",
     "webpack-dev-server": "^1.9.0",
-    "grunt-concurrent": "^1.0.0",
-    "grunt-contrib-connect": "^0.10.1",
     "remarkable": "^1.6.0",
     "front-matter": "^1.0.0",
     "glob": "^5.0.10",
