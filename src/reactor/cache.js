@@ -1,4 +1,4 @@
-import { List, Map, OrderedMap, Record } from 'immutable'
+import { List, Map, OrderedSet, Record } from 'immutable'
 
 export const CacheEntry = Record({
   value: null,
@@ -100,11 +100,10 @@ export class BasicCache {
  */
 export class LRUCache {
 
-  constructor(limit = 1000, cache = new BasicCache(), lru = OrderedMap(), tick = 0) {
+  constructor(limit = 1000, cache = new BasicCache(), lru = OrderedSet()) {
     this.limit = limit;
     this.cache = cache;
     this.lru = lru;
-    this.tick = tick;
   }
 
   /**
@@ -141,14 +140,12 @@ export class LRUCache {
    * @return {LRUCache}
    */
   hit(item) {
-    const nextTick = this.tick + 1;
-
-    // if item exists, remove it first to reorder in lru OrderedMap
+    // if item exists, remove it first to reorder in lru OrderedSet
     const lru = this.cache.lookup(item) ?
-      this.lru.remove(item).set(item, nextTick) :
+      this.lru.remove(item).add(item) :
       this.lru;
 
-    return new LRUCache(this.limit, this.cache, lru, nextTick)
+    return new LRUCache(this.limit, this.cache, lru)
   }
 
   /**
@@ -159,24 +156,20 @@ export class LRUCache {
    * @return {LRUCache}
    */
   miss(item, entry) {
-    const nextTick = this.tick + 1;
-
     if (this.lru.size >= this.limit) {
       // TODO add options to clear multiple items at once
-      const evictItem = this.has(item) ? item : this.lru.keySeq().first()
+      const evictItem = this.has(item) ? item : this.lru.first()
 
       return new LRUCache(
         this.limit,
         this.cache.evict(evictItem).miss(item, entry),
-        this.lru.remove(evictItem).set(item, nextTick),
-        nextTick
+        this.lru.remove(evictItem).add(item)
       )
     } else {
       return new LRUCache(
         this.limit,
         this.cache.miss(item, entry),
-        this.lru.set(item, nextTick),
-        nextTick
+        this.lru.add(item)
       )
     }
   }
@@ -194,8 +187,7 @@ export class LRUCache {
     return new LRUCache(
       this.limit,
       this.cache.evict(item),
-      this.lru.remove(item),
-      this.tick + 1
+      this.lru.remove(item)
     )
   }
 }
