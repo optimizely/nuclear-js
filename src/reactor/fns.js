@@ -1,5 +1,6 @@
 import Immutable from 'immutable'
 import logging from '../logging'
+import { CacheEntry } from './cache'
 import { isImmutableValue } from '../immutable-helpers'
 import { toImmutable } from '../immutable-helpers'
 import { fromKeyPath, getStoreDeps, getComputeFn, getDeps, isGetter } from '../getter'
@@ -330,22 +331,21 @@ export function evaluate(reactorState, keyPathOrGetter) {
   }
 
   // Must be a Getter
-  // if the value is cached for this dispatch cycle, return the cached value
-  if (isCached(reactorState, keyPathOrGetter)) {
-    // Cache hit
-    return evaluateResult(
-      getCachedValue(reactorState, keyPathOrGetter),
-      reactorState
-    )
+
+  const cache = reactorState.get('cache')
+  var cacheEntry = cache.lookup(keyPathOrGetter)
+  const isCacheMiss = !cacheEntry
+  if (isCacheMiss || isDirtyCacheEntry(reactorState, cacheEntry)) {
+    cacheEntry = createCacheEntry(reactorState, keyPathOrGetter)
   }
 
-  // evaluate dependencies
-  const args = getDeps(keyPathOrGetter).map(dep => evaluate(reactorState, dep).result)
-  const evaluatedValue = getComputeFn(keyPathOrGetter).apply(null, args)
-
   return evaluateResult(
-    evaluatedValue,
-    cacheValue(reactorState, keyPathOrGetter, evaluatedValue)
+    cacheEntry.get('value'),
+    reactorState.update('cache', cache => {
+      return isCacheMiss ?
+        cache.miss(keyPathOrGetter, cacheEntry) :
+        cache.hit(keyPathOrGetter)
+    })
   )
 }
 
@@ -376,56 +376,30 @@ export function resetDirtyStores(reactorState) {
 }
 
 /**
- * Currently cache keys are always getters by reference
- * @param {Getter} getter
- * @return {Getter}
- */
-function getCacheKey(getter) {
-  return getter
-}
-
-/**
  * @param {ReactorState} reactorState
- * @param {Getter|KeyPath} keyPathOrGetter
- * @return {Immutable.Map}
+ * @param {CacheEntry} cacheEntry
+ * @return {boolean}
  */
-function getCacheEntry(reactorState, keyPathOrGetter) {
-  const key = getCacheKey(keyPathOrGetter)
-  return reactorState.getIn(['cache', key])
-}
+function isDirtyCacheEntry(reactorState, cacheEntry) {
+  const storeStates = cacheEntry.get('storeStates')
 
-/**
- * @param {ReactorState} reactorState
- * @param {Getter} getter
- * @return {Boolean}
- */
-function isCached(reactorState, keyPathOrGetter) {
-  const entry = getCacheEntry(reactorState, keyPathOrGetter)
-  if (!entry) {
-    return false
-  }
-
-  const storeStates = entry.get('storeStates')
-  if (storeStates.size === 0) {
-    // if there are no store states for this entry then it was never cached before
-    return false
-  }
-
-  return storeStates.every((stateId, storeId) => {
-    return reactorState.getIn(['storeStates', storeId]) === stateId
+  // if there are no store states for this entry then it was never cached before
+  return !storeStates.size || storeStates.some((stateId, storeId) => {
+    return reactorState.getIn(['storeStates', storeId]) !== stateId
   })
 }
 
 /**
- * Caches the value of a getter given state, getter, args, value
+ * Evaluates getter for given reactorState and returns CacheEntry
  * @param {ReactorState} reactorState
  * @param {Getter} getter
- * @param {*} value
- * @return {ReactorState}
+ * @return {CacheEntry}
  */
-function cacheValue(reactorState, getter, value) {
-  const cacheKey = getCacheKey(getter)
-  const dispatchId = reactorState.get('dispatchId')
+function createCacheEntry(reactorState, getter) {
+  // evaluate dependencies
+  const args = getDeps(getter).map(dep => evaluate(reactorState, dep).result)
+  const value = getComputeFn(getter).apply(null, args)
+
   const storeDeps = getStoreDeps(getter)
   const storeStates = toImmutable({}).withMutations(map => {
     storeDeps.forEach(storeId => {
@@ -434,19 +408,11 @@ function cacheValue(reactorState, getter, value) {
     })
   })
 
-  return reactorState.setIn(['cache', cacheKey], Immutable.Map({
+  return CacheEntry({
     value: value,
     storeStates: storeStates,
-    dispatchId: dispatchId,
-  }))
-}
-
-/**
- * Pulls out the cached value for a getter
- */
-function getCachedValue(reactorState, getter) {
-  const key = getCacheKey(getter)
-  return reactorState.getIn(['cache', key, 'value'])
+    dispatchId: reactorState.get('dispatchId'),
+  })
 }
 
 /**

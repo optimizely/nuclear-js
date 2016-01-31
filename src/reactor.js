@@ -1,6 +1,7 @@
 import Immutable from 'immutable'
 import createReactMixin from './create-react-mixin'
 import * as fns from './reactor/fns'
+import { DefaultCache } from './reactor/cache'
 import { isKeyPath } from './key-path'
 import { isGetter } from './getter'
 import { toJS } from './immutable-helpers'
@@ -27,6 +28,7 @@ class Reactor {
     const baseOptions = debug ? DEBUG_OPTIONS : PROD_OPTIONS
     const initialReactorState = new ReactorState({
       debug: debug,
+      cache: config.cache || DefaultCache(),
       // merge config options with the defaults
       options: baseOptions.merge(config.options || {}),
     })
