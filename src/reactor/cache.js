@@ -143,6 +143,7 @@ export class LRUCache {
   hit(item) {
     const nextTick = this.tick + 1;
 
+    // if item exists, remove it first to reorder in lru OrderedMap
     const lru = this.cache.lookup(item) ?
       this.lru.remove(item).set(item, nextTick) :
       this.lru;
