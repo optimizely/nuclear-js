@@ -238,13 +238,44 @@ export function getOption(reactorState, option) {
  * @return {Array}
  */
 export function removeObserver(observerState, reactorState, getter, handler) {
-  const entriesToRemove = observerState.get('observersMap').filter(entry => {
+  let entriesToRemove = getAllObserversForGetter(observerState, getter)
+  const originalEntriesToRemoveCount = entriesToRemove.size
+  if (handler) {
+    entriesToRemove = entriesToRemove.filter(entry => {
+      return entry.get('handler') === handler
+    })
+  }
+
+  // If a handler was specified, only clear cache if ALL entries for a getter have that handler
+  const shouldClearCache = originalEntriesToRemoveCount === entriesToRemove.size
+
+  // Update both observer and reactor state
+  observerState = observerState.withMutations(oState => {
+    reactorState = reactorState.withMutations(rState => {
+
+      entriesToRemove.forEach(entry => { removeObserverByEntry(oState, rState, entry, false) })
+      if (shouldClearCache) {
+        removeCacheValue(rState, getter)
+      }
+    })
+  })
+  return {
+    observerState,
+    reactorState,
+  }
+}
+
+/**
+ * Retrieve all observer entries that match a given getter
+ * @param {ObserverState} observerState
+ * @param {Getter} getter
+ * @returns {Immutable.Map}
+ */
+export function getAllObserversForGetter(observerState, getter) {
+  return observerState.get('observersMap').filter(entry => {
     // use the getterKey in the case of a keyPath is transformed to a getter in addObserver
     const entryGetter = entry.get('getterKey')
-    let handlersMatch = (!handler || entry.get('handler') === handler)
-    if (!handlersMatch) {
-      return false
-    }
+
     // check for a by-value equality of keypaths
     if (isKeyPath(getter) && isKeyPath(entryGetter)) {
       return isEqual(getter, entryGetter)
@@ -252,17 +283,6 @@ export function removeObserver(observerState, reactorState, getter, handler) {
     // we are comparing two getters do it by reference
     return (getter === entryGetter)
   })
-
-  // Update both observer and reactor state
-  observerState = observerState.withMutations(oState => {
-    reactorState = reactorState.withMutations(rState => {
-      entriesToRemove.forEach(entry => { removeObserverByEntry(oState, rState, entry) })
-    })
-  })
-  return [
-    observerState,
-    reactorState,
-  ]
 }
 
 /**
@@ -272,31 +292,38 @@ export function removeObserver(observerState, reactorState, getter, handler) {
  * @param {Immutable.Map} entry
  * @return {Array}
  */
-export function removeObserverByEntry(observerState, reactorState, entry) {
-  return [
-    observerState.withMutations(map => {
-      const id = entry.get('id')
-      const storeDeps = entry.get('storeDeps')
+export function removeObserverByEntry(observerState, reactorState, entry, attemptToClearCache=true) {
 
-      if (storeDeps.size === 0) {
-        map.update('any', anyObsevers => anyObsevers.remove(id))
-      } else {
-        storeDeps.forEach(storeId => {
-          map.updateIn(['stores', storeId], observers => {
-            if (observers) {
-              // check for observers being present because reactor.reset() can be called before an unwatch fn
-              return observers.remove(id)
-            }
-            return observers
-          })
+  // Only clear cache values for a getter if there is only one entry for it
+  if (attemptToClearCache && getAllObserversForGetter(observerState, entry.get('getterKey')).size === 1) {
+    reactorState = removeCacheValue(reactorState, entry.get('getterKey'))
+  }
+
+  observerState = observerState.withMutations(map => {
+    const id = entry.get('id')
+    const storeDeps = entry.get('storeDeps')
+
+    if (storeDeps.size === 0) {
+      map.update('any', anyObsevers => anyObsevers.remove(id))
+    } else {
+      storeDeps.forEach(storeId => {
+        map.updateIn(['stores', storeId], observers => {
+          if (observers) {
+            // check for observers being present because reactor.reset() can be called before an unwatch fn
+            return observers.remove(id)
+          }
+          return observers
         })
-      }
+      })
+    }
 
-      map.removeIn(['observersMap', id])
-    }),
-    // remove cache values for getter
-    removeCacheValue(reactorState, entry.get('getterKey')),
-  ]
+    map.removeIn(['observersMap', id])
+  })
+
+  return {
+    observerState,
+    reactorState,
+  }
 }
 
 /**
@@ -471,7 +498,7 @@ function cacheValue(reactorState, getter, value) {
   const itemsToCache = maxItemsToCache * CACHE_CLEAR_RATIO
 
   return reactorState.withMutations(state => {
-    if (maxItemsToCache && maxItemsToCache <= state.get('cache').size) {
+    if (maxItemsToCache <= state.get('cache').size) {
       do {
         let key = state.get('cacheRecency').first()
         state.deleteIn(['cache', key])

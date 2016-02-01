@@ -34,7 +34,7 @@ class Reactor {
     // if user has defined maxItemsToCache, use the number provide or set to null (ie no max)
     if (config.maxItemsToCache !== undefined) {
       maxItemsToCache = Number(config.maxItemsToCache)
-      maxItemsToCache = maxItemsToCache && maxItemsToCache > 0 ? maxItemsToCache : null
+      maxItemsToCache = maxItemsToCache > 0 ? maxItemsToCache : null
     }
 
     const baseOptions = debug ? DEBUG_OPTIONS : PROD_OPTIONS
@@ -103,7 +103,7 @@ class Reactor {
     let { observerState, entry } = fns.addObserver(this.observerState, getter, handler)
     this.observerState = observerState
     return () => {
-      let [ observerState, reactorState ] = fns.removeObserverByEntry(this.observerState, this.reactorState, entry)
+      let { observerState, reactorState } = fns.removeObserverByEntry(this.observerState, this.reactorState, entry)
       this.observerState = observerState
       this.reactorState = reactorState
     }
@@ -117,7 +117,7 @@ class Reactor {
       throw new Error('Must call unobserve with a Getter')
     }
 
-    let [ observerState, reactorState ] = fns.removeObserver(this.observerState, this.reactorState, getter, handler)
+    const { observerState, reactorState } = fns.removeObserver(this.observerState, this.reactorState, getter, handler)
     this.observerState = observerState
     this.reactorState = reactorState
   }

@@ -35,10 +35,10 @@ describe('Getter', () => {
   describe('#getGetterOption', () => {
     it('should return undefined if options are not set, or an unrecognized option is requested', () => {
       expect(getGetterOption(['test'], 'cache')).toBe(undefined)
-      expect(getGetterOption(Getter(['test'], { cache: 'always'}), 'fakeOption').toBe(undefined)
+      expect(getGetterOption(Getter(['test'], { cache: 'always'}), 'fakeOption')).toBe(undefined)
     })
     it('should return the value of the requested option', () => {
-      expect(getGetterOption(Getter(['test'], { cache: 'always'}), 'cache').toBe('always')
+      expect(getGetterOption(Getter(['test'], { cache: 'always'}), 'cache')).toBe('always')
     })
   })
 
@@ -62,7 +62,7 @@ describe('Getter', () => {
       const getterObject = Getter(['test'], {})
       expect(getGetterOption(getterObject, 'cache')).toBe('default')
       const getterObject1 = Getter(['test'], { cache: 'fakeOption' })
-      expect(getGetterOption(getterObject, 'cache')).toBe('default')
+      expect(getGetterOption(getterObject1, 'cache')).toBe('default')
     })
 
     it('should set "always" and "never" as cache options', () => {
