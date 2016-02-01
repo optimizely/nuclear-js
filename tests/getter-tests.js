@@ -1,4 +1,4 @@
-import { isGetter, getFlattenedDeps, fromKeyPath, isGetterObject, Getter, convertToGetterLiteral } from '../src/getter'
+import { isGetter, getFlattenedDeps, fromKeyPath, getGetterOption, Getter } from '../src/getter'
 import { Set, List, is } from 'immutable'
 
 describe('Getter', () => {
@@ -23,39 +23,22 @@ describe('Getter', () => {
     })
   })
 
-  describe('#isGetterObject', () => {
-    it('should return false for getter literal and primitives', () => {
-      expect(isGetterObject(1)).toBe(false)
-      expect(isGetterObject('foo')).toBe(false)
-      expect(isGetterObject(false)).toBe(false)
-      expect(isGetterObject(null)).toBe(false)
-      expect(isGetterObject([['foo'], (x) => x])).toBe(false)
-      expect(isGetterObject([['foo', 'bar'], (x) => x])).toBe(false)
-    })
-
-    it('should return true for Getter instances', () => {
-      const getter = Getter(['test'])
-      expect(isGetterObject(getter)).toBe(true)
-    })
-  })
-
-  describe('#convertToGetterLiteral', () => {
-    it('should return supplied getter if not a getter object', () => {
-      const getter = ['test']
-      const getter2 = [['test'], x => x]
-      const getterObject = Getter(getter)
-      expect(convertToGetterLiteral(getter)).toBe(getter)
-      expect(convertToGetterLiteral(getter2)).toBe(getter2)
-      expect(convertToGetterLiteral(getterObject)).toBe(getter)
-    })
-  })
-
   describe('fromKeyPath', () => {
     it('should throw an Error for a nonvalid KeyPath', () => {
       var invalidKeypath = 'foo.bar'
       expect(function() {
         fromKeyPath(invalidKeypath)
       }).toThrow()
+    })
+  })
+
+  describe('#getGetterOption', () => {
+    it('should return undefined if options are not set, or an unrecognized option is requested', () => {
+      expect(getGetterOption(['test'], 'cache')).toBe(undefined)
+      expect(getGetterOption(Getter(['test'], { cache: 'always'}), 'fakeOption').toBe(undefined)
+    })
+    it('should return the value of the requested option', () => {
+      expect(getGetterOption(Getter(['test'], { cache: 'always'}), 'cache').toBe('always')
     })
   })
 
@@ -66,41 +49,38 @@ describe('Getter', () => {
 
     it('should accept a keyPath as a getter argument', () => {
       const keyPath = ['test']
-      expect(Getter(keyPath).getter).toBe(keyPath)
+      expect(Getter(keyPath)).toBe(keyPath)
     })
 
     it('should accept a getter as a getter argument', () => {
       const getter = ['test', () => 1]
-      expect(Getter(getter).getter).toBe(getter)
+      expect(Getter(getter)).toBe(getter)
     })
 
 
     it('should use "default" as the default cache option', () => {
-      const getter = ['test']
-      const getterObject = Getter(getter, {})
-      expect(getterObject.cache).toBe('default')
-      const getterObject1 = Getter(getter, { cache: 'fakeOption' })
-      expect(getterObject1.cache).toBe('default')
+      const getterObject = Getter(['test'], {})
+      expect(getGetterOption(getterObject, 'cache')).toBe('default')
+      const getterObject1 = Getter(['test'], { cache: 'fakeOption' })
+      expect(getGetterOption(getterObject, 'cache')).toBe('default')
     })
 
     it('should set "always" and "never" as cache options', () => {
-      const getter = ['test']
-      const getterObject = Getter(getter, { cache: 'never' })
-      expect(getterObject.cache).toBe('never')
-      const getterObject1 = Getter(getter, { cache: 'always' })
-      expect(getterObject1.cache).toBe('always')
+      const getterObject = Getter(['test'], { cache: 'never' })
+      expect(getGetterOption(getterObject, 'cache')).toBe('never')
+      const getterObject1 = Getter(['test'], { cache: 'always' })
+      expect(getGetterOption(getterObject1, 'cache')).toBe('always')
     })
 
     it('should default cacheKey to null', () => {
-      const getter = ['test']
-      const getterObject = Getter(getter, {})
-      expect(getterObject.cacheKey).toBe(null)
+      const getterObject = Getter(['test'], {})
+      expect(getGetterOption(getterObject, 'cacheKey')).toBe(null)
     })
 
     it('should set cacheKey to supplied value', () => {
       const getter = ['test']
-      const getterObject = Getter(getter, { cacheKey: getter })
-      expect(getterObject.cacheKey).toBe(getter)
+      const getterObject = Getter(getter, { cacheKey: 'test' })
+      expect(getGetterOption(getterObject, 'cacheKey')).toBe('test')
     })
   })
 

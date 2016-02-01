@@ -2,7 +2,7 @@ import Immutable from 'immutable'
 import createReactMixin from './create-react-mixin'
 import * as fns from './reactor/fns'
 import { isKeyPath } from './key-path'
-import { isGetter, isGetterObject } from './getter'
+import { isGetter } from './getter'
 import { toJS } from './immutable-helpers'
 import { toFactory } from './utils'
 import {
@@ -113,7 +113,7 @@ class Reactor {
     if (arguments.length === 0) {
       throw new Error('Must call unobserve with a Getter')
     }
-    if (!isGetterObject(getter) && !isGetter(getter) && !isKeyPath(getter)) {
+    if (!isGetter(getter) && !isKeyPath(getter)) {
       throw new Error('Must call unobserve with a Getter')
     }
 

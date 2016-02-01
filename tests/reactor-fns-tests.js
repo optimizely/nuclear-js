@@ -4,7 +4,7 @@ import { Store } from '../src/main'
 import * as fns from '../src/reactor/fns'
 import { ReactorState, ObserverState, DEBUG_OPTIONS } from '../src/reactor/records'
 import { toImmutable } from '../src/immutable-helpers'
-import { Getter, convertToGetterLiteral } from '../src/getter'
+import { Getter } from '../src/getter'
 
 describe('reactor fns', () => {
   describe('#registerStores', () => {
@@ -529,7 +529,7 @@ describe('reactor fns', () => {
               id: 3,
               storeDeps: Set(),
               getterKey: getter2,
-              getter: convertToGetterLiteral(getter2),
+              getter: getter2,
               handler: handler3,
             })]
           ])
