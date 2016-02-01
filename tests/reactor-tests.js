@@ -1,9 +1,11 @@
 import Immutable, { Map, List, is } from 'immutable'
 import { Reactor, Store } from '../src/main'
-import { getOption } from '../src/reactor/fns'
+import { DEFAULT_MAX_ITEMS_TO_CACHE } from '../src/reactor'
+import { getOption, CACHE_CLEAR_RATIO } from '../src/reactor/fns'
 import { toImmutable } from '../src/immutable-helpers'
 import { PROD_OPTIONS, DEBUG_OPTIONS } from '../src/reactor/records'
 import logging from '../src/logging'
+import { Getter } from '../src/getter'
 
 describe('Reactor', () => {
   it('should construct without \'new\'', () => {
@@ -11,10 +13,11 @@ describe('Reactor', () => {
     expect(reactor instanceof Reactor).toBe(true)
   })
 
-  describe('debug and options flags', () => {
+  describe('debug, cache, and options flags', () => {
     it('should create a reactor with PROD_OPTIONS', () => {
       var reactor = new Reactor()
       expect(reactor.reactorState.get('debug')).toBe(false)
+      expect(reactor.reactorState.get('maxItemsToCache')).toBe(DEFAULT_MAX_ITEMS_TO_CACHE)
       expect(is(reactor.reactorState.get('options'), PROD_OPTIONS)).toBe(true)
     })
     it('should create a reactor with DEBUG_OPTIONS', () => {
@@ -22,13 +25,14 @@ describe('Reactor', () => {
         debug: true,
       })
       expect(reactor.reactorState.get('debug')).toBe(true)
+      expect(reactor.reactorState.get('maxItemsToCache')).toBe(DEFAULT_MAX_ITEMS_TO_CACHE)
       expect(is(reactor.reactorState.get('options'), DEBUG_OPTIONS)).toBe(true)
     })
     it('should override PROD options', () => {
       var reactor = new Reactor({
         options: {
           logDispatches: true,
-        }
+        },
       })
       expect(getOption(reactor.reactorState, 'logDispatches')).toBe(true)
       expect(getOption(reactor.reactorState, 'logAppState')).toBe(false)
@@ -44,7 +48,7 @@ describe('Reactor', () => {
         options: {
           logDispatches: false,
           throwOnDispatchInDispatch: false,
-        }
+        },
       })
       expect(getOption(reactor.reactorState, 'logDispatches')).toBe(false)
       expect(getOption(reactor.reactorState, 'logAppState')).toBe(true)
@@ -53,6 +57,28 @@ describe('Reactor', () => {
       expect(getOption(reactor.reactorState, 'throwOnUndefinedStoreReturnValue')).toBe(true)
       expect(getOption(reactor.reactorState, 'throwOnNonImmutableStore')).toBe(true)
       expect(getOption(reactor.reactorState, 'throwOnDispatchInDispatch')).toBe(false)
+    })
+    it('should create a reactor that overrides maxItemsToCache', () => {
+      var reactor = new Reactor({
+        maxItemsToCache: 20,
+      })
+      expect(reactor.reactorState.get('maxItemsToCache')).toBe(20)
+      reactor = new Reactor({
+        maxItemsToCache: -20,
+      })
+      expect(reactor.reactorState.get('maxItemsToCache')).toBe(null)
+      reactor = new Reactor({
+        maxItemsToCache: 'abc',
+      })
+      expect(reactor.reactorState.get('maxItemsToCache')).toBe(null)
+    })
+    it('should override caching by default', () => {
+      let reactor = new Reactor({})
+      expect(reactor.reactorState.get('useCache')).toBe(true)
+      reactor = new Reactor({
+        useCache: false,
+      })
+      expect(reactor.reactorState.get('useCache')).toBe(false)
     })
   })
 
@@ -100,7 +126,7 @@ describe('Reactor', () => {
               initialize() {
                 this.on('action', () => undefined)
               },
-            })
+            }),
           })
           reactor.dispatch('action')
           reactor.reset()
@@ -123,7 +149,7 @@ describe('Reactor', () => {
               initialize() {
                 this.on('action', () => undefined)
               },
-            })
+            }),
           })
         }).toThrow()
       })
@@ -144,7 +170,7 @@ describe('Reactor', () => {
               initialize() {
                 this.on('action', () => undefined)
               },
-            })
+            }),
           })
         }).toThrow()
       })
@@ -164,8 +190,8 @@ describe('Reactor', () => {
               },
               handleReset() {
                 return undefined
-              }
-            })
+              },
+            }),
           })
           reactor.reset()
         }).toThrow()
@@ -189,7 +215,7 @@ describe('Reactor', () => {
               handleReset() {
                 return { foo: 'baz' }
               },
-            })
+            }),
           })
           reactor.reset()
         }).not.toThrow()
@@ -208,7 +234,7 @@ describe('Reactor', () => {
               getInitialState() {
                 return { foo: 'bar' }
               },
-            })
+            }),
           })
         }).toThrow()
       })
@@ -229,7 +255,7 @@ describe('Reactor', () => {
               handleReset() {
                 return { foo: 'baz' }
               },
-            })
+            }),
           })
           reactor.reset()
         }).toThrow()
@@ -252,8 +278,8 @@ describe('Reactor', () => {
               },
               initialize() {
                 this.on('increment', curr => curr + 1)
-              }
-            })
+              },
+            }),
           })
 
           reactor.observe(['count'], (val) => {
@@ -281,8 +307,8 @@ describe('Reactor', () => {
               },
               initialize() {
                 this.on('increment', curr => curr + 1)
-              }
-            })
+              },
+            }),
           })
 
           reactor.observe(['count'], (val) => {
@@ -595,12 +621,120 @@ describe('Reactor', () => {
         expect(taxPercentSpy.calls.count()).toEqual(2)
         expect(subtotalSpy.calls.count()).toEqual(1)
       })
+
+      it('should not cache if useCache is set to false', () => {
+        let cacheReactor = new Reactor({
+          useCache: true,
+        })
+        cacheReactor.evaluate([['test'], () => 1])
+        expect(cacheReactor.reactorState.get('cache').size).toBe(1)
+        cacheReactor = new Reactor({
+          useCache: false,
+        })
+        cacheReactor.evaluate([['test'], () => 1])
+        expect(cacheReactor.reactorState.get('cache').size).toBe(0)
+      })
+
+      it('should respect individual getter cache settings over global settings', () => {
+        let cacheReactor = new Reactor({
+          useCache: true,
+        })
+
+        let getter = Getter([['test2'], () => 1], { cache: 'never' })
+        cacheReactor.evaluate(getter)
+        expect(cacheReactor.reactorState.get('cache').size).toBe(0)
+
+        cacheReactor = new Reactor({
+          useCache: false,
+        })
+        getter = Getter([['test2'], () => 1], { cache: 'always' })
+        cacheReactor.evaluate(getter)
+        expect(cacheReactor.reactorState.get('cache').size).toBe(1)
+      })
+
+      it('should use cache key supplied by getter if it is present in options', () => {
+        let cacheReactor = new Reactor({
+          useCache: true,
+        })
+
+        let getter = Getter([['test'], () => 1], { cacheKey: 'test' })
+        cacheReactor.evaluate(getter)
+        expect(Object.keys(cacheReactor.reactorState.get('cache').toJS())).toEqual(['test'])
+      })
+
+      it('should not cache keyPaths', () => {
+        let cacheReactor = new Reactor({
+          useCache: true,
+        })
+
+        let getter = ['test']
+        cacheReactor.evaluate(getter)
+        expect(Object.keys(cacheReactor.reactorState.get('cache').toJS())).toEqual([])
+
+        getter = Getter(['test'])
+        cacheReactor.evaluate(getter)
+        expect(Object.keys(cacheReactor.reactorState.get('cache').toJS())).toEqual([])
+
+      })
+
+      describe('recency caching', () => {
+        var getters = Array.apply(null, new Array(100)).map(() => {
+          return [['price'], () => 1]
+        })
+
+        var cacheReactor
+        const maxItemsToCache = 50
+
+        beforeEach(() => {
+          cacheReactor = new Reactor({
+            maxItemsToCache: maxItemsToCache,
+          })
+        })
+
+        it('should add getters to the recency cache map', () => {
+          for (let x = 0; x < 50; x++) {
+            cacheReactor.evaluate(getters[x])
+          }
+          expect(cacheReactor.reactorState.get('cacheRecency').size).toBe(50)
+          expect(cacheReactor.reactorState.get('cacheRecency').first()).toBe(getters[0])
+          expect(cacheReactor.reactorState.get('cacheRecency').last()).toBe(getters[49])
+        })
+
+        it('should prioritize the recency cache by when getters were added', () => {
+          for (let x = 0; x < 10; x++) {
+            cacheReactor.evaluate(getters[x])
+          }
+          cacheReactor.evaluate(getters[0])
+          expect(cacheReactor.reactorState.get('cacheRecency').size).toBe(10)
+          expect(cacheReactor.reactorState.get('cacheRecency').last()).toBe(getters[0])
+          expect(cacheReactor.reactorState.get('cacheRecency').first()).toBe(getters[1])
+        })
+
+        it('should clear the appropriate ratio of items from cache when the maxItemsToCache limit is exceeded', () => {
+          for (let x = 0; x <= maxItemsToCache; x++) {
+            cacheReactor.evaluate(getters[x])
+          }
+          expect(cacheReactor.reactorState.get('cacheRecency').size).toBe(cacheReactor.reactorState.get('cache').size)
+          expect(cacheReactor.reactorState.get('cacheRecency').size).toBe(Math.floor(CACHE_CLEAR_RATIO * maxItemsToCache) + 1)
+          expect(cacheReactor.reactorState.getIn(['cacheRecency', getters[0]])).toBe(undefined)
+          expect(cacheReactor.reactorState.getIn(['cacheRecency', getters[50]])).toBe(getters[50])
+        })
+      })
     })
 
     describe('#observe', () => {
       it('should invoke a change handler if the specific keyPath changes', () => {
         var mockFn = jasmine.createSpy()
         reactor.observe(['taxPercent'], mockFn)
+
+        checkoutActions.setTaxPercent(5)
+
+        expect(mockFn.calls.count()).toEqual(1)
+        expect(mockFn.calls.argsFor(0)).toEqual([5])
+      })
+      it('should observe a Getter object', () => {
+        var mockFn = jasmine.createSpy()
+        reactor.observe(Getter(['taxPercent']), mockFn)
 
         checkoutActions.setTaxPercent(5)
 
@@ -695,8 +829,8 @@ describe('Reactor', () => {
           test: Store({
             getInitialState() {
               return 1
-            }
-          })
+            },
+          }),
         })
 
         expect(mockFn.calls.count()).toEqual(1)
@@ -717,24 +851,24 @@ describe('Reactor', () => {
             },
             initialize() {
               this.on('increment', (state) => state + 1)
-            }
-          })
+            },
+          }),
         })
 
         // it should call the observer after the store has been registered
         expect(mockFn.calls.count()).toEqual(1)
         var observedValue = mockFn.calls.argsFor(0)[0]
         var expectedHandlerValue = Map({
-          test: 1
+          test: 1,
         })
         expect(is(observedValue, expectedHandlerValue)).toBe(true)
 
         // it should call the observer again when the store handles an action
         reactor.dispatch('increment')
         expect(mockFn.calls.count()).toEqual(2)
-        var observedValue = mockFn.calls.argsFor(1)[0]
-        var expectedHandlerValue = Map({
-          test: 2
+        observedValue = mockFn.calls.argsFor(1)[0]
+        expectedHandlerValue = Map({
+          test: 2,
         })
         expect(is(observedValue, expectedHandlerValue)).toBe(true)
       })
@@ -828,14 +962,12 @@ describe('Reactor', () => {
         var mockFn1 = jasmine.createSpy()
         var mockFn2 = jasmine.createSpy()
         var unwatchFn2
-        var unwatchFn1 = reactor.observe(subtotalGetter, (val) => {
-          console.log('hanlder1', unwatchFn2)
+        reactor.observe(subtotalGetter, (val) => {
           unwatchFn2()
           mockFn1(val)
         })
 
         unwatchFn2 = reactor.observe(subtotalGetter, (val) => {
-          console.log('handler2')
           mockFn2(val)
         })
 
@@ -1777,7 +1909,6 @@ describe('Reactor', () => {
   describe('#replaceStores', () => {
     let counter1Store
     let counter2Store
-    let counter1StoreReplaced
     let reactor
 
     beforeEach(() => {
@@ -1786,13 +1917,13 @@ describe('Reactor', () => {
         getInitialState: () => 1,
         initialize() {
           this.on('increment1', (state) => state + 1)
-        }
+        },
       })
       counter2Store = new Store({
         getInitialState: () => 1,
         initialize() {
           this.on('increment2', (state) => state + 1)
-        }
+        },
       })
 
       reactor.registerStores({
@@ -1806,7 +1937,7 @@ describe('Reactor', () => {
         getInitialState: () => 1,
         initialize() {
           this.on('increment1', (state) => state + 10)
-        }
+        },
       })
 
       expect(reactor.evaluate(['counter1'])).toBe(1)
@@ -1828,13 +1959,13 @@ describe('Reactor', () => {
         getInitialState: () => 1,
         initialize() {
           this.on('increment1', (state) => state + 10)
-        }
+        },
       })
       let newStore2 = new Store({
         getInitialState: () => 1,
         initialize() {
           this.on('increment2', (state) => state + 20)
-        }
+        },
       })
 
       expect(reactor.evaluate(['counter1'])).toBe(1)

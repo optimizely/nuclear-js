@@ -2,12 +2,49 @@ import Immutable, { List } from 'immutable'
 import { isFunction, isArray } from './utils'
 import { isKeyPath } from './key-path'
 
+const CACHE_OPTIONS = ['default', 'always', 'never']
+
 /**
  * Getter helper functions
  * A getter is an array with the form:
  * [<KeyPath>, ...<KeyPath>, <function>]
  */
 const identity = (x) => x
+
+/**
+ * Add override options to a getter
+ * @param {getter} getter
+ * @param {object} options
+ * @param {boolean} options.cache
+ * @param {*} options.cacheKey
+ * @returns {getter}
+ */
+function Getter(getter, options={}) {
+  if (!isKeyPath(getter) && !isGetter(getter)) {
+    throw new Error('createGetter must be passed a keyPath or Getter')
+  }
+
+  if (getter.hasOwnProperty('__options')) {
+    throw new Error('Cannot reassign options to getter')
+  }
+
+  getter.__options = {}
+  getter.__options.cache = CACHE_OPTIONS.indexOf(options.cache) > -1 ? options.cache : 'default'
+  getter.__options.cacheKey = options.cacheKey !== undefined ? options.cacheKey : null
+  return getter
+}
+
+/**
+ * Retrieve an option from getter options
+ * @param {getter} getter
+ * @param {string} Name of option to retrieve
+ * @returns {*}
+ */
+function getGetterOption(getter, option) {
+  if (getter.__options) {
+    return getter.__options[option]
+  }
+}
 
 /**
  * Checks if something is a getter literal, ex: ['dep1', 'dep2', function(dep1, dep2) {...}]
@@ -106,7 +143,9 @@ export default {
   isGetter,
   getComputeFn,
   getFlattenedDeps,
+  getGetterOption,
   getStoreDeps,
   getDeps,
   fromKeyPath,
+  Getter,
 }

@@ -12,6 +12,8 @@ import {
   PROD_OPTIONS,
 } from './reactor/records'
 
+export const DEFAULT_MAX_ITEMS_TO_CACHE = 1000
+
 /**
  * State is stored in NuclearJS Reactors.  Reactors
  * contain a 'state' object which is an Immutable.Map
@@ -24,11 +26,24 @@ import {
 class Reactor {
   constructor(config = {}) {
     const debug = !!config.debug
+    const useCache = config.useCache === undefined ? true : !!config.useCache
+
+    // use default # of items in cache
+    let maxItemsToCache = DEFAULT_MAX_ITEMS_TO_CACHE
+
+    // if user has defined maxItemsToCache, use the number provide or set to null (ie no max)
+    if (config.maxItemsToCache !== undefined) {
+      maxItemsToCache = Number(config.maxItemsToCache)
+      maxItemsToCache = maxItemsToCache > 0 ? maxItemsToCache : null
+    }
+
     const baseOptions = debug ? DEBUG_OPTIONS : PROD_OPTIONS
     const initialReactorState = new ReactorState({
       debug: debug,
+      maxItemsToCache: maxItemsToCache,
       // merge config options with the defaults
       options: baseOptions.merge(config.options || {}),
+      useCache: useCache,
     })
 
     this.prevReactorState = initialReactorState
@@ -88,7 +103,9 @@ class Reactor {
     let { observerState, entry } = fns.addObserver(this.observerState, getter, handler)
     this.observerState = observerState
     return () => {
-      this.observerState = fns.removeObserverByEntry(this.observerState, entry)
+      let { observerState, reactorState } = fns.removeObserverByEntry(this.observerState, this.reactorState, entry)
+      this.observerState = observerState
+      this.reactorState = reactorState
     }
   }
 
@@ -100,7 +117,9 @@ class Reactor {
       throw new Error('Must call unobserve with a Getter')
     }
 
-    this.observerState = fns.removeObserver(this.observerState, getter, handler)
+    const { observerState, reactorState } = fns.removeObserver(this.observerState, this.reactorState, getter, handler)
+    this.observerState = observerState
+    this.reactorState = reactorState
   }
 
   /**

@@ -1,4 +1,4 @@
-import { Map, Set, Record } from 'immutable'
+import { Map, Set, Record, OrderedMap } from 'immutable'
 
 export const PROD_OPTIONS = Map({
   // logs information for each dispatch
@@ -39,12 +39,15 @@ export const ReactorState = Record({
   state: Map(),
   stores: Map(),
   cache: Map(),
+  cacheRecency: OrderedMap(),
   // maintains a mapping of storeId => state id (monotomically increasing integer whenever store state changes)
   storeStates: Map(),
   dirtyStores: Set(),
   debug: false,
+  maxItemsToCache: null,
   // production defaults
   options: PROD_OPTIONS,
+  useCache: true,
 })
 
 export const ObserverState = Record({
