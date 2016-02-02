@@ -140,12 +140,12 @@ export class LRUCache {
    * @return {LRUCache}
    */
   hit(item) {
-    // if item exists, remove it first to reorder in lru OrderedSet
-    const lru = this.cache.lookup(item) ?
-      this.lru.remove(item).add(item) :
-      this.lru;
+    if (!this.cache.has(item)) {
+      return this;
+    }
 
-    return new LRUCache(this.limit, this.cache, lru)
+    // remove it first to reorder in lru OrderedSet
+    return new LRUCache(this.limit, this.cache, this.lru.remove(item).add(item))
   }
 
   /**
