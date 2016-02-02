@@ -93,6 +93,9 @@ export class BasicCache {
   }
 }
 
+const DEFAULT_LRU_LIMIT = 1000
+const DEFAULT_LRU_EVICT_COUNT = 1
+
 /**
  * Implements caching strategy that evicts least-recently-used items in cache
  * when an item is being added to a cache that has reached a configured size
@@ -100,8 +103,9 @@ export class BasicCache {
  */
 export class LRUCache {
 
-  constructor(limit = 1000, cache = new BasicCache(), lru = OrderedSet()) {
+  constructor(limit = DEFAULT_LRU_LIMIT, evictCount = DEFAULT_LRU_EVICT_COUNT, cache = new BasicCache(), lru = OrderedSet()) {
     this.limit = limit;
+    this.evictCount = evictCount
     this.cache = cache;
     this.lru = lru;
   }
@@ -145,7 +149,7 @@ export class LRUCache {
     }
 
     // remove it first to reorder in lru OrderedSet
-    return new LRUCache(this.limit, this.cache, this.lru.remove(item).add(item))
+    return new LRUCache(this.limit, this.evictCount, this.cache, this.lru.remove(item).add(item))
   }
 
   /**
@@ -157,17 +161,30 @@ export class LRUCache {
    */
   miss(item, entry) {
     if (this.lru.size >= this.limit) {
-      // TODO add options to clear multiple items at once
-      const evictItem = this.has(item) ? item : this.lru.first()
+      if (this.has(item)) {
+        return new LRUCache(
+          this.limit,
+          this.evictCount,
+          this.cache.miss(item, entry),
+          this.lru.remove(item).add(item)
+        )
+      }
+
+      const cache = (this.lru
+                     .take(this.evictCount)
+                     .reduce((c, evictItem) => c.evict(evictItem), this.cache)
+                     .miss(item, entry));
 
       return new LRUCache(
         this.limit,
-        this.cache.evict(evictItem).miss(item, entry),
-        this.lru.remove(evictItem).add(item)
+        this.evictCount,
+        cache,
+        this.lru.skip(this.evictCount).add(item)
       )
     } else {
       return new LRUCache(
         this.limit,
+        this.evictCount,
         this.cache.miss(item, entry),
         this.lru.add(item)
       )
@@ -186,6 +203,7 @@ export class LRUCache {
 
     return new LRUCache(
       this.limit,
+      this.evictCount,
       this.cache.evict(item),
       this.lru.remove(item)
     )
