@@ -15,6 +15,8 @@ export const CacheEntry = Record({
  *    evict(item)
  *    asMap()
  * }
+ *
+ * Inspired by clojure.core.cache/CacheProtocol
  *******************************************************************************/
 
 /**
