@@ -334,8 +334,8 @@ export function evaluate(reactorState, keyPathOrGetter) {
 
   const cache = reactorState.get('cache')
   var cacheEntry = cache.lookup(keyPathOrGetter)
-  const isCacheMiss = !cacheEntry
-  if (isCacheMiss || isDirtyCacheEntry(reactorState, cacheEntry)) {
+  const isCacheMiss = !cacheEntry || isDirtyCacheEntry(reactorState, cacheEntry)
+  if (isCacheMiss) {
     cacheEntry = createCacheEntry(reactorState, keyPathOrGetter)
   }
 
