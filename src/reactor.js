@@ -1,6 +1,7 @@
 import Immutable from 'immutable'
 import createReactMixin from './create-react-mixin'
 import * as fns from './reactor/fns'
+import { BasicCache, LRUCache } from './reactor/cache'
 import { isKeyPath } from './key-path'
 import { isGetter } from './getter'
 import { toJS } from './immutable-helpers'
@@ -24,11 +25,33 @@ import {
 class Reactor {
   constructor(config = {}) {
     const debug = !!config.debug
+    const useCache = config.useCache === undefined ? true : !!config.useCache
+
+    let Cache = LRUCache
+
+    if (config.cache !== undefined) {
+      Cache = config.cache
+    } else if (config.maxItemsToCache !== undefined) {
+      const maxItemsToCache = Number(config.maxItemsToCache)
+      if (maxItemsToCache > 0) {
+        Cache = LRUCache.bind(LRUCache, maxItemsToCache)
+      } else {
+        Cache = BasicCache
+      }
+    }
+
+    const cacheFactory = () => {
+      return new Cache()
+    }
+
     const baseOptions = debug ? DEBUG_OPTIONS : PROD_OPTIONS
     const initialReactorState = new ReactorState({
       debug: debug,
+      cacheFactory: cacheFactory,
+      cache: cacheFactory(),
       // merge config options with the defaults
       options: baseOptions.merge(config.options || {}),
+      useCache: useCache,
     })
 
     this.prevReactorState = initialReactorState
@@ -88,7 +111,9 @@ class Reactor {
     let { observerState, entry } = fns.addObserver(this.observerState, getter, handler)
     this.observerState = observerState
     return () => {
-      this.observerState = fns.removeObserverByEntry(this.observerState, entry)
+      let { observerState, reactorState } = fns.removeObserverByEntry(this.observerState, this.reactorState, entry)
+      this.observerState = observerState
+      this.reactorState = reactorState
     }
   }
 
@@ -100,7 +125,9 @@ class Reactor {
       throw new Error('Must call unobserve with a Getter')
     }
 
-    this.observerState = fns.removeObserver(this.observerState, getter, handler)
+    const { observerState, reactorState } = fns.removeObserver(this.observerState, this.reactorState, getter, handler)
+    this.observerState = observerState
+    this.reactorState = reactorState
   }
 
   /**

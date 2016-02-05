@@ -1,11 +1,11 @@
 try {
-  if (!(window.console && console.log)) {
+  if (!(window.console && console.log)) { // eslint-disable-line
     console = {
-      log: function(){},
-      debug: function(){},
-      info: function(){},
-      warn: function(){},
-      error: function(){}
-    };
+      log: function() {},
+      debug: function() {},
+      info: function() {},
+      warn: function() {},
+      error: function() {},
+    }
   }
-} catch(e) {}
+} catch(e) {} // eslint-disable-line

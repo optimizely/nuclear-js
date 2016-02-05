@@ -26,7 +26,7 @@ export default function(reactor) {
       each(this.getDataBindings(), (getter, key) => {
         const unwatchFn = reactor.observe(getter, (val) => {
           this.setState({
-            [key]: val
+            [key]: val,
           })
         })
 
