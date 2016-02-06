@@ -595,6 +595,24 @@ describe('Reactor', () => {
         expect(taxPercentSpy.calls.count()).toEqual(2)
         expect(subtotalSpy.calls.count()).toEqual(1)
       })
+
+      it('should update cache with updated item after action', () => {
+        const lastItemGetter = [['items', 'all'], (items) => items.last()]
+
+        // ensure its in cache
+        const lastItemBefore = reactor.evaluate(lastItemGetter)
+        const cacheEntryBefore = reactor.reactorState.cache.lookup(lastItemGetter)
+        expect(lastItemBefore === cacheEntryBefore.value).toBe(true)
+
+        checkoutActions.addItem('potato', 0.80)
+
+        const lastItemAfter = reactor.evaluate(lastItemGetter)
+        const cacheEntryAfter = reactor.reactorState.cache.lookup(lastItemGetter)
+        expect(lastItemAfter === cacheEntryAfter.value).toBe(true)
+
+        // sanity check that lastItem actually changed for completeness
+        expect(lastItemAfter !== lastItemBefore).toBe(true)
+      })
     })
 
     describe('#observe', () => {
