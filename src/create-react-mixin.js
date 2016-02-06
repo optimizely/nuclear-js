@@ -22,23 +22,22 @@ export default function(reactor) {
     },
 
     componentDidMount() {
-      this.__unwatchFns = []
-      each(this.getDataBindings(), (getter, key) => {
-        const unwatchFn = reactor.observe(getter, (val) => {
-          this.setState({
-            [key]: val
-          })
-        })
+      const bindings = this.getDataBindings()
+      let keys = Object.keys(bindings)
+      const args = keys.map((k) => { return bindings[k] })
+      args.push((...vals) => { return vals })
 
-        this.__unwatchFns.push(unwatchFn)
+      this.__unwatchFn = reactor.observe(args, (vals) => {
+        let state = {}
+        each(vals, (val, i) => { state[keys[i]] = val })
+        this.setState(state)
       })
     },
 
     componentWillUnmount() {
-      while (this.__unwatchFns.length) {
-        this.__unwatchFns.shift()()
+      if (this.__unwatchFn) {
+        this.__unwatchFn()
       }
     },
   }
 }
-
