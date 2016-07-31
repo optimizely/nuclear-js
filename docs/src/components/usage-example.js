@@ -80,7 +80,7 @@ const componentCode = `const ItemViewer = React.createClass({
 
 const dispatchCode = `const actions = {
   setFilter(type) {
-    reactor.dispatch('FILTER_TYPE' type)
+    reactor.dispatch('FILTER_TYPE', type)
   },
 
   addItem(name, type, price) {
