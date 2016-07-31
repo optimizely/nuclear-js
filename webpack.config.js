@@ -1,5 +1,14 @@
 var webpack = require('webpack')
 
+var immutableJS = {
+  immutable: {
+    root: 'Immutable',
+    commonjs2: 'immutable',
+    commonjs: 'immutable',
+    amd: 'immutable',
+  }
+}
+
 var genFilename = function(isMin) {
   return [
     './dist/nuclear',
@@ -23,6 +32,9 @@ module.exports = [
         { test: /\.js$/, exclude: /node_modules/, loader: 'babel-loader' },
       ],
     },
+    externals: [
+      immutableJS
+    ],
   },
   {
     entry: './src/main.js',
@@ -36,6 +48,9 @@ module.exports = [
         { test: /\.js$/, exclude: /node_modules/, loader: 'babel-loader' },
       ],
     },
+    externals: [
+      immutableJS
+    ],
     plugins: [uglifyJsPlugin],
   },
 ]
