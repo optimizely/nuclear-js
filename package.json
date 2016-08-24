@@ -27,7 +27,7 @@
     "stateless"
   ],
   "dependencies": {
-    "immutable": "^3.7.3"
+    "immutable": "^3.8.1"
   },
   "devDependencies": {
     "grunt": "^0.4.5",
