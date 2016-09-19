@@ -2,7 +2,7 @@
 import { Map, Set, is } from 'immutable'
 import { Store } from '../src/main'
 import * as fns from '../src/reactor/fns'
-import { ReactorState, ObserverState, DEBUG_OPTIONS } from '../src/reactor/records'
+import { ReactorState, ObserverState } from '../src/reactor/records'
 import { toImmutable } from '../src/immutable-helpers'
 
 describe('reactor fns', () => {
@@ -571,7 +571,7 @@ describe('reactor fns', () => {
       })
 
       expect(function() {
-        const result = fns.getOption(reactorState, 'unknownOption')
+        fns.getOption(reactorState, 'unknownOption')
       }).toThrow()
     })
   })

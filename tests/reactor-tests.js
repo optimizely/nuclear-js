@@ -28,7 +28,7 @@ describe('Reactor', () => {
       var reactor = new Reactor({
         options: {
           logDispatches: true,
-        }
+        },
       })
       expect(getOption(reactor.reactorState, 'logDispatches')).toBe(true)
       expect(getOption(reactor.reactorState, 'logAppState')).toBe(false)
@@ -44,7 +44,7 @@ describe('Reactor', () => {
         options: {
           logDispatches: false,
           throwOnDispatchInDispatch: false,
-        }
+        },
       })
       expect(getOption(reactor.reactorState, 'logDispatches')).toBe(false)
       expect(getOption(reactor.reactorState, 'logAppState')).toBe(true)
@@ -100,7 +100,7 @@ describe('Reactor', () => {
               initialize() {
                 this.on('action', () => undefined)
               },
-            })
+            }),
           })
           reactor.dispatch('action')
           reactor.reset()
@@ -123,7 +123,7 @@ describe('Reactor', () => {
               initialize() {
                 this.on('action', () => undefined)
               },
-            })
+            }),
           })
         }).toThrow()
       })
@@ -144,7 +144,7 @@ describe('Reactor', () => {
               initialize() {
                 this.on('action', () => undefined)
               },
-            })
+            }),
           })
         }).toThrow()
       })
@@ -164,8 +164,8 @@ describe('Reactor', () => {
               },
               handleReset() {
                 return undefined
-              }
-            })
+              },
+            }),
           })
           reactor.reset()
         }).toThrow()
@@ -189,7 +189,7 @@ describe('Reactor', () => {
               handleReset() {
                 return { foo: 'baz' }
               },
-            })
+            }),
           })
           reactor.reset()
         }).not.toThrow()
@@ -208,7 +208,7 @@ describe('Reactor', () => {
               getInitialState() {
                 return { foo: 'bar' }
               },
-            })
+            }),
           })
         }).toThrow()
       })
@@ -229,7 +229,7 @@ describe('Reactor', () => {
               handleReset() {
                 return { foo: 'baz' }
               },
-            })
+            }),
           })
           reactor.reset()
         }).toThrow()
@@ -252,8 +252,8 @@ describe('Reactor', () => {
               },
               initialize() {
                 this.on('increment', curr => curr + 1)
-              }
-            })
+              },
+            }),
           })
 
           reactor.observe(['count'], (val) => {
@@ -281,8 +281,8 @@ describe('Reactor', () => {
               },
               initialize() {
                 this.on('increment', curr => curr + 1)
-              }
-            })
+              },
+            }),
           })
 
           reactor.observe(['count'], (val) => {
@@ -713,8 +713,8 @@ describe('Reactor', () => {
           test: Store({
             getInitialState() {
               return 1
-            }
-          })
+            },
+          }),
         })
 
         expect(mockFn.calls.count()).toEqual(1)
@@ -722,6 +722,8 @@ describe('Reactor', () => {
       })
 
       it('should trigger an observer for a late registered store for the identity getter', () => {
+        var observedValue
+        var expectedHandlerValue
         var mockFn = jasmine.createSpy()
         var reactor = new Reactor()
         reactor.observe([], mockFn)
@@ -735,24 +737,24 @@ describe('Reactor', () => {
             },
             initialize() {
               this.on('increment', (state) => state + 1)
-            }
-          })
+            },
+          }),
         })
 
         // it should call the observer after the store has been registered
         expect(mockFn.calls.count()).toEqual(1)
-        var observedValue = mockFn.calls.argsFor(0)[0]
-        var expectedHandlerValue = Map({
-          test: 1
+        observedValue = mockFn.calls.argsFor(0)[0]
+        expectedHandlerValue = Map({
+          test: 1,
         })
         expect(is(observedValue, expectedHandlerValue)).toBe(true)
 
         // it should call the observer again when the store handles an action
         reactor.dispatch('increment')
         expect(mockFn.calls.count()).toEqual(2)
-        var observedValue = mockFn.calls.argsFor(1)[0]
-        var expectedHandlerValue = Map({
-          test: 2
+        observedValue = mockFn.calls.argsFor(1)[0]
+        expectedHandlerValue = Map({
+          test: 2,
         })
         expect(is(observedValue, expectedHandlerValue)).toBe(true)
       })
@@ -846,14 +848,12 @@ describe('Reactor', () => {
         var mockFn1 = jasmine.createSpy()
         var mockFn2 = jasmine.createSpy()
         var unwatchFn2
-        var unwatchFn1 = reactor.observe(subtotalGetter, (val) => {
-          console.log('hanlder1', unwatchFn2)
+        reactor.observe(subtotalGetter, (val) => {
           unwatchFn2()
           mockFn1(val)
         })
 
         unwatchFn2 = reactor.observe(subtotalGetter, (val) => {
-          console.log('handler2')
           mockFn2(val)
         })
 
@@ -1795,7 +1795,6 @@ describe('Reactor', () => {
   describe('#replaceStores', () => {
     let counter1Store
     let counter2Store
-    let counter1StoreReplaced
     let reactor
 
     beforeEach(() => {
@@ -1804,13 +1803,13 @@ describe('Reactor', () => {
         getInitialState: () => 1,
         initialize() {
           this.on('increment1', (state) => state + 1)
-        }
+        },
       })
       counter2Store = new Store({
         getInitialState: () => 1,
         initialize() {
           this.on('increment2', (state) => state + 1)
-        }
+        },
       })
 
       reactor.registerStores({
@@ -1824,7 +1823,7 @@ describe('Reactor', () => {
         getInitialState: () => 1,
         initialize() {
           this.on('increment1', (state) => state + 10)
-        }
+        },
       })
 
       expect(reactor.evaluate(['counter1'])).toBe(1)
@@ -1846,13 +1845,13 @@ describe('Reactor', () => {
         getInitialState: () => 1,
         initialize() {
           this.on('increment1', (state) => state + 10)
-        }
+        },
       })
       let newStore2 = new Store({
         getInitialState: () => 1,
         initialize() {
           this.on('increment2', (state) => state + 20)
-        }
+        },
       })
 
       expect(reactor.evaluate(['counter1'])).toBe(1)

@@ -1,4 +1,4 @@
-import { List, Map, OrderedSet, Record } from 'immutable'
+import { Map, OrderedSet, Record } from 'immutable'
 
 export const CacheEntry = Record({
   value: null,
@@ -28,7 +28,7 @@ export class BasicCache {
    * @param {Immutable.Map} cache
    */
   constructor(cache = Map()) {
-    this.cache = cache;
+    this.cache = cache
   }
 
   /**
@@ -65,7 +65,7 @@ export class BasicCache {
    * @return {BasicCache}
    */
   hit(item) {
-    return this;
+    return this
   }
 
   /**
@@ -78,7 +78,7 @@ export class BasicCache {
     return new BasicCache(
       this.cache.update(item, existingEntry => {
         if (existingEntry && existingEntry.dispatchId > entry.dispatchId) {
-          throw new Error("Refusing to cache older value")
+          throw new Error('Refusing to cache older value')
         }
         return entry
       })
@@ -106,10 +106,10 @@ const DEFAULT_LRU_EVICT_COUNT = 1
 export class LRUCache {
 
   constructor(limit = DEFAULT_LRU_LIMIT, evictCount = DEFAULT_LRU_EVICT_COUNT, cache = new BasicCache(), lru = OrderedSet()) {
-    this.limit = limit;
+    this.limit = limit
     this.evictCount = evictCount
-    this.cache = cache;
-    this.lru = lru;
+    this.cache = cache
+    this.lru = lru
   }
 
   /**
@@ -147,7 +147,7 @@ export class LRUCache {
    */
   hit(item) {
     if (!this.cache.has(item)) {
-      return this;
+      return this
     }
 
     // remove it first to reorder in lru OrderedSet
@@ -162,6 +162,7 @@ export class LRUCache {
    * @return {LRUCache}
    */
   miss(item, entry) {
+    var lruCache
     if (this.lru.size >= this.limit) {
       if (this.has(item)) {
         return new LRUCache(
@@ -175,22 +176,23 @@ export class LRUCache {
       const cache = (this.lru
                      .take(this.evictCount)
                      .reduce((c, evictItem) => c.evict(evictItem), this.cache)
-                     .miss(item, entry));
+                     .miss(item, entry))
 
-      return new LRUCache(
+      lruCache = new LRUCache(
         this.limit,
         this.evictCount,
         cache,
         this.lru.skip(this.evictCount).add(item)
       )
     } else {
-      return new LRUCache(
+      lruCache = new LRUCache(
         this.limit,
         this.evictCount,
         this.cache.miss(item, entry),
         this.lru.add(item)
       )
     }
+    return lruCache
   }
 
   /**
@@ -200,7 +202,7 @@ export class LRUCache {
    */
   evict(item) {
     if (!this.cache.has(item)) {
-      return this;
+      return this
     }
 
     return new LRUCache(
