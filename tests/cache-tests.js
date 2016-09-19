@@ -1,6 +1,5 @@
 import Immutable, { Map } from 'immutable'
-import { toImmutable } from '../src/immutable-helpers'
-import { BasicCache, LRUCache } from '../src/reactor/cache'
+import { LRUCache } from '../src/reactor/cache'
 
 
 describe('Cache', () => {
@@ -16,9 +15,9 @@ describe('Cache', () => {
 
       expect(cache.asMap().isEmpty()).toBe(true)
 
-      var a = {foo: "bar"}
-      var b = {bar: "baz"}
-      var c = {baz: "foo"}
+      var a = {foo: 'bar'}
+      var b = {bar: 'baz'}
+      var c = {baz: 'foo'}
 
       cache = cache.miss('a', a)
 
