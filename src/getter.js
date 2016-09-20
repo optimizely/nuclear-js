@@ -54,7 +54,7 @@ function getFlattenedDeps(getter, existing) {
 
     getDeps(getter).forEach(dep => {
       if (isKeyPath(dep)) {
-        set.add(List(dep))
+        set.add(Immutable.List(dep))
       } else if (isGetter(dep)) {
         set.union(getFlattenedDeps(dep))
       } else {
@@ -64,6 +64,45 @@ function getFlattenedDeps(getter, existing) {
   })
 
   return existing.union(toAdd)
+}
+
+/**
+ * Returns a set of deps that have been flattened and expanded
+ * expanded ex: ['store1', 'key1'] => [['store1'], ['store1', 'key1']]
+ *
+ * Note: returns a keypath as an Immutable.List(['store1', 'key1')
+ * @param {Getter} getter
+ * @param {Number} maxDepth
+ * @return {Immutable.Set}
+ */
+function getCanonicalKeypathDeps(getter, maxDepth) {
+  if (maxDepth === undefined) {
+    throw new Error('Must supply maxDepth argument')
+  }
+
+  const cacheKey = `__storeDeps_${maxDepth}`
+  if (getter.hasOwnProperty(cacheKey)) {
+    return getter[cacheKey]
+  }
+
+  const deps = Immutable.Set().withMutations(set => {
+    getFlattenedDeps(getter).forEach(keypath => {
+      if (keypath.size <= maxDepth) {
+        set.add(keypath)
+      } else {
+        set.add(keypath.slice(0, maxDepth))
+      }
+    })
+  })
+
+  Object.defineProperty(getter, cacheKey, {
+    enumerable: false,
+    configurable: false,
+    writable: false,
+    value: deps,
+  })
+
+  return deps
 }
 
 /**
@@ -88,7 +127,6 @@ function getStoreDeps(getter) {
   }
 
   const storeDeps = getFlattenedDeps(getter)
-    .map(keyPath => keyPath.first())
     .filter(x => !!x)
 
 
@@ -106,6 +144,7 @@ export default {
   isGetter,
   getComputeFn,
   getFlattenedDeps,
+  getCanonicalKeypathDeps,
   getStoreDeps,
   getDeps,
   fromKeyPath,

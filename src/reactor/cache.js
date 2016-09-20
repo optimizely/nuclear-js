@@ -2,7 +2,7 @@ import { Map, OrderedSet, Record } from 'immutable'
 
 export const CacheEntry = Record({
   value: null,
-  storeStates: Map(),
+  states: Map(),
   dispatchId: null,
 })
 

@@ -1,4 +1,4 @@
-import { isGetter, getFlattenedDeps, fromKeyPath } from '../src/getter'
+import { isGetter, getFlattenedDeps, fromKeyPath, getCanonicalKeypathDeps } from '../src/getter'
 import { Set, List, is } from 'immutable'
 
 describe('Getter', () => {
@@ -72,6 +72,89 @@ describe('Getter', () => {
         var result = getFlattenedDeps(getter2)
         var expected = Set()
           .add(List(['store1', 'key1']))
+          .add(List(['store2', 'key2']))
+          .add(List(['store3', 'key3']))
+        expect(is(result, expected)).toBe(true)
+      })
+    })
+  })
+
+  describe('getCanonicalKeypathDeps', function() {
+    describe('when passed the identity getter', () => {
+      it('should return a set with only an empty list', () => {
+        var getter = [[], (x) => x]
+        var result = getCanonicalKeypathDeps(getter, 3)
+        var expected = Set().add(List())
+        expect(is(result, expected)).toBe(true)
+      })
+    })
+
+    describe('when passed a flat getter with maxDepth greater than each keypath' , () => {
+      it('return all keypaths', () => {
+        var getter = [
+          ['store1', 'key1'],
+          ['store2', 'key2'],
+          (a, b) => 1,
+        ]
+        var result = getCanonicalKeypathDeps(getter, 3)
+        var expected = Set()
+          .add(List(['store1', 'key1']))
+          .add(List(['store2', 'key2']))
+        expect(is(result, expected)).toBe(true)
+      })
+    })
+
+    describe('when passed a flat getter with maxDepth less than each keypath' , () => {
+      it('return all shortened keypaths', () => {
+        var getter = [
+          ['store1', 'key1', 'prop1', 'bar1'],
+          ['store2', 'key2'],
+          (a, b) => 1,
+        ]
+        var result = getCanonicalKeypathDeps(getter, 3)
+        var expected = Set()
+          .add(List(['store1', 'key1', 'prop1']))
+          .add(List(['store2', 'key2']))
+        expect(is(result, expected)).toBe(true)
+      })
+    })
+
+    describe('when passed getter with a getter dependency', () => {
+      it('should return flattened keypaths', () => {
+        var getter1 = [
+          ['store1', 'key1'],
+          ['store2', 'key2'],
+          (a, b) => 1,
+        ]
+        var getter2 = [
+          getter1,
+          ['store3', 'key3'],
+          (a, b) => 1,
+        ]
+        var result = getFlattenedDeps(getter2)
+        var expected = Set()
+          .add(List(['store1', 'key1']))
+          .add(List(['store2', 'key2']))
+          .add(List(['store3', 'key3']))
+        expect(is(result, expected)).toBe(true)
+      })
+    })
+
+    describe('when passed getter with a getter dependency with long keypaths', () => {
+      it('should return flattened and shortened keypaths', () => {
+        var getter1 = [
+          ['store1', 'key1', 'bar', 'baz'],
+          ['store2', 'key2'],
+          (a, b) => 1,
+        ]
+        var getter2 = [
+          getter1,
+          ['store3', 'key3'],
+          (a, b) => 1,
+        ]
+        var result = getCanonicalKeypathDeps(getter2, 3)
+        var expected = Set()
+          .add(List(['store1', 'key1', 'bar']))
           .add(List(['store2', 'key2']))
           .add(List(['store3', 'key3']))
         expect(is(result, expected)).toBe(true)
