@@ -1,5 +1,4 @@
 import Immutable from 'immutable'
-import logging from '../logging'
 import { CacheEntry } from './cache'
 import { isImmutableValue } from '../immutable-helpers'
 import { toImmutable } from '../immutable-helpers'
@@ -74,6 +73,8 @@ export function replaceStores(reactorState, stores) {
  * @return {ReactorState}
  */
 export function dispatch(reactorState, actionType, payload) {
+  let logging = reactorState.get('logger')
+
   if (actionType === undefined && getOption(reactorState, 'throwOnUndefinedActionType')) {
     throw new Error('`dispatch` cannot be called with an `undefined` action type.')
   }

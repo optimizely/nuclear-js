@@ -3,7 +3,7 @@ import { Reactor, Store } from '../src/main'
 import { getOption } from '../src/reactor/fns'
 import { toImmutable } from '../src/immutable-helpers'
 import { PROD_OPTIONS, DEBUG_OPTIONS } from '../src/reactor/records'
-import logging from '../src/logging'
+import { NoopLogger, ConsoleGroupLogger } from '../src/logging'
 
 describe('Reactor', () => {
   it('should construct without \'new\'', () => {
@@ -53,6 +53,82 @@ describe('Reactor', () => {
       expect(getOption(reactor.reactorState, 'throwOnUndefinedStoreReturnValue')).toBe(true)
       expect(getOption(reactor.reactorState, 'throwOnNonImmutableStore')).toBe(true)
       expect(getOption(reactor.reactorState, 'throwOnDispatchInDispatch')).toBe(false)
+    })
+
+    describe('custom logging', () => {
+      var handler
+
+      beforeEach(() => {
+        handler = {
+          dispatchStart() {},
+          dispatchError() {},
+          dispatchEnd() {},
+        }
+        spyOn(handler, 'dispatchStart')
+        spyOn(handler, 'dispatchError')
+        spyOn(handler, 'dispatchEnd')
+
+        spyOn(NoopLogger, 'dispatchError')
+      })
+
+      afterEach(() => {
+        handler = null
+      })
+
+      it('should use dispatchStart on the provided logging handler if defined', () => {
+        var reactor = new Reactor({
+          debug: true,
+          logger: handler,
+        })
+
+        reactor.dispatch('setTax', 5)
+
+        expect(handler.dispatchStart).toHaveBeenCalled()
+      })
+      it('should use dispatchEnd on the provided logging handler if defined', () => {
+        var reactor = new Reactor({
+          debug: true,
+          logger: handler,
+        })
+
+        reactor.dispatch('setTax', 5)
+
+        expect(handler.dispatchEnd).toHaveBeenCalled()
+      })
+      it('should use dispatchError on the provided logging handler if defined', () => {
+        var reactor = new Reactor({
+          debug: true,
+          logger: handler,
+          options: {
+            throwOnUndefinedActionType: false,
+          },
+        })
+
+        try {
+          reactor.dispatch(undefined)
+        } catch (e) {
+          expect(handler.dispatchError).toHaveBeenCalled()
+        }
+      })
+      it('should use the NoopLogger implementation when a logging function is not defined on the custom implementation', () => {
+        var reactor = new Reactor({
+          debug: true,
+          logger: {
+            dispatchStart() {},
+            dispatchEnd() {},
+          },
+          options: {
+            throwOnUndefinedActionType: false,
+          },
+        })
+
+        try {
+          reactor.dispatch(undefined)
+        } catch (e) {
+          expect(NoopLogger.dispatchError).toHaveBeenCalled()
+        }
+      })
+
     })
   })
 
@@ -1098,7 +1174,7 @@ describe('Reactor', () => {
     var reactor
 
     beforeEach(() => {
-      spyOn(logging, 'dispatchError')
+      spyOn(ConsoleGroupLogger, 'dispatchError')
       var throwingStore = new Store({
         getInitialState() {
           return 1
@@ -1124,7 +1200,7 @@ describe('Reactor', () => {
       expect(function() {
         reactor.dispatch('set', 'foo')
       }).toThrow(new Error('Error during action handling'))
-      expect(logging.dispatchError).toHaveBeenCalledWith(reactor.reactorState, 'Error during action handling')
+      expect(ConsoleGroupLogger.dispatchError).toHaveBeenCalledWith(reactor.reactorState, 'Error during action handling')
     })
   })
 

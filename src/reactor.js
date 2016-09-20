@@ -2,10 +2,11 @@ import Immutable from 'immutable'
 import createReactMixin from './create-react-mixin'
 import * as fns from './reactor/fns'
 import { DefaultCache } from './reactor/cache'
+import { NoopLogger, ConsoleGroupLogger } from './logging'
 import { isKeyPath } from './key-path'
 import { isGetter } from './getter'
 import { toJS } from './immutable-helpers'
-import { toFactory } from './utils'
+import { extend, toFactory } from './utils'
 import {
   ReactorState,
   ObserverState,
@@ -26,9 +27,16 @@ class Reactor {
   constructor(config = {}) {
     const debug = !!config.debug
     const baseOptions = debug ? DEBUG_OPTIONS : PROD_OPTIONS
+    // if defined, merge the custom implementation over the noop logger to avoid undefined lookups,
+    // otherwise, just use the built-in console group logger
+    let logger = config.logger ? extend({}, NoopLogger, config.logger) : NoopLogger
+    if (!config.logger && debug) {
+      logger = ConsoleGroupLogger
+    }
     const initialReactorState = new ReactorState({
       debug: debug,
       cache: config.cache || DefaultCache(),
+      logger: logger,
       // merge config options with the defaults
       options: baseOptions.merge(config.options || {}),
     })
