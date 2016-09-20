@@ -73,7 +73,7 @@ export function replaceStores(reactorState, stores) {
  * @return {ReactorState}
  */
 export function dispatch(reactorState, actionType, payload) {
-  let logging = reactorState.get('logging')
+  let logging = reactorState.get('logger')
 
   if (actionType === undefined && getOption(reactorState, 'throwOnUndefinedActionType')) {
     throw new Error('`dispatch` cannot be called with an `undefined` action type.');

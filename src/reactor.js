@@ -29,11 +29,11 @@ class Reactor {
     const baseOptions = debug ? DEBUG_OPTIONS : PROD_OPTIONS
     // if defined, merge the custom implementation over the noop logger to avoid undefined lookups,
     // otherwise, just use the built-in console group logger
-    const debugLogger = config.logging ? extend({}, NoopLogger, config.logging) : ConsoleGroupLogger
+    const debugLogger = config.logger ? extend({}, NoopLogger, config.logger) : ConsoleGroupLogger
     const initialReactorState = new ReactorState({
       debug: debug,
       cache: config.cache || DefaultCache(),
-      logging: debug ? debugLogger : NoopLogger,
+      logger: debug ? debugLogger : NoopLogger,
       // merge config options with the defaults
       options: baseOptions.merge(config.options || {}),
     })

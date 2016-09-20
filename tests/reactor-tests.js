@@ -78,7 +78,7 @@ describe('Reactor', () => {
       it('should use dispatchStart on the provided logging handler if defined', () => {
         var reactor = new Reactor({
           debug: true,
-          logging: handler,
+          logger: handler,
         })
 
         reactor.dispatch('setTax', 5)
@@ -88,7 +88,7 @@ describe('Reactor', () => {
       it('should use dispatchEnd on the provided logging handler if defined', () => {
         var reactor = new Reactor({
           debug: true,
-          logging: handler,
+          logger: handler,
         })
 
         reactor.dispatch('setTax', 5)
@@ -98,7 +98,7 @@ describe('Reactor', () => {
       it('should use dispatchError on the provided logging handler if defined', () => {
         var reactor = new Reactor({
           debug: true,
-          logging: handler,
+          logger: handler,
           options: {
             throwOnUndefinedActionType: false,
           },
@@ -113,7 +113,7 @@ describe('Reactor', () => {
       it('should use the NoopLogger implementation when a logging function is not defined on the custom implementation', () => {
         var reactor = new Reactor({
           debug: true,
-          logging: {
+          logger: {
             dispatchStart() {},
             dispatchEnd() {},
           },

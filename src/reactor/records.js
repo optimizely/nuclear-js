@@ -41,7 +41,7 @@ export const ReactorState = Record({
   state: Map(),
   stores: Map(),
   cache: DefaultCache(),
-  logging: NoopLogger,
+  logger: NoopLogger,
   // maintains a mapping of storeId => state id (monotomically increasing integer whenever store state changes)
   storeStates: Map(),
   dirtyStores: Set(),
