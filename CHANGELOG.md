@@ -1,3 +1,50 @@
+## 1.4.0 (September 21, 2015)
+
+
+- **[NEW]** Added ability to switch out the default caching strategy for caching getter values. Also expose an LRU cache that can be swapped in for the basic cache
+- **[NEW]** Add ability to supply your own logger and override the default console group logger in NuclearJS
+- **[UPGRADE]** Upgrade `immutable` to `3.8.1`
+
+
+### Cache Configuration
+
+```
+import * as Nuclear from 'nuclear-js';
+
+const MAX_ITEMS = 1000 // (optional, default = 1000) how many items to keep in the LRU cache before evicting
+const EVICT_COUNT = 10 // (optional, default = 1) how many items to throw out when the cache fills up
+
+new Nuclear.Reactor({
+  debug: false,
+  cache: new Nuclear.LRUCache(MAX_ITEMS, EVICT_COUNT),
+});
+```
+
+### Using your own Logger
+
+```
+import * as Nuclear from 'nuclear-js';
+
+new Nuclear.Reactor({
+  logger: {
+    dispatchStart(reactorState, actionType, payload) {
+      console.log(`dispatch: actionType=${actionTypes}`, payload)
+    },
+    dispatchError(reactorState, error) {
+      // useful if you need to close a console.group if an error is thrown during dispatch
+    },
+    dispatchEnd(reactorState, state, dirtyStores, previousState) {
+      const prevStateChanges = previousState.filter((val, key) => dirtyStores.contains(key)).toJS()
+      const stateChanges = state.filter((val, key) => dirtyStores.contains(key)).toJS()
+
+      console.log('prev state: ', prevStateChanges)
+      console.log('new state: ', stateChanges)
+    },
+  },
+});
+```
+
+
 ## 1.3.0 (December 31, 2015)
 
 - **[NEW]** Store hot-reloading via `reactor.replaceStores(stores)` which replaces the implementation of a store without resetting its underlying state value.  See [hot reloading example](https://github.com/optimizely/nuclear-js/tree/master/examples/hot-reloading).

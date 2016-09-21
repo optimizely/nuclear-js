@@ -41,7 +41,7 @@ export const ConsoleGroupLogger = {
    * @param {Map} state
    * @param {Set} dirtyStores
    */
-  dispatchEnd: function(reactorState, state, dirtyStores) {
+  dispatchEnd: function(reactorState, state, dirtyStores, previousState) {
     if (!getOption(reactorState, 'logDispatches')) {
       return
     }

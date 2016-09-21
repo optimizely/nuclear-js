@@ -112,7 +112,7 @@ export function dispatch(reactorState, actionType, payload) {
       }
     })
 
-    logging.dispatchEnd(reactorState, state, dirtyStores)
+    logging.dispatchEnd(reactorState, state, dirtyStores, currState)
   })
 
   const nextReactorState = reactorState
