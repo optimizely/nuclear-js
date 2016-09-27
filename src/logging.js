@@ -39,7 +39,8 @@ export const ConsoleGroupLogger = {
   /**
    * @param {ReactorState} reactorState
    * @param {Map} state
-   * @param {Set} dirtyStores
+   * @param {List} dirtyStores
+   * @param {Map} previousState
    */
   dispatchEnd: function(reactorState, state, dirtyStores, previousState) {
     if (!getOption(reactorState, 'logDispatches')) {
@@ -57,29 +58,33 @@ export const ConsoleGroupLogger = {
       console.groupEnd()
     }
   },
+  /**
+   * @param {ReactorState} reactorState
+   * @param {ObserverState} observerState
+   */
+  notifyStart: function(reactorState, observerState) {
+  },
+  /**
+   * @param {ReactorState} reactorState
+   * @param {Getter} getter
+   */
+  notifyEvaluateStart: function(reactorState, getter) {
+  },
+  /**
+   * @param {ReactorState} reactorState
+   * @param {Getter} getter
+   * @param {Boolean} didCall
+   * @param {*} currValue
+   */
+  notifyEvaluateEnd: function(reactorState, getter, didCall, currValue) {
+  },
+  /**
+   * @param {ReactorState} reactorState
+   * @param {ObserverState} observerState
+   */
+  notifyEnd: function(reactorState, observerState) {
+  },
 }
 
 /* eslint-enable no-console */
 
-export const NoopLogger = {
-  /**
-   * @param {ReactorState} reactorState
-   * @param {String} type
-   * @param {*} payload
-   */
-  dispatchStart: function(reactorState, type, payload) {
-  },
-  /**
-   * @param {ReactorState} reactorState
-   * @param {Error} error
-   */
-  dispatchError: function(reactorState, error) {
-  },
-  /**
-   * @param {ReactorState} reactorState
-   * @param {Map} state
-   * @param {Set} dirtyStores
-   */
-  dispatchEnd: function(reactorState, state, dirtyStores) {
-  },
-}

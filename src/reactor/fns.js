@@ -73,8 +73,6 @@ export function replaceStores(reactorState, stores) {
  * @return {ReactorState}
  */
 export function dispatch(reactorState, actionType, payload) {
-  let logging = reactorState.get('logger')
-
   if (actionType === undefined && getOption(reactorState, 'throwOnUndefinedActionType')) {
     throw new Error('`dispatch` cannot be called with an `undefined` action type.')
   }
@@ -83,7 +81,7 @@ export function dispatch(reactorState, actionType, payload) {
   let dirtyStores = reactorState.get('dirtyStores')
 
   const nextState = currState.withMutations(state => {
-    logging.dispatchStart(reactorState, actionType, payload)
+    getLoggerFunction(reactorState, 'dispatchStart')(reactorState, actionType, payload)
 
     // let each store handle the message
     reactorState.get('stores').forEach((store, id) => {
@@ -94,13 +92,13 @@ export function dispatch(reactorState, actionType, payload) {
         newState = store.handle(currState, actionType, payload)
       } catch(e) {
         // ensure console.group is properly closed
-        logging.dispatchError(reactorState, e.message)
+        getLoggerFunction(reactorState, 'dispatchError')(reactorState, e.message)
         throw e
       }
 
       if (newState === undefined && getOption(reactorState, 'throwOnUndefinedStoreReturnValue')) {
         const errorMsg = 'Store handler must return a value, did you forget a return statement'
-        logging.dispatchError(reactorState, errorMsg)
+        getLoggerFunction(reactorState, 'dispatchError')(reactorState, errorMsg)
         throw new Error(errorMsg)
       }
 
@@ -112,7 +110,7 @@ export function dispatch(reactorState, actionType, payload) {
       }
     })
 
-    logging.dispatchEnd(reactorState, state, dirtyStores, currState)
+    getLoggerFunction(reactorState, 'dispatchEnd')(reactorState, state, dirtyStores, currState)
   })
 
   const nextReactorState = reactorState
@@ -376,6 +374,17 @@ export function resetDirtyStores(reactorState) {
   return reactorState.set('dirtyStores', Immutable.Set())
 }
 
+export function getLoggerFunction(reactorState, fnName) {
+  const logger = reactorState.get('logger')
+  if (!logger) {
+    return noop
+  }
+  const fn = logger[fnName]
+  return (fn)
+    ? fn.bind(logger)
+    : noop
+}
+
 /**
  * @param {ReactorState} reactorState
  * @param {CacheEntry} cacheEntry
@@ -438,3 +447,5 @@ function incrementStoreStates(storeStates, storeIds) {
     })
   })
 }
+
+function noop() {}

@@ -1,6 +1,5 @@
 import { Map, Set, Record } from 'immutable'
 import { DefaultCache } from './cache'
-import { NoopLogger } from '../logging'
 
 export const PROD_OPTIONS = Map({
   // logs information for each dispatch
@@ -41,7 +40,7 @@ export const ReactorState = Record({
   state: Map(),
   stores: Map(),
   cache: DefaultCache(),
-  logger: NoopLogger,
+  logger: {},
   // maintains a mapping of storeId => state id (monotomically increasing integer whenever store state changes)
   storeStates: Map(),
   dirtyStores: Set(),

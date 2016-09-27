@@ -2,7 +2,7 @@ import Immutable from 'immutable'
 import createReactMixin from './create-react-mixin'
 import * as fns from './reactor/fns'
 import { DefaultCache } from './reactor/cache'
-import { NoopLogger, ConsoleGroupLogger } from './logging'
+import { ConsoleGroupLogger } from './logging'
 import { isKeyPath } from './key-path'
 import { isGetter } from './getter'
 import { toJS } from './immutable-helpers'
@@ -29,7 +29,7 @@ class Reactor {
     const baseOptions = debug ? DEBUG_OPTIONS : PROD_OPTIONS
     // if defined, merge the custom implementation over the noop logger to avoid undefined lookups,
     // otherwise, just use the built-in console group logger
-    let logger = config.logger ? extend({}, NoopLogger, config.logger) : NoopLogger
+    let logger = config.logger ? config.logger : {}
     if (!config.logger && debug) {
       logger = ConsoleGroupLogger
     }
@@ -225,6 +225,8 @@ class Reactor {
       return
     }
 
+    fns.getLoggerFunction(this.reactorState, 'notifyStart')(this.reactorState, this.observerState)
+
     let observerIdsToNotify = Immutable.Set().withMutations(set => {
       // notify all observers
       set.union(this.observerState.get('any'))
@@ -244,9 +246,12 @@ class Reactor {
         // don't notify here in the case a handler called unobserve on another observer
         return
       }
+      let didCall = false
 
       const getter = entry.get('getter')
       const handler = entry.get('handler')
+
+      fns.getLoggerFunction(this.reactorState, 'notifyEvaluateStart')(this.reactorState, getter)
 
       const prevEvaluateResult = fns.evaluate(this.prevReactorState, getter)
       const currEvaluateResult = fns.evaluate(this.reactorState, getter)
@@ -259,13 +264,17 @@ class Reactor {
 
       if (!Immutable.is(prevValue, currValue)) {
         handler.call(null, currValue)
+        didCall = true
       }
+      fns.getLoggerFunction(this.reactorState, 'notifyEvaluateEnd')(this.reactorState, getter, didCall, currValue)
     })
 
     const nextReactorState = fns.resetDirtyStores(this.reactorState)
 
     this.prevReactorState = nextReactorState
     this.reactorState = nextReactorState
+
+    fns.getLoggerFunction(this.reactorState, 'notifyEnd')(this.reactorState, this.observerState)
   }
 
   /**
