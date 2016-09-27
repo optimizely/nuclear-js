@@ -1,4 +1,4 @@
-## 1.4.0 (September 21, 2015)
+## 1.4.0 (September 21, 2016)
 
 
 - **[NEW]** Added ability to switch out the default caching strategy for caching getter values. Also expose an LRU cache that can be swapped in for the basic cache
