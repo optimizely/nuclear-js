@@ -67,8 +67,6 @@ describe('Reactor', () => {
         spyOn(handler, 'dispatchStart')
         spyOn(handler, 'dispatchError')
         spyOn(handler, 'dispatchEnd')
-
-        spyOn(NoopLogger, 'dispatchError')
       })
 
       afterEach(() => {
@@ -110,25 +108,44 @@ describe('Reactor', () => {
           expect(handler.dispatchError).toHaveBeenCalled()
         }
       })
-      it('should use the NoopLogger implementation when a logging function is not defined on the custom implementation', () => {
+      it('should noop when a logging function is not defined on the custom implementation', () => {
         var reactor = new Reactor({
           debug: true,
           logger: {
             dispatchStart() {},
-            dispatchEnd() {},
           },
           options: {
             throwOnUndefinedActionType: false,
           },
         })
 
-        try {
-          reactor.dispatch(undefined)
-        } catch (e) {
-          expect(NoopLogger.dispatchError).toHaveBeenCalled()
-        }
+        expect(() => {
+          reactor.dispatch('setTax', 5)
+        }).not.toThrow()
       })
 
+      it('should properly bind context to the logging function', () => {
+        const loggerSpy = jasmine.createSpy()
+
+        function Logger() {
+        }
+        Logger.prototype.log = function() {
+          loggerSpy()
+        }
+
+        Logger.prototype.dispatchStart = function() {
+          this.log()
+        }
+
+        var reactor = new Reactor({
+          debug: true,
+          logger: new Logger(),
+        })
+
+        reactor.dispatch('setTax', 5)
+
+        expect(loggerSpy).toHaveBeenCalled()
+      })
     })
   })
 
