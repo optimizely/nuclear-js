@@ -57,7 +57,8 @@ describe('reactor fns', () => {
 
     it('should update keypathStates', () => {
       const result = nextReactorState.get('keypathStates')
-      const expected = new KeypathTracker.Node({
+      const expected = new KeypathTracker.RootNode({
+        changedPaths: Set.of(List(['store1']), List(['store2'])),
         state: 3,
         status: status.DIRTY,
         children: toImmutable({
@@ -186,7 +187,8 @@ describe('reactor fns', () => {
 
       it('should update keypathStates', () => {
         const result = nextReactorState.get('keypathStates')
-        const expected = new KeypathTracker.Node({
+        const expected = new KeypathTracker.RootNode({
+          changedPaths: Set.of(List(['store2'])),
           state: 4,
           status: status.DIRTY,
           children: toImmutable({
@@ -202,6 +204,7 @@ describe('reactor fns', () => {
             },
           }),
         })
+
         expect(is(result, expected)).toBe(true)
       })
     })
@@ -230,7 +233,7 @@ describe('reactor fns', () => {
 
       it('should update keypathStates', () => {
         const result = nextReactorState.get('keypathStates')
-        const expected = new KeypathTracker.Node({
+        const expected = new KeypathTracker.RootNode({
           state: 3,
           status: status.CLEAN,
           children: toImmutable({
@@ -262,7 +265,8 @@ describe('reactor fns', () => {
 
       it('should update keypathStates', () => {
         const result = nextReactorState.get('keypathStates')
-        const expected = new KeypathTracker.Node({
+        const expected = new KeypathTracker.RootNode({
+          changedPaths: Set.of(List(['store2'])),
           state: 4,
           status: status.DIRTY,
           children: toImmutable({
@@ -344,7 +348,8 @@ describe('reactor fns', () => {
 
     it('should update keypathStates', () => {
       const result = nextReactorState.get('keypathStates')
-      const expected = new KeypathTracker.Node({
+      const expected = new KeypathTracker.RootNode({
+        changedPaths: Set.of(List(['store1'])),
         state: 4,
         status: status.DIRTY,
         children: toImmutable({
@@ -412,7 +417,8 @@ describe('reactor fns', () => {
 
     it('should update keypathStates', () => {
       const result = nextReactorState.get('keypathStates')
-      const expected = new KeypathTracker.Node({
+      const expected = new KeypathTracker.RootNode({
+        changedPaths: Set.of(List(['store1']), List(['store2'])),
         state: 6,
         status: status.DIRTY,
         children: toImmutable({

@@ -1,6 +1,6 @@
 import { Map, Set, Record } from 'immutable'
 import { DefaultCache } from './cache'
-import { Node as KeypathTrackerNode } from './keypath-tracker'
+import { RootNode as KeypathTrackerNode } from './keypath-tracker'
 
 export const PROD_OPTIONS = Map({
   // logs information for each dispatch

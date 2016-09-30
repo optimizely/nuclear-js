@@ -1,18 +1,18 @@
 /*eslint-disable one-var, comma-dangle*/
-import { Map, Set, is } from 'immutable'
+import { Map, List, Set, is } from 'immutable'
 import * as KeypathTracker from '../src/reactor/keypath-tracker'
 import { toImmutable } from '../src/immutable-helpers'
 
-const { status, Node } = KeypathTracker
+const { status, RootNode } = KeypathTracker
 
 describe('Keypath Tracker', () => {
   describe('unchanged', () => {
     it('should properly register ["foo"]', () => {
       const keypath = ['foo']
-      const state = new Node()
+      const state = new RootNode()
       let tracker = KeypathTracker.unchanged(state, keypath)
 
-      const expected = new Node({
+      const expected = new RootNode({
         status: status.CLEAN,
         state: 1,
         children: toImmutable({
@@ -28,10 +28,10 @@ describe('Keypath Tracker', () => {
 
     it('should properly register ["foo", "bar"]', () => {
       const keypath = ['foo', 'bar']
-      const state = new Node()
+      const state = new RootNode()
       let tracker = KeypathTracker.unchanged(state, keypath)
 
-      const expected = new Node({
+      const expected = new RootNode({
         status: status.CLEAN,
         state: 1,
         children: toImmutable({
@@ -54,7 +54,7 @@ describe('Keypath Tracker', () => {
 
     it('should register ["foo", "bar"] when ["foo"] is already registered', () => {
       const keypath = ['foo', 'bar']
-      const origTracker = new Node({
+      const origTracker = new RootNode({
         status: status.CLEAN,
         state: 1,
         children: toImmutable({
@@ -66,7 +66,7 @@ describe('Keypath Tracker', () => {
         })
       })
       const tracker = KeypathTracker.unchanged(origTracker, keypath)
-      const expected = new Node({
+      const expected = new RootNode({
         status: status.CLEAN,
         state: 1,
         children: toImmutable({
@@ -89,7 +89,7 @@ describe('Keypath Tracker', () => {
 
     it('should mark something as unchanged', () => {
       const keypath = ['foo', 'bar']
-      const orig = new Node({
+      const orig = new RootNode({
         status: status.CLEAN,
         state: 1,
         children: toImmutable({
@@ -107,7 +107,7 @@ describe('Keypath Tracker', () => {
         }),
       })
       const tracker = KeypathTracker.unchanged(orig, keypath)
-      const expected = new Node({
+      const expected = new RootNode({
         status: status.CLEAN,
         state: 1,
         children: toImmutable({
@@ -129,7 +129,7 @@ describe('Keypath Tracker', () => {
     })
 
     it('should mark the root node as unchanged', () => {
-      const orig = new Node({
+      const orig = new RootNode({
         status: status.UNKNOWN,
         state: 1,
         children: toImmutable({
@@ -141,7 +141,7 @@ describe('Keypath Tracker', () => {
         }),
       })
       const tracker = KeypathTracker.unchanged(orig, [])
-      const expected = new Node({
+      const expected = new RootNode({
         status: status.CLEAN,
         state: 1,
         children: toImmutable({
@@ -160,12 +160,13 @@ describe('Keypath Tracker', () => {
 
   describe('changed', () => {
     it('should initialize a node with a DIRTY status', () => {
-      const orig = new Node({
+      const orig = new RootNode({
         status: status.CLEAN,
         state: 1,
       })
       const result = KeypathTracker.changed(orig, ['foo'])
-      const expected = new Node({
+      const expected = new RootNode({
+        changedPaths: Set.of(toImmutable(['foo'])),
         status: status.DIRTY,
         state: 2,
         children: toImmutable({
@@ -179,8 +180,8 @@ describe('Keypath Tracker', () => {
 
       expect(is(result, expected)).toBe(true)
     })
-    it('should traverse and increment for parents and mark children clean', () => {
-      const orig = new Node({
+    it('should traverse and increment for parents and mark children UNKNOWN', () => {
+      const orig = new RootNode({
         status: status.CLEAN,
         state: 1,
           children: toImmutable({
@@ -208,7 +209,8 @@ describe('Keypath Tracker', () => {
         }),
       })
       const result = KeypathTracker.changed(orig, ['foo', 'bar'])
-      const expected = new Node({
+      const expected = new RootNode({
+        changedPaths: Set.of(toImmutable(['foo', 'bar'])),
         status: status.DIRTY,
         state: 2,
           children: toImmutable({
@@ -241,7 +243,7 @@ describe('Keypath Tracker', () => {
     })
 
     it('should handle the root node', () => {
-      const orig = new Node({
+      const orig = new RootNode({
         status: status.CLEAN,
         state: 1,
           children: toImmutable({
@@ -270,7 +272,8 @@ describe('Keypath Tracker', () => {
         }),
       })
       const result = KeypathTracker.changed(orig, [])
-      const expected = new Node({
+      const expected = new RootNode({
+        changedPaths: Set.of(toImmutable([])),
         status: status.DIRTY,
         state: 2,
           children: toImmutable({
@@ -304,7 +307,7 @@ describe('Keypath Tracker', () => {
   })
 
   describe('isEqual', () => {
-    const state = new Node({
+    const state = new RootNode({
       state: 1,
       status: status.DIRTY,
       children: toImmutable({
@@ -360,7 +363,7 @@ describe('Keypath Tracker', () => {
   })
 
   describe('get', () => {
-    const state = new Node({
+    const state = new RootNode({
       state: 1,
       status: status.DIRTY,
       children: toImmutable({
@@ -406,7 +409,7 @@ describe('Keypath Tracker', () => {
   })
 
   describe('isClean', () => {
-    const state = new Node({
+    const state = new RootNode({
       state: 1,
       status: status.DIRTY,
       children: toImmutable({
@@ -458,10 +461,11 @@ describe('Keypath Tracker', () => {
 
   describe('incrementAndClean', () => {
     it('should work when the root node is clean', () => {
-      const state = new Node({
+      const state = new RootNode({
+        changedPaths: Set.of(List(['foo'])),
         state: 2,
         status: status.CLEAN,
-        chidlren: toImmutable({
+        children: toImmutable({
           foo: {
             status: status.DIRTY,
             state: 2,
@@ -476,10 +480,10 @@ describe('Keypath Tracker', () => {
         }),
       })
 
-      const expected = new Node({
+      const expected = new RootNode({
         state: 2,
         status: status.CLEAN,
-        chidlren: toImmutable({
+        children: toImmutable({
           foo: {
             status: status.CLEAN,
             state: 2,
@@ -499,16 +503,17 @@ describe('Keypath Tracker', () => {
       expect(is(result, expected)).toBe(true)
     })
     it('should traverse the tree and increment any state value thats UNKNOWN and mark everything CLEAN', () => {
-      const state = new Node({
+      const state = new RootNode({
+        changedPaths: Set.of(List(['foo', 'bar']), List(['foo', 'bar', 'bat'])),
         state: 2,
         status: status.DIRTY,
-        chidlren: toImmutable({
+        children: toImmutable({
           foo: {
             status: status.DIRTY,
             state: 2,
             children: {
               bar: {
-                status: status.UNKNOWN,
+                status: status.DIRTY,
                 state: 1,
                 children: {
                   baz: {
@@ -533,20 +538,20 @@ describe('Keypath Tracker', () => {
         }),
       })
 
-      const expected = new Node({
+      const expected = new RootNode({
         state: 2,
         status: status.CLEAN,
-        chidlren: toImmutable({
+        children: toImmutable({
           foo: {
             status: status.CLEAN,
             state: 2,
             children: {
               bar: {
                 status: status.CLEAN,
-                state: 2,
+                state: 1,
                 children: {
                   baz: {
-                    status: status.UNKNOWN,
+                    status: status.CLEAN,
                     state: 2,
                     children: {},
                   },

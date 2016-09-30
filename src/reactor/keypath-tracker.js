@@ -8,7 +8,7 @@
  *     k
  *
  */
-import { Map, Record } from 'immutable'
+import { Map, Record, Set } from 'immutable'
 import { toImmutable, toJS } from '../immutable-helpers'
 
 export const status = {
@@ -17,12 +17,26 @@ export const status = {
   UNKNOWN: 2,
 }
 
-export const Node = Record({
+export const RootNode = Record({
+  status: status.CLEAN,
+  state: 1,
+  children: Map(),
+  changedPaths: Set(),
+})
+
+const Node = Record({
   status: status.CLEAN,
   state: 1,
   children: Map(),
 })
 
+/**
+ * Denotes that a keypath hasn't changed
+ * Makes the Node at the keypath as CLEAN and recursively marks the children as CLEAN
+ * @param {Immutable.Map} map
+ * @param {Keypath} keypath
+ * @return {Status}
+ */
 export function unchanged(map, keypath) {
   const childKeypath = getChildKeypath(keypath)
   if (!map.hasIn(childKeypath)) {
@@ -36,14 +50,24 @@ export function unchanged(map, keypath) {
   })
 }
 
+/**
+ * Denotes that a keypath has changed
+ * Traverses to the Node at the keypath and marks as DIRTY, marks all children as UNKNOWN
+ * @param {Immutable.Map} map
+ * @param {Keypath} keypath
+ * @return {Status}
+ */
 export function changed(map, keypath) {
   const childrenKeypath = getChildKeypath(keypath).concat('children')
-  return map
-    .update('children', children => recursiveIncrement(children, keypath))
+  // TODO(jordan): can this be optimized
+  return map.withMutations(m => {
+    m.update('changedPaths', p => p.add(toImmutable(keypath)))
+    m.update('children', children => recursiveIncrement(children, keypath))
     // handle the root node
-    .update('state', val => val + 1)
-    .set('status', status.DIRTY)
-    .updateIn(childrenKeypath, entry => recursiveSetStatus(entry, status.UNKNOWN))
+    m.update('state', val => val + 1)
+    m.set('status', status.DIRTY)
+    m.updateIn(childrenKeypath, entry => recursiveSetStatus(entry, status.UNKNOWN))
+  })
 }
 
 /**
@@ -63,12 +87,7 @@ export function isEqual(map, keypath, value) {
   return entry.get('state') === value;
 }
 
-/**
- * Increments all unknown states and sets everything to CLEAN
- * @param {Immutable.Map} map
- * @return {Status}
- */
-export function incrementAndClean(map) {
+function recursiveClean(map) {
   if (map.size === 0) {
     return map
   }
@@ -82,9 +101,35 @@ export function incrementAndClean(map) {
   return map
     .update('children', c => c.withMutations(m => {
       m.keySeq().forEach(key => {
-        m.update(key, incrementAndClean)
+        m.update(key, recursiveClean)
       })
     }))
+}
+
+/**
+ * Increments all unknown states and sets everything to CLEAN
+ * @param {Immutable.Map} map
+ * @return {Status}
+ */
+export function incrementAndClean(map) {
+  if (map.size === 0) {
+    return map
+  }
+  const changedPaths = map.get('changedPaths')
+  // TODO(jordan): can this be optimized
+  return map.withMutations(m => {
+    changedPaths.forEach(path => {
+      m.update('children', c => traverseAndMarkClean(c, path))
+    })
+
+    m.set('changedPaths', Set())
+    const rootStatus = m.get('status')
+    if (rootStatus === status.DIRTY) {
+      setClean(m)
+    } else if (rootStatus === status.UNKNOWN) {
+      setClean(increment(m))
+    }
+  })
 }
 
 export function get(map, keypath) {
@@ -127,6 +172,52 @@ function recursiveIncrement(map, keypath) {
 
     map.updateIn([key, 'children'], children => recursiveIncrement(children, keypath.rest()))
   })
+}
+
+/**
+ * Traverses up to a keypath and marks all entries as clean along the way, then recursively traverses over all children
+ * @param {Immutable.Map} map
+ * @param {Immutable.List} keypath
+ * @return {Status}
+ */
+function traverseAndMarkClean(map, keypath) {
+  if (keypath.size === 0) {
+    return recursiveCleanChildren(map)
+  }
+  return map.withMutations(map => {
+    const key = keypath.first()
+
+    map.update(key, incrementAndCleanNode)
+    map.updateIn([key, 'children'], children => traverseAndMarkClean(children, keypath.rest()))
+  })
+}
+
+function recursiveCleanChildren(children) {
+  if (children.size === 0) {
+    return children
+  }
+
+  return children.withMutations(c => {
+    c.keySeq().forEach(key => {
+      c.update(key, incrementAndCleanNode)
+      c.updateIn([key, 'children'], recursiveCleanChildren)
+    })
+  })
+}
+
+/**
+ * Takes a node, marks it CLEAN, if it was UNKNOWN it increments
+ * @param {Node} node
+ * @return {Status}
+ */
+function incrementAndCleanNode(node) {
+  const nodeStatus = node.get('status')
+  if (nodeStatus === status.DIRTY) {
+    return setClean(node)
+  } else if (nodeStatus === status.UNKNOWN) {
+    return setClean(increment(node))
+  }
+  return node
 }
 
 function recursiveRegister(map, keypath) {
