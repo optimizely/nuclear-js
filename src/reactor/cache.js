@@ -93,6 +93,21 @@ export class BasicCache {
   evict(item) {
     return new BasicCache(this.cache.remove(item))
   }
+
+  /**
+   * Removes entry from cache
+   * @param {Iterable} items
+   * @return {BasicCache}
+   */
+  evictMany(items) {
+    const newCache = this.cache.withMutations(c => {
+      items.forEach(item => {
+        c.remove(item)
+      })
+    })
+
+    return new BasicCache(newCache)
+  }
 }
 
 const DEFAULT_LRU_LIMIT = 1000
@@ -173,15 +188,12 @@ export class LRUCache {
         )
       }
 
-      const cache = (this.lru
-                     .take(this.evictCount)
-                     .reduce((c, evictItem) => c.evict(evictItem), this.cache)
-                     .miss(item, entry))
+      const itemsToRemove = this.lru.take(this.evictCount)
 
       lruCache = new LRUCache(
         this.limit,
         this.evictCount,
-        cache,
+        this.cache.evictMany(itemsToRemove).miss(item, entry),
         this.lru.skip(this.evictCount).add(item)
       )
     } else {
