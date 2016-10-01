@@ -58,7 +58,7 @@ export const ObserverState = Record({
     <Keypath>: Set<ObserverEntry>
   }
   */
-  keypathToEntries: Map({}),
+  keypathToEntries: Map({}).asMutable(),
 
   /*
   {
@@ -67,11 +67,11 @@ export const ObserverState = Record({
     }
   }
   */
-  observersMap: Map({}),
+  observersMap: Map({}).asMutable(),
 
-  trackedKeypaths: Set(),
+  trackedKeypaths: Set().asMutable(),
 
   // keep a flat set of observers to know when one is removed during a handler
-  observers: Set(),
+  observers: Set().asMutable(),
 })
 

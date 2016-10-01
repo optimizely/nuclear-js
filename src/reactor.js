@@ -45,6 +45,8 @@ class Reactor {
     this.reactorState = initialReactorState
     this.observerState = new ObserverState()
 
+    this.observerState = this.observerState.asMutable()
+
     this.ReactMixin = createReactMixin(this)
 
     // keep track of the depth of batch nesting
@@ -108,10 +110,9 @@ class Reactor {
       handler = getter
       getter = []
     }
-    let { observerState, entry } = fns.addObserver(this.reactorState, this.observerState, getter, handler)
-    this.observerState = observerState
+    let entry = fns.addObserver(this.reactorState, this.observerState, getter, handler)
     return () => {
-      this.observerState = fns.removeObserverByEntry(this.reactorState, this.observerState, entry)
+      fns.removeObserverByEntry(this.reactorState, this.observerState, entry)
     }
   }
 
@@ -123,7 +124,7 @@ class Reactor {
       throw new Error('Must call unobserve with a Getter')
     }
 
-    this.observerState = fns.removeObserver(this.reactorState, this.observerState, getter, handler)
+    fns.removeObserver(this.reactorState, this.observerState, getter, handler)
   }
 
   /**

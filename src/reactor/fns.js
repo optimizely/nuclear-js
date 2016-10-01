@@ -188,27 +188,22 @@ export function addObserver(reactorState, observerState, getter, handler) {
     handler: handler,
   })
 
-  let updatedObserverState = observerState.withMutations(map => {
-    keypathDeps.forEach(keypath => {
-      map.updateIn(['keypathToEntries', keypath], entries => {
-        return (entries)
-          ? entries.add(entry)
-          : Immutable.Set().add(entry)
-      })
-    })
+  const keypathToEntries = observerState.get('keypathToEntries')
+
+  keypathDeps.forEach(keypath => {
+    if (!keypathToEntries.has(keypath)) {
+      keypathToEntries.set(keypath, Immutable.Set().asMutable().add(entry))
+    } else {
+      keypathToEntries.get(keypath).add(entry)
+    }
   })
 
   const getterKey = createGetterKey(getter);
+  observerState.get('trackedKeypaths').union(keypathDeps)
+  observerState.get('observersMap').setIn([getterKey, handler], entry)
+  observerState.get('observers').add(entry)
 
-  const finalObserverState = updatedObserverState
-    .update('trackedKeypaths', keypaths => keypaths.union(keypathDeps))
-    .setIn(['observersMap', getterKey, handler], entry)
-    .update('observers', observers => observers.add(entry))
-
-  return {
-    observerState: finalObserverState,
-    entry: entry,
-  }
+  return entry
 }
 
 /**
@@ -254,9 +249,7 @@ export function removeObserver(reactorState, observerState, getter, handler) {
     entriesToRemove = observerState.getIn(['observersMap', getterKey], Immutable.Map({})).toList()
   }
 
-  return observerState.withMutations(map => {
-    entriesToRemove.forEach(entry => removeObserverByEntry(reactorState, map, entry, keypathDeps))
-  })
+  entriesToRemove.forEach(entry => removeObserverByEntry(reactorState, map, entry, keypathDeps))
 }
 
 /**
@@ -266,42 +259,40 @@ export function removeObserver(reactorState, observerState, getter, handler) {
  * @return {ObserverState}
  */
 export function removeObserverByEntry(reactorState, observerState, entry, keypathDeps = null) {
-  return observerState.withMutations(map => {
-    const getter = entry.get('getter')
-    if (!keypathDeps) {
-      const maxCacheDepth = getOption(reactorState, 'maxCacheDepth')
-      keypathDeps = getCanonicalKeypathDeps(getter, maxCacheDepth)
-    }
+  const getter = entry.get('getter')
+  if (!keypathDeps) {
+    const maxCacheDepth = getOption(reactorState, 'maxCacheDepth')
+    keypathDeps = getCanonicalKeypathDeps(getter, maxCacheDepth)
+  }
 
-    map.update('observers', observers => observers.remove(entry))
+  observerState.get('observers').remove(entry)
 
-    // update the keypathToEntries
-    keypathDeps.forEach(keypath => {
-      const kp = ['keypathToEntries', keypath]
-      map.updateIn(kp, entries => {
-        // check for observers being present because reactor.reset() can be called before an unwatch fn
-        return (entries)
-          ? entries.remove(entry)
-          : entries
-      })
-      // protect against unwatch after reset
-      if (map.hasIn(kp) &&
-          map.getIn(kp).size === 0) {
-        map.removeIn(kp)
-        map.update('trackedKeypaths', keypaths => keypaths.remove(keypath))
+  // update the keypathToEntries
+  keypathDeps.forEach(keypath => {
+    const kp = ['keypathToEntries', keypath]
+    const entries = observerState.getIn(kp)
+
+    if (entries) {
+      // check for observers being present because reactor.reset() can be called before an unwatch fn
+      entries.remove(entry)
+      if (entries.size === 0) {
+        observerState.removeIn(kp)
+        observerState.get('trackedKeypaths').remove(keypath)
       }
-    })
-
-    // remove entry from observersMap
-    const getterKey = createGetterKey(getter)
-    const handler = entry.get('handler')
-    map.removeIn(['observersMap', getterKey, handler])
-    // protect against unwatch after reset
-    if (map.hasIn(['observersMap', getterKey]) &&
-        map.getIn(['observersMap', getterKey]).size === 0) {
-      map.removeIn(['observersMap', getterKey])
     }
   })
+
+  // remove entry from observersobserverState
+  const getterKey = createGetterKey(getter)
+  const handler = entry.get('handler')
+
+  const observersMap = observerState.get('observersMap')
+  observersMap.removeIn([getterKey, handler])
+  // protect against unwatch after reset
+  if (observersMap.has(getterKey) &&
+      observersMap.get(getterKey).size === 0) {
+    observersMap.remove(getterKey)
+  }
 }
 
 /**
