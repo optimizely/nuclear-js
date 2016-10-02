@@ -5,10 +5,15 @@ import * as fns from '../src/reactor/fns'
 import * as KeypathTracker from '../src/reactor/keypath-tracker'
 import { ReactorState, ObserverState } from '../src/reactor/records'
 import { toImmutable } from '../src/immutable-helpers'
+import { DefaultCache } from '../src/reactor/cache'
 
 const status = KeypathTracker.status
 
 describe('reactor fns', () => {
+  beforeEach(() => {
+    jasmine.addCustomEqualityTester(is)
+  })
+
   describe('#registerStores', () => {
     let reactorState
     let store1
@@ -374,7 +379,13 @@ describe('reactor fns', () => {
     let initialReactorState, nextReactorState, store1, store2
 
     beforeEach(() => {
-      const reactorState = new ReactorState()
+      const cache = DefaultCache()
+      cache.miss('key', 'value')
+
+      const reactorState = new ReactorState({
+        cache: DefaultCache(),
+      })
+
       store1 = new Store({
         getInitialState() {
           return toImmutable({
@@ -415,25 +426,18 @@ describe('reactor fns', () => {
       expect(is(expected, result)).toBe(true)
     })
 
+    it('should empty the cache', () => {
+      const cache = nextReactorState.get('cache')
+      expect(cache.asMap()).toEqual(Map({}))
+    })
+
+    it('reset the dispatchId', () => {
+      expect(nextReactorState.get('dispatchId')).toBe(1)
+    })
+
     it('should update keypathStates', () => {
       const result = nextReactorState.get('keypathStates')
-      const expected = new KeypathTracker.RootNode({
-        changedPaths: Set.of(List(['store1']), List(['store2'])),
-        state: 6,
-        status: status.DIRTY,
-        children: toImmutable({
-          store1: {
-            state: 3,
-            status: status.DIRTY,
-            children: {},
-          },
-          store2: {
-            state: 2,
-            status: status.DIRTY,
-            children: {},
-          },
-        }),
-      })
+      const expected = new KeypathTracker.RootNode()
       expect(is(result, expected)).toBe(true)
     })
   })
