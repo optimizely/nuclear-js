@@ -5523,8 +5523,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _immutable = __webpack_require__(3);
 
-	var _immutable2 = _interopRequireDefault(_immutable);
-
 	var _createReactMixin = __webpack_require__(7);
 
 	var _createReactMixin2 = _interopRequireDefault(_createReactMixin);
@@ -5535,7 +5533,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _reactorCache = __webpack_require__(9);
 
-	var _logging = __webpack_require__(12);
+	var _logging = __webpack_require__(13);
 
 	var _keyPath = __webpack_require__(11);
 
@@ -5545,7 +5543,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _utils = __webpack_require__(4);
 
-	var _reactorRecords = __webpack_require__(13);
+	var _reactorObserverState = __webpack_require__(14);
+
+	var _reactorObserverState2 = _interopRequireDefault(_reactorObserverState);
+
+	var _reactorRecords = __webpack_require__(15);
 
 	/**
 	 * State is stored in NuclearJS Reactors.  Reactors
@@ -5567,7 +5569,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var baseOptions = debug ? _reactorRecords.DEBUG_OPTIONS : _reactorRecords.PROD_OPTIONS;
 	    // if defined, merge the custom implementation over the noop logger to avoid undefined lookups,
 	    // otherwise, just use the built-in console group logger
-	    var logger = config.logger ? (0, _utils.extend)({}, _logging.NoopLogger, config.logger) : _logging.NoopLogger;
+	    var logger = config.logger ? config.logger : {};
 	    if (!config.logger && debug) {
 	      logger = _logging.ConsoleGroupLogger;
 	    }
@@ -5581,7 +5583,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    this.prevReactorState = initialReactorState;
 	    this.reactorState = initialReactorState;
-	    this.observerState = new _reactorRecords.ObserverState();
+	    this.observerState = new _reactorObserverState2['default']();
 
 	    this.ReactMixin = (0, _createReactMixin2['default'])(this);
 
@@ -5601,12 +5603,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	  _createClass(Reactor, [{
 	    key: 'evaluate',
 	    value: function evaluate(keyPathOrGetter) {
-	      var _fns$evaluate = fns.evaluate(this.reactorState, keyPathOrGetter);
+	      var _this = this;
 
-	      var result = _fns$evaluate.result;
-	      var reactorState = _fns$evaluate.reactorState;
+	      var result = undefined;
 
-	      this.reactorState = reactorState;
+	      this.reactorState = this.reactorState.withMutations(function (reactorState) {
+	        if (!(0, _keyPath.isKeyPath)(keyPathOrGetter)) {
+	          // look through the keypathStates and see if any of the getters dependencies are dirty, if so resolve
+	          // against the previous reactor state
+	          var maxCacheDepth = fns.getOption(reactorState, 'maxCacheDepth');
+	          fns.resolveDirtyKeypathStates(_this.prevReactorState, reactorState, (0, _getter.getCanonicalKeypathDeps)(keyPathOrGetter, maxCacheDepth));
+	        }
+	        result = fns.evaluate(reactorState, keyPathOrGetter);
+	      });
+
 	      return result;
 	    }
 
@@ -5640,21 +5650,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: 'observe',
 	    value: function observe(getter, handler) {
-	      var _this = this;
+	      var _this2 = this;
 
 	      if (arguments.length === 1) {
 	        handler = getter;
 	        getter = [];
 	      }
-
-	      var _fns$addObserver = fns.addObserver(this.observerState, getter, handler);
-
-	      var observerState = _fns$addObserver.observerState;
-	      var entry = _fns$addObserver.entry;
-
-	      this.observerState = observerState;
+	      var entry = this.observerState.addObserver(this.reactorState, getter, handler);
 	      return function () {
-	        _this.observerState = fns.removeObserverByEntry(_this.observerState, entry);
+	        _this2.observerState.removeObserverByEntry(_this2.reactorState, entry);
 	      };
 	    }
 	  }, {
@@ -5667,7 +5671,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        throw new Error('Must call unobserve with a Getter');
 	      }
 
-	      this.observerState = fns.removeObserver(this.observerState, getter, handler);
+	      this.observerState.removeObserver(this.reactorState, getter, handler);
 	    }
 
 	    /**
@@ -5689,6 +5693,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 
 	      try {
+	        this.prevReactorState = this.reactorState;
 	        this.reactorState = fns.dispatch(this.reactorState, actionType, payload);
 	      } catch (e) {
 	        this.__isDispatching = false;
@@ -5734,6 +5739,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: 'registerStores',
 	    value: function registerStores(stores) {
+	      this.prevReactorState = this.reactorState;
 	      this.reactorState = fns.registerStores(this.reactorState, stores);
 	      this.__notify();
 	    }
@@ -5765,6 +5771,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: 'loadState',
 	    value: function loadState(state) {
+	      this.prevReactorState = this.reactorState;
 	      this.reactorState = fns.loadState(this.reactorState, state);
 	      this.__notify();
 	    }
@@ -5778,7 +5785,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var newState = fns.reset(this.reactorState);
 	      this.reactorState = newState;
 	      this.prevReactorState = newState;
-	      this.observerState = new _reactorRecords.ObserverState();
+	      this.observerState = new _reactorObserverState2['default']();
 	    }
 
 	    /**
@@ -5788,59 +5795,52 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }, {
 	    key: '__notify',
 	    value: function __notify() {
-	      var _this2 = this;
+	      var _this3 = this;
 
 	      if (this.__batchDepth > 0) {
 	        // in the middle of batch, dont notify
 	        return;
 	      }
 
-	      var dirtyStores = this.reactorState.get('dirtyStores');
-	      if (dirtyStores.size === 0) {
-	        return;
-	      }
+	      this.prevReactorState = this.prevReactorState.asMutable();
+	      this.reactorState = this.reactorState.asMutable();
 
-	      var observerIdsToNotify = _immutable2['default'].Set().withMutations(function (set) {
-	        // notify all observers
-	        set.union(_this2.observerState.get('any'));
+	      fns.getLoggerFunction(this.reactorState, 'notifyStart')(this.reactorState, this.observerState);
 
-	        dirtyStores.forEach(function (id) {
-	          var entries = _this2.observerState.getIn(['stores', id]);
-	          if (!entries) {
-	            return;
-	          }
-	          set.union(entries);
-	        });
-	      });
+	      var keypathsToResolve = this.observerState.getTrackedKeypaths();
+	      var changedKeypaths = fns.resolveDirtyKeypathStates(this.prevReactorState, this.reactorState, keypathsToResolve, true // increment all dirty states (this should leave no unknown state in the keypath tracker map):
+	      );
 
-	      observerIdsToNotify.forEach(function (observerId) {
-	        var entry = _this2.observerState.getIn(['observersMap', observerId]);
-	        if (!entry) {
-	          // don't notify here in the case a handler called unobserve on another observer
+	      // get observers to notify based on the keypaths that changed
+	      var observersToNotify = this.observerState.getObserversToNotify(changedKeypaths);
+
+	      observersToNotify.forEach(function (observer) {
+	        if (!_this3.observerState.hasObserver(observer)) {
+	          // the observer was removed in a hander function
 	          return;
 	        }
+	        var didCall = false;
 
-	        var getter = entry.get('getter');
-	        var handler = entry.get('handler');
+	        var getter = observer.get('getter');
+	        var handler = observer.get('handler');
 
-	        var prevEvaluateResult = fns.evaluate(_this2.prevReactorState, getter);
-	        var currEvaluateResult = fns.evaluate(_this2.reactorState, getter);
+	        fns.getLoggerFunction(_this3.reactorState, 'notifyEvaluateStart')(_this3.reactorState, getter);
 
-	        _this2.prevReactorState = prevEvaluateResult.reactorState;
-	        _this2.reactorState = currEvaluateResult.reactorState;
+	        var prevValue = fns.evaluate(_this3.prevReactorState, getter);
+	        var currValue = fns.evaluate(_this3.reactorState, getter);
 
-	        var prevValue = prevEvaluateResult.result;
-	        var currValue = currEvaluateResult.result;
-
-	        if (!_immutable2['default'].is(prevValue, currValue)) {
+	        // TODO(jordan) pull some comparator function out of the reactorState
+	        if (!(0, _immutable.is)(prevValue, currValue)) {
 	          handler.call(null, currValue);
+	          didCall = true;
 	        }
+	        fns.getLoggerFunction(_this3.reactorState, 'notifyEvaluateEnd')(_this3.reactorState, getter, didCall, currValue);
 	      });
 
-	      var nextReactorState = fns.resetDirtyStores(this.reactorState);
+	      this.prevReactorState = this.prevReactorState.asImmutable();
+	      this.reactorState = this.reactorState.asImmutable();
 
-	      this.prevReactorState = nextReactorState;
-	      this.reactorState = nextReactorState;
+	      fns.getLoggerFunction(this.reactorState, 'notifyEnd')(this.reactorState, this.observerState);
 	    }
 
 	    /**
@@ -5954,14 +5954,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.replaceStores = replaceStores;
 	exports.dispatch = dispatch;
 	exports.loadState = loadState;
-	exports.addObserver = addObserver;
 	exports.getOption = getOption;
-	exports.removeObserver = removeObserver;
-	exports.removeObserverByEntry = removeObserverByEntry;
 	exports.reset = reset;
+	exports.resolveDirtyKeypathStates = resolveDirtyKeypathStates;
 	exports.evaluate = evaluate;
 	exports.serialize = serialize;
-	exports.resetDirtyStores = resetDirtyStores;
+	exports.getLoggerFunction = getLoggerFunction;
+
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
@@ -5977,19 +5977,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _keyPath = __webpack_require__(11);
 
+	var _keypathTracker = __webpack_require__(12);
+
+	var KeypathTracker = _interopRequireWildcard(_keypathTracker);
+
 	var _utils = __webpack_require__(4);
-
-	/**
-	 * Immutable Types
-	 */
-	var EvaluateResult = _immutable2['default'].Record({ result: null, reactorState: null });
-
-	function evaluateResult(result, reactorState) {
-	  return new EvaluateResult({
-	    result: result,
-	    reactorState: reactorState
-	  });
-	}
 
 	/**
 	 * @param {ReactorState} reactorState
@@ -6019,10 +6011,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return stores.set(id, store);
 	      }).update('state', function (state) {
 	        return state.set(id, initialState);
-	      }).update('dirtyStores', function (state) {
-	        return state.add(id);
-	      }).update('storeStates', function (storeStates) {
-	        return incrementStoreStates(storeStates, [id]);
+	      }).update('keypathStates', function (keypathStates) {
+	        return KeypathTracker.changed(keypathStates, [id]);
 	      });
 	    });
 	    incrementId(reactorState);
@@ -6055,17 +6045,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 
 	function dispatch(reactorState, actionType, payload) {
-	  var logging = reactorState.get('logger');
-
 	  if (actionType === undefined && getOption(reactorState, 'throwOnUndefinedActionType')) {
 	    throw new Error('`dispatch` cannot be called with an `undefined` action type.');
 	  }
 
 	  var currState = reactorState.get('state');
-	  var dirtyStores = reactorState.get('dirtyStores');
+	  var dirtyStores = [];
 
 	  var nextState = currState.withMutations(function (state) {
-	    logging.dispatchStart(reactorState, actionType, payload);
+	    getLoggerFunction(reactorState, 'dispatchStart')(reactorState, actionType, payload);
 
 	    // let each store handle the message
 	    reactorState.get('stores').forEach(function (store, id) {
@@ -6076,13 +6064,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	        newState = store.handle(currState, actionType, payload);
 	      } catch (e) {
 	        // ensure console.group is properly closed
-	        logging.dispatchError(reactorState, e.message);
+	        getLoggerFunction(reactorState, 'dispatchError')(reactorState, e.message);
 	        throw e;
 	      }
 
 	      if (newState === undefined && getOption(reactorState, 'throwOnUndefinedStoreReturnValue')) {
 	        var errorMsg = 'Store handler must return a value, did you forget a return statement';
-	        logging.dispatchError(reactorState, errorMsg);
+	        getLoggerFunction(reactorState, 'dispatchError')(reactorState, errorMsg);
 	        throw new Error(errorMsg);
 	      }
 
@@ -6090,15 +6078,19 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      if (currState !== newState) {
 	        // if the store state changed add store to list of dirty stores
-	        dirtyStores = dirtyStores.add(id);
+	        dirtyStores.push(id);
 	      }
 	    });
 
-	    logging.dispatchEnd(reactorState, state, dirtyStores, currState);
+	    getLoggerFunction(reactorState, 'dispatchEnd')(reactorState, state, (0, _immutableHelpers.toImmutable)(dirtyStores), currState);
 	  });
 
-	  var nextReactorState = reactorState.set('state', nextState).set('dirtyStores', dirtyStores).update('storeStates', function (storeStates) {
-	    return incrementStoreStates(storeStates, dirtyStores);
+	  var nextReactorState = reactorState.set('state', nextState).update('keypathStates', function (k) {
+	    return k.withMutations(function (keypathStates) {
+	      dirtyStores.forEach(function (storeId) {
+	        KeypathTracker.changed(keypathStates, [storeId]);
+	      });
+	    });
 	  });
 
 	  return incrementId(nextReactorState);
@@ -6111,91 +6103,33 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 
 	function loadState(reactorState, state) {
-	  var dirtyStores = [];
-	  var stateToLoad = (0, _immutableHelpers.toImmutable)({}).withMutations(function (stateToLoad) {
+	  reactorState = reactorState.asMutable();
+	  var dirtyStores = _immutable2['default'].Set().asMutable();
+
+	  var stateToLoad = _immutable2['default'].Map({}).withMutations(function (stateToLoad) {
 	    (0, _utils.each)(state, function (serializedStoreState, storeId) {
 	      var store = reactorState.getIn(['stores', storeId]);
 	      if (store) {
 	        var storeState = store.deserialize(serializedStoreState);
 	        if (storeState !== undefined) {
 	          stateToLoad.set(storeId, storeState);
-	          dirtyStores.push(storeId);
+	          dirtyStores.add(storeId);
 	        }
 	      }
 	    });
 	  });
 
-	  var dirtyStoresSet = _immutable2['default'].Set(dirtyStores);
-	  return reactorState.update('state', function (state) {
+	  reactorState.update('state', function (state) {
 	    return state.merge(stateToLoad);
-	  }).update('dirtyStores', function (stores) {
-	    return stores.union(dirtyStoresSet);
-	  }).update('storeStates', function (storeStates) {
-	    return incrementStoreStates(storeStates, dirtyStores);
-	  });
-	}
-
-	/**
-	 * Adds a change observer whenever a certain part of the reactor state changes
-	 *
-	 * 1. observe(handlerFn) - 1 argument, called anytime reactor.state changes
-	 * 2. observe(keyPath, handlerFn) same as above
-	 * 3. observe(getter, handlerFn) called whenever any getter dependencies change with
-	 *    the value of the getter
-	 *
-	 * Adds a change handler whenever certain deps change
-	 * If only one argument is passed invoked the handler whenever
-	 * the reactor state changes
-	 *
-	 * @param {ObserverState} observerState
-	 * @param {KeyPath|Getter} getter
-	 * @param {function} handler
-	 * @return {ObserveResult}
-	 */
-
-	function addObserver(observerState, getter, handler) {
-	  // use the passed in getter as the key so we can rely on a byreference call for unobserve
-	  var getterKey = getter;
-	  if ((0, _keyPath.isKeyPath)(getter)) {
-	    getter = (0, _getter.fromKeyPath)(getter);
-	  }
-
-	  var currId = observerState.get('nextId');
-	  var storeDeps = (0, _getter.getStoreDeps)(getter);
-	  var entry = _immutable2['default'].Map({
-	    id: currId,
-	    storeDeps: storeDeps,
-	    getterKey: getterKey,
-	    getter: getter,
-	    handler: handler
-	  });
-
-	  var updatedObserverState = undefined;
-	  if (storeDeps.size === 0) {
-	    // no storeDeps means the observer is dependent on any of the state changing
-	    updatedObserverState = observerState.update('any', function (observerIds) {
-	      return observerIds.add(currId);
-	    });
-	  } else {
-	    updatedObserverState = observerState.withMutations(function (map) {
-	      storeDeps.forEach(function (storeId) {
-	        var path = ['stores', storeId];
-	        if (!map.hasIn(path)) {
-	          map.setIn(path, _immutable2['default'].Set());
-	        }
-	        map.updateIn(['stores', storeId], function (observerIds) {
-	          return observerIds.add(currId);
-	        });
+	  }).update('keypathStates', function (k) {
+	    return k.withMutations(function (keypathStates) {
+	      dirtyStores.forEach(function (storeId) {
+	        KeypathTracker.changed(keypathStates, [storeId]);
 	      });
 	    });
-	  }
+	  });
 
-	  updatedObserverState = updatedObserverState.set('nextId', currId + 1).setIn(['observersMap', currId], entry);
-
-	  return {
-	    observerState: updatedObserverState,
-	    entry: entry
-	  };
+	  return reactorState.asImmutable();
 	}
 
 	/**
@@ -6210,75 +6144,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    throw new Error('Invalid option: ' + option);
 	  }
 	  return value;
-	}
-
-	/**
-	 * Use cases
-	 * removeObserver(observerState, [])
-	 * removeObserver(observerState, [], handler)
-	 * removeObserver(observerState, ['keyPath'])
-	 * removeObserver(observerState, ['keyPath'], handler)
-	 * removeObserver(observerState, getter)
-	 * removeObserver(observerState, getter, handler)
-	 * @param {ObserverState} observerState
-	 * @param {KeyPath|Getter} getter
-	 * @param {Function} handler
-	 * @return {ObserverState}
-	 */
-
-	function removeObserver(observerState, getter, handler) {
-	  var entriesToRemove = observerState.get('observersMap').filter(function (entry) {
-	    // use the getterKey in the case of a keyPath is transformed to a getter in addObserver
-	    var entryGetter = entry.get('getterKey');
-	    var handlersMatch = !handler || entry.get('handler') === handler;
-	    if (!handlersMatch) {
-	      return false;
-	    }
-	    // check for a by-value equality of keypaths
-	    if ((0, _keyPath.isKeyPath)(getter) && (0, _keyPath.isKeyPath)(entryGetter)) {
-	      return (0, _keyPath.isEqual)(getter, entryGetter);
-	    }
-	    // we are comparing two getters do it by reference
-	    return getter === entryGetter;
-	  });
-
-	  return observerState.withMutations(function (map) {
-	    entriesToRemove.forEach(function (entry) {
-	      return removeObserverByEntry(map, entry);
-	    });
-	  });
-	}
-
-	/**
-	 * Removes an observer entry by id from the observerState
-	 * @param {ObserverState} observerState
-	 * @param {Immutable.Map} entry
-	 * @return {ObserverState}
-	 */
-
-	function removeObserverByEntry(observerState, entry) {
-	  return observerState.withMutations(function (map) {
-	    var id = entry.get('id');
-	    var storeDeps = entry.get('storeDeps');
-
-	    if (storeDeps.size === 0) {
-	      map.update('any', function (anyObsevers) {
-	        return anyObsevers.remove(id);
-	      });
-	    } else {
-	      storeDeps.forEach(function (storeId) {
-	        map.updateIn(['stores', storeId], function (observers) {
-	          if (observers) {
-	            // check for observers being present because reactor.reset() can be called before an unwatch fn
-	            return observers.remove(id);
-	          }
-	          return observers;
-	        });
-	      });
-	    }
-
-	    map.removeIn(['observersMap', id]);
-	  });
 	}
 
 	/**
@@ -6304,17 +6169,66 @@ return /******/ (function(modules) { // webpackBootstrap
 	      reactorState.setIn(['state', id], resetStoreState);
 	    });
 
-	    reactorState.update('storeStates', function (storeStates) {
-	      return incrementStoreStates(storeStates, storeIds);
+	    reactorState.update('keypathStates', function (k) {
+	      return k.withMutations(function (keypathStates) {
+	        storeIds.forEach(function (id) {
+	          KeypathTracker.changed(keypathStates, [id]);
+	        });
+	      });
 	    });
-	    resetDirtyStores(reactorState);
 	  });
 	}
 
 	/**
+	 * @param {ReactorState} prevReactorState
+	 * @param {ReactorState} currReactorState
+	 * @param {Array<KeyPath>} keyPathOrGetter
+	 * @return {Object}
+	 */
+
+	function resolveDirtyKeypathStates(prevReactorState, currReactorState, keypaths) {
+	  var cleanAll = arguments.length <= 3 || arguments[3] === undefined ? false : arguments[3];
+
+	  var prevState = prevReactorState.get('state');
+	  var currState = currReactorState.get('state');
+
+	  // TODO(jordan): allow store define a comparator function
+	  function equals(a, b) {
+	    return _immutable2['default'].is(a, b);
+	  }
+
+	  var changedKeypaths = [];
+
+	  currReactorState.update('keypathStates', function (k) {
+	    return k.withMutations(function (keypathStates) {
+	      keypaths.forEach(function (keypath) {
+	        if (KeypathTracker.isClean(keypathStates, keypath)) {
+	          return;
+	        }
+
+	        if (equals(prevState.getIn(keypath), currState.getIn(keypath))) {
+	          KeypathTracker.unchanged(keypathStates, keypath);
+	        } else {
+	          KeypathTracker.changed(keypathStates, keypath);
+	          changedKeypaths.push(keypath);
+	        }
+	      });
+
+	      if (cleanAll) {
+	        // TODO(jordan): this can probably be a single traversal
+	        KeypathTracker.incrementAndClean(keypathStates);
+	      }
+	    });
+	  });
+
+	  return changedKeypaths;
+	}
+
+	/**
+	 * This function must be called with mutable reactorState for performance reasons
 	 * @param {ReactorState} reactorState
 	 * @param {KeyPath|Gettter} keyPathOrGetter
-	 * @return {EvaluateResult}
+	 * @return {*}
 	 */
 
 	function evaluate(reactorState, keyPathOrGetter) {
@@ -6322,11 +6236,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  if ((0, _keyPath.isKeyPath)(keyPathOrGetter)) {
 	    // if its a keyPath simply return
-	    return evaluateResult(state.getIn(keyPathOrGetter), reactorState);
+	    return state.getIn(keyPathOrGetter);
 	  } else if (!(0, _getter.isGetter)(keyPathOrGetter)) {
 	    throw new Error('evaluate must be passed a keyPath or Getter');
 	  }
-
 	  // Must be a Getter
 
 	  var cache = reactorState.get('cache');
@@ -6336,9 +6249,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    cacheEntry = createCacheEntry(reactorState, keyPathOrGetter);
 	  }
 
-	  return evaluateResult(cacheEntry.get('value'), reactorState.update('cache', function (cache) {
+	  // TODO(jordan): respect the Getter's `shouldCache` setting
+	  reactorState.update('cache', function (cache) {
 	    return isCacheMiss ? cache.miss(keyPathOrGetter, cacheEntry) : cache.hit(keyPathOrGetter);
-	  }));
+	  });
+
+	  return cacheEntry.get('value');
 	}
 
 	/**
@@ -6359,14 +6275,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return serialized;
 	}
 
-	/**
-	 * Returns serialized state for all stores
-	 * @param {ReactorState} reactorState
-	 * @return {ReactorState}
-	 */
-
-	function resetDirtyStores(reactorState) {
-	  return reactorState.set('dirtyStores', _immutable2['default'].Set());
+	function getLoggerFunction(reactorState, fnName) {
+	  var logger = reactorState.get('logger');
+	  if (!logger) {
+	    return noop;
+	  }
+	  var fn = logger[fnName];
+	  return fn ? fn.bind(logger) : noop;
 	}
 
 	/**
@@ -6375,11 +6290,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @return {boolean}
 	 */
 	function isDirtyCacheEntry(reactorState, cacheEntry) {
-	  var storeStates = cacheEntry.get('storeStates');
+	  if (reactorState.get('dispatchId') === cacheEntry.get('dispatchId')) {
+	    return false;
+	  }
 
-	  // if there are no store states for this entry then it was never cached before
-	  return !storeStates.size || storeStates.some(function (stateId, storeId) {
-	    return reactorState.getIn(['storeStates', storeId]) !== stateId;
+	  var cacheStates = cacheEntry.get('states');
+	  var keypathStates = reactorState.get('keypathStates');
+
+	  return cacheEntry.get('states').some(function (value, keypath) {
+	    return !KeypathTracker.isEqual(keypathStates, keypath, value);
 	  });
 	}
 
@@ -6391,22 +6310,30 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 	function createCacheEntry(reactorState, getter) {
 	  // evaluate dependencies
-	  var args = (0, _getter.getDeps)(getter).map(function (dep) {
-	    return evaluate(reactorState, dep).result;
-	  });
+	  var args = (0, _getter.getDeps)(getter).reduce(function (memo, dep) {
+	    memo.push(evaluate(reactorState, dep));
+	    return memo;
+	  }, []);
+
 	  var value = (0, _getter.getComputeFn)(getter).apply(null, args);
 
-	  var storeDeps = (0, _getter.getStoreDeps)(getter);
-	  var storeStates = (0, _immutableHelpers.toImmutable)({}).withMutations(function (map) {
-	    storeDeps.forEach(function (storeId) {
-	      var stateId = reactorState.getIn(['storeStates', storeId]);
-	      map.set(storeId, stateId);
+	  var maxCacheDepth = getOption(reactorState, 'maxCacheDepth');
+	  var keypathDeps = (0, _getter.getCanonicalKeypathDeps)(getter, maxCacheDepth);
+	  var keypathStates = reactorState.get('keypathStates');
+
+	  var cacheStates = _immutable2['default'].Map({}).withMutations(function (map) {
+	    keypathDeps.forEach(function (keypath) {
+	      var keypathState = KeypathTracker.get(keypathStates, keypath);
+	      // The -1 case happens when evaluating soemthing against a previous reactorState
+	      // where the getter's keypaths were never registered and the old keypathState is undefined
+	      // for particular keypaths, this shouldn't matter because we can cache hit by dispatchId
+	      map.set(keypath, keypathState ? keypathState : -1);
 	    });
 	  });
 
 	  return (0, _cache.CacheEntry)({
 	    value: value,
-	    storeStates: storeStates,
+	    states: cacheStates,
 	    dispatchId: reactorState.get('dispatchId')
 	  });
 	}
@@ -6421,19 +6348,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  });
 	}
 
-	/**
-	 * @param {Immutable.Map} storeStates
-	 * @param {Array} storeIds
-	 * @return {Immutable.Map}
-	 */
-	function incrementStoreStates(storeStates, storeIds) {
-	  return storeStates.withMutations(function (map) {
-	    storeIds.forEach(function (id) {
-	      var nextId = map.has(id) ? map.get(id) + 1 : 1;
-	      map.set(id, nextId);
-	    });
-	  });
-	}
+	function noop() {}
 
 /***/ },
 /* 9 */
@@ -6455,7 +6370,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var CacheEntry = (0, _immutable.Record)({
 	  value: null,
-	  storeStates: (0, _immutable.Map)(),
+	  states: (0, _immutable.Map)(),
 	  dispatchId: null
 	});
 
@@ -6564,6 +6479,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: function evict(item) {
 	      return new BasicCache(this.cache.remove(item));
 	    }
+
+	    /**
+	     * Removes entry from cache
+	     * @param {Iterable} items
+	     * @return {BasicCache}
+	     */
+	  }, {
+	    key: 'evictMany',
+	    value: function evictMany(items) {
+	      var newCache = this.cache.withMutations(function (c) {
+	        items.forEach(function (item) {
+	          c.remove(item);
+	        });
+	      });
+
+	      return new BasicCache(newCache);
+	    }
 	  }]);
 
 	  return BasicCache;
@@ -6589,7 +6521,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    _classCallCheck(this, LRUCache);
 
-	    console.log("using LRU");
 	    this.limit = limit;
 	    this.evictCount = evictCount;
 	    this.cache = cache;
@@ -6668,11 +6599,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	          return new LRUCache(this.limit, this.evictCount, this.cache.miss(item, entry), this.lru.remove(item).add(item));
 	        }
 
-	        var cache = this.lru.take(this.evictCount).reduce(function (c, evictItem) {
-	          return c.evict(evictItem);
-	        }, this.cache).miss(item, entry);
+	        var itemsToRemove = this.lru.take(this.evictCount);
 
-	        lruCache = new LRUCache(this.limit, this.evictCount, cache, this.lru.skip(this.evictCount).add(item));
+	        lruCache = new LRUCache(this.limit, this.evictCount, this.cache.evictMany(itemsToRemove).miss(item, entry), this.lru.skip(this.evictCount).add(item));
 	      } else {
 	        lruCache = new LRUCache(this.limit, this.evictCount, this.cache.miss(item, entry), this.lru.add(item));
 	      }
@@ -6778,7 +6707,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    getDeps(getter).forEach(function (dep) {
 	      if ((0, _keyPath.isKeyPath)(dep)) {
-	        set.add((0, _immutable.List)(dep));
+	        set.add(_immutable2['default'].List(dep));
 	      } else if (isGetter(dep)) {
 	        set.union(getFlattenedDeps(dep));
 	      } else {
@@ -6788,6 +6717,45 @@ return /******/ (function(modules) { // webpackBootstrap
 	  });
 
 	  return existing.union(toAdd);
+	}
+
+	/**
+	 * Returns a set of deps that have been flattened and expanded
+	 * expanded ex: ['store1', 'key1'] => [['store1'], ['store1', 'key1']]
+	 *
+	 * Note: returns a keypath as an Immutable.List(['store1', 'key1')
+	 * @param {Getter} getter
+	 * @param {Number} maxDepth
+	 * @return {Immutable.Set}
+	 */
+	function getCanonicalKeypathDeps(getter, maxDepth) {
+	  if (maxDepth === undefined) {
+	    throw new Error('Must supply maxDepth argument');
+	  }
+
+	  var cacheKey = '__storeDeps_' + maxDepth;
+	  if (getter.hasOwnProperty(cacheKey)) {
+	    return getter[cacheKey];
+	  }
+
+	  var deps = _immutable2['default'].Set().withMutations(function (set) {
+	    getFlattenedDeps(getter).forEach(function (keypath) {
+	      if (keypath.size <= maxDepth) {
+	        set.add(keypath);
+	      } else {
+	        set.add(keypath.slice(0, maxDepth));
+	      }
+	    });
+	  });
+
+	  Object.defineProperty(getter, cacheKey, {
+	    enumerable: false,
+	    configurable: false,
+	    writable: false,
+	    value: deps
+	  });
+
+	  return deps;
 	}
 
 	/**
@@ -6811,9 +6779,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return getter.__storeDeps;
 	  }
 
-	  var storeDeps = getFlattenedDeps(getter).map(function (keyPath) {
-	    return keyPath.first();
-	  }).filter(function (x) {
+	  var storeDeps = getFlattenedDeps(getter).filter(function (x) {
 	    return !!x;
 	  });
 
@@ -6831,6 +6797,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  isGetter: isGetter,
 	  getComputeFn: getComputeFn,
 	  getFlattenedDeps: getFlattenedDeps,
+	  getCanonicalKeypathDeps: getCanonicalKeypathDeps,
 	  getStoreDeps: getStoreDeps,
 	  getDeps: getDeps,
 	  fromKeyPath: fromKeyPath
@@ -6847,7 +6814,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	  value: true
 	});
 	exports.isKeyPath = isKeyPath;
-	exports.isEqual = isEqual;
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
@@ -6867,22 +6833,325 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return (0, _utils.isArray)(toTest) && !(0, _utils.isFunction)(toTest[toTest.length - 1]);
 	}
 
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
 	/**
-	 * Checks if two keypaths are equal by value
-	 * @param {KeyPath} a
-	 * @param {KeyPath} a
-	 * @return {Boolean}
+	 * KeyPath Tracker
+	 *
+	 * St
+	 * {
+	 *   entityCache: {
+	 *     status: 'CLEAN',
+	 *     k
+	 *
+	 */
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+	exports.unchanged = unchanged;
+	exports.changed = changed;
+	exports.isEqual = isEqual;
+	exports.incrementAndClean = incrementAndClean;
+	exports.get = get;
+	exports.isClean = isClean;
+
+	var _immutable = __webpack_require__(3);
+
+	var _immutableHelpers = __webpack_require__(5);
+
+	var status = {
+	  CLEAN: 0,
+	  DIRTY: 1,
+	  UNKNOWN: 2
+	};
+
+	exports.status = status;
+	var RootNode = (0, _immutable.Record)({
+	  status: status.CLEAN,
+	  state: 1,
+	  children: (0, _immutable.Map)(),
+	  changedPaths: (0, _immutable.Set)()
+	});
+
+	exports.RootNode = RootNode;
+	var Node = (0, _immutable.Record)({
+	  status: status.CLEAN,
+	  state: 1,
+	  children: (0, _immutable.Map)()
+	});
+
+	/**
+	 * Denotes that a keypath hasn't changed
+	 * Makes the Node at the keypath as CLEAN and recursively marks the children as CLEAN
+	 * @param {Immutable.Map} map
+	 * @param {Keypath} keypath
+	 * @return {Status}
 	 */
 
-	function isEqual(a, b) {
-	  var iA = _immutable2['default'].List(a);
-	  var iB = _immutable2['default'].List(b);
+	function unchanged(map, keypath) {
+	  var childKeypath = getChildKeypath(keypath);
+	  if (!map.hasIn(childKeypath)) {
+	    return map.update('children', function (children) {
+	      return recursiveRegister(children, keypath);
+	    });
+	  }
 
-	  return _immutable2['default'].is(iA, iB);
+	  return map.updateIn(childKeypath, function (entry) {
+	    return entry.set('status', status.CLEAN).update('children', function (children) {
+	      return recursiveSetStatus(children, status.CLEAN);
+	    });
+	  });
+	}
+
+	/**
+	 * Denotes that a keypath has changed
+	 * Traverses to the Node at the keypath and marks as DIRTY, marks all children as UNKNOWN
+	 * @param {Immutable.Map} map
+	 * @param {Keypath} keypath
+	 * @return {Status}
+	 */
+
+	function changed(map, keypath) {
+	  var childrenKeypath = getChildKeypath(keypath).concat('children');
+	  // TODO(jordan): can this be optimized
+	  return map.withMutations(function (m) {
+	    m.update('changedPaths', function (p) {
+	      return p.add((0, _immutableHelpers.toImmutable)(keypath));
+	    });
+	    m.update('children', function (children) {
+	      return recursiveIncrement(children, keypath);
+	    });
+	    // handle the root node
+	    m.update('state', function (val) {
+	      return val + 1;
+	    });
+	    m.set('status', status.DIRTY);
+	    m.updateIn(childrenKeypath, function (entry) {
+	      return recursiveSetStatus(entry, status.UNKNOWN);
+	    });
+	  });
+	}
+
+	/**
+	 * @param {Immutable.Map} map
+	 * @param {Keypath} keypath
+	 * @return {Status}
+	 */
+
+	function isEqual(map, keypath, value) {
+	  var entry = map.getIn(getChildKeypath(keypath));
+
+	  if (!entry) {
+	    return false;
+	  }
+	  if (entry.get('status') === status.UNKNOWN) {
+	    return false;
+	  }
+	  return entry.get('state') === value;
+	}
+
+	function recursiveClean(map) {
+	  if (map.size === 0) {
+	    return map;
+	  }
+
+	  var rootStatus = map.get('status');
+	  if (rootStatus === status.DIRTY) {
+	    map = setClean(map);
+	  } else if (rootStatus === status.UNKNOWN) {
+	    map = setClean(increment(map));
+	  }
+	  return map.update('children', function (c) {
+	    return c.withMutations(function (m) {
+	      m.keySeq().forEach(function (key) {
+	        m.update(key, recursiveClean);
+	      });
+	    });
+	  });
+	}
+
+	/**
+	 * Increments all unknown states and sets everything to CLEAN
+	 * @param {Immutable.Map} map
+	 * @return {Status}
+	 */
+
+	function incrementAndClean(map) {
+	  if (map.size === 0) {
+	    return map;
+	  }
+	  var changedPaths = map.get('changedPaths');
+	  // TODO(jordan): can this be optimized
+	  return map.withMutations(function (m) {
+	    changedPaths.forEach(function (path) {
+	      m.update('children', function (c) {
+	        return traverseAndMarkClean(c, path);
+	      });
+	    });
+
+	    m.set('changedPaths', (0, _immutable.Set)());
+	    var rootStatus = m.get('status');
+	    if (rootStatus === status.DIRTY) {
+	      setClean(m);
+	    } else if (rootStatus === status.UNKNOWN) {
+	      setClean(increment(m));
+	    }
+	  });
+	}
+
+	function get(map, keypath) {
+	  return map.getIn(getChildKeypath(keypath).concat('state'));
+	}
+
+	function isClean(map, keypath) {
+	  return map.getIn(getChildKeypath(keypath).concat('status')) === status.CLEAN;
+	}
+
+	function increment(node) {
+	  return node.update('state', function (val) {
+	    return val + 1;
+	  });
+	}
+
+	function setClean(node) {
+	  return node.set('status', status.CLEAN);
+	}
+
+	function setDirty(node) {
+	  return node.set('status', status.DIRTY);
+	}
+
+	function recursiveIncrement(map, keypath) {
+	  keypath = (0, _immutableHelpers.toImmutable)(keypath);
+	  if (keypath.size === 0) {
+	    return map;
+	  }
+
+	  return map.withMutations(function (map) {
+	    var key = keypath.first();
+	    var entry = map.get(key);
+
+	    if (!entry) {
+	      map.set(key, new Node({
+	        status: status.DIRTY
+	      }));
+	    } else {
+	      map.update(key, function (node) {
+	        return setDirty(increment(node));
+	      });
+	    }
+
+	    map.updateIn([key, 'children'], function (children) {
+	      return recursiveIncrement(children, keypath.rest());
+	    });
+	  });
+	}
+
+	/**
+	 * Traverses up to a keypath and marks all entries as clean along the way, then recursively traverses over all children
+	 * @param {Immutable.Map} map
+	 * @param {Immutable.List} keypath
+	 * @return {Status}
+	 */
+	function traverseAndMarkClean(map, keypath) {
+	  if (keypath.size === 0) {
+	    return recursiveCleanChildren(map);
+	  }
+	  return map.withMutations(function (map) {
+	    var key = keypath.first();
+
+	    map.update(key, incrementAndCleanNode);
+	    map.updateIn([key, 'children'], function (children) {
+	      return traverseAndMarkClean(children, keypath.rest());
+	    });
+	  });
+	}
+
+	function recursiveCleanChildren(children) {
+	  if (children.size === 0) {
+	    return children;
+	  }
+
+	  return children.withMutations(function (c) {
+	    c.keySeq().forEach(function (key) {
+	      c.update(key, incrementAndCleanNode);
+	      c.updateIn([key, 'children'], recursiveCleanChildren);
+	    });
+	  });
+	}
+
+	/**
+	 * Takes a node, marks it CLEAN, if it was UNKNOWN it increments
+	 * @param {Node} node
+	 * @return {Status}
+	 */
+	function incrementAndCleanNode(node) {
+	  var nodeStatus = node.get('status');
+	  if (nodeStatus === status.DIRTY) {
+	    return setClean(node);
+	  } else if (nodeStatus === status.UNKNOWN) {
+	    return setClean(increment(node));
+	  }
+	  return node;
+	}
+
+	function recursiveRegister(map, keypath) {
+	  keypath = (0, _immutableHelpers.toImmutable)(keypath);
+	  if (keypath.size === 0) {
+	    return map;
+	  }
+
+	  return map.withMutations(function (map) {
+	    var key = keypath.first();
+	    var entry = map.get(key);
+
+	    if (!entry) {
+	      map.set(key, new Node());
+	    }
+	    map.updateIn([key, 'children'], function (children) {
+	      return recursiveRegister(children, keypath.rest());
+	    });
+	  });
+	}
+
+	/**
+	 * Turns ['foo', 'bar', 'baz'] -> ['foo', 'children', 'bar', 'children', 'baz']
+	 * @param {Keypath} keypath
+	 * @return {Keypath}
+	 */
+	function getChildKeypath(keypath) {
+	  // TODO(jordan): handle toJS more elegantly
+	  keypath = (0, _immutableHelpers.toJS)(keypath);
+	  var ret = [];
+	  for (var i = 0; i < keypath.length; i++) {
+	    ret.push('children');
+	    ret.push(keypath[i]);
+	  }
+	  return ret;
+	}
+
+	function recursiveSetStatus(map, status) {
+	  if (map.size === 0) {
+	    return map;
+	  }
+
+	  return map.withMutations(function (map) {
+	    map.keySeq().forEach(function (key) {
+	      return map.update(key, function (entry) {
+	        return entry.update('children', function (children) {
+	          return recursiveSetStatus(children, status);
+	        }).set('status', status);
+	      });
+	    });
+	  });
 	}
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -6932,7 +7201,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	  /**
 	   * @param {ReactorState} reactorState
 	   * @param {Map} state
-	   * @param {Set} dirtyStores
+	   * @param {List} dirtyStores
+	   * @param {Map} previousState
 	   */
 	  dispatchEnd: function dispatchEnd(reactorState, state, dirtyStores, previousState) {
 	    if (!(0, _reactorFns.getOption)(reactorState, 'logDispatches')) {
@@ -6949,35 +7219,270 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 	      console.groupEnd();
 	    }
-	  }
+	  },
+	  /**
+	   * @param {ReactorState} reactorState
+	   * @param {ObserverState} observerState
+	   */
+	  notifyStart: function notifyStart(reactorState, observerState) {},
+	  /**
+	   * @param {ReactorState} reactorState
+	   * @param {Getter} getter
+	   */
+	  notifyEvaluateStart: function notifyEvaluateStart(reactorState, getter) {},
+	  /**
+	   * @param {ReactorState} reactorState
+	   * @param {Getter} getter
+	   * @param {Boolean} didCall
+	   * @param {*} currValue
+	   */
+	  notifyEvaluateEnd: function notifyEvaluateEnd(reactorState, getter, didCall, currValue) {},
+	  /**
+	   * @param {ReactorState} reactorState
+	   * @param {ObserverState} observerState
+	   */
+	  notifyEnd: function notifyEnd(reactorState, observerState) {}
 	};
 
 	exports.ConsoleGroupLogger = ConsoleGroupLogger;
 	/* eslint-enable no-console */
 
-	var NoopLogger = {
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, '__esModule', {
+	  value: true
+	});
+
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+	var _immutable = __webpack_require__(3);
+
+	var _fns = __webpack_require__(8);
+
+	var _getter = __webpack_require__(10);
+
+	var _immutableHelpers = __webpack_require__(5);
+
+	var _keyPath = __webpack_require__(11);
+
+	var ObserverState = (function () {
+	  function ObserverState() {
+	    _classCallCheck(this, ObserverState);
+
+	    /*
+	    {
+	      <Keypath>: Set<ObserverEntry>
+	    }
+	    */
+	    this.keypathToEntries = (0, _immutable.Map)({}).asMutable();
+
+	    /*
+	    {
+	      <GetterKey>: {
+	        <handler>: <ObserverEntry>
+	      }
+	    }
+	    */
+	    this.observersMap = (0, _immutable.Map)({}).asMutable();
+
+	    this.trackedKeypaths = (0, _immutable.Set)().asMutable();
+
+	    // keep a flat set of observers to know when one is removed during a handler
+	    this.observers = (0, _immutable.Set)().asMutable();
+	  }
+
 	  /**
-	   * @param {ReactorState} reactorState
-	   * @param {String} type
-	   * @param {*} payload
+	   * Creates an immutable key for a getter
+	   * @param {Getter} getter
+	   * @return {Immutable.List}
 	   */
-	  dispatchStart: function dispatchStart(reactorState, type, payload) {},
+
 	  /**
+	   * Adds a change observer whenever a certain part of the reactor state changes
+	   *
+	   * 1. observe(handlerFn) - 1 argument, called anytime reactor.state changes
+	   * 2. observe(keyPath, handlerFn) same as above
+	   * 3. observe(getter, handlerFn) called whenever any getter dependencies change with
+	   *    the value of the getter
+	   *
+	   * Adds a change handler whenever certain deps change
+	   * If only one argument is passed invoked the handler whenever
+	   * the reactor state changes
+	   *
 	   * @param {ReactorState} reactorState
-	   * @param {Error} error
+	   * @param {KeyPath|Getter} getter
+	   * @param {function} handler
+	   * @return {ObserveResult}
 	   */
-	  dispatchError: function dispatchError(reactorState, error) {},
-	  /**
-	   * @param {ReactorState} reactorState
-	   * @param {Map} state
-	   * @param {Set} dirtyStores
-	   */
-	  dispatchEnd: function dispatchEnd(reactorState, state, dirtyStores) {}
-	};
-	exports.NoopLogger = NoopLogger;
+
+	  _createClass(ObserverState, [{
+	    key: 'addObserver',
+	    value: function addObserver(reactorState, getter, handler) {
+	      var _this = this;
+
+	      // use the passed in getter as the key so we can rely on a byreference call for unobserve
+	      var rawGetter = getter;
+	      if ((0, _keyPath.isKeyPath)(getter)) {
+	        // TODO(jordan): add a `dontCache` flag here so we dont waste caching overhead on simple keypath lookups
+	        getter = (0, _getter.fromKeyPath)(getter);
+	      }
+
+	      var maxCacheDepth = (0, _fns.getOption)(reactorState, 'maxCacheDepth');
+	      var keypathDeps = (0, _getter.getCanonicalKeypathDeps)(getter, maxCacheDepth);
+	      var entry = (0, _immutable.Map)({
+	        getter: getter,
+	        handler: handler
+	      });
+
+	      keypathDeps.forEach(function (keypath) {
+	        if (!_this.keypathToEntries.has(keypath)) {
+	          _this.keypathToEntries.set(keypath, (0, _immutable.Set)().asMutable().add(entry));
+	        } else {
+	          _this.keypathToEntries.get(keypath).add(entry);
+	        }
+	      });
+
+	      var getterKey = createGetterKey(getter);
+
+	      // union doesn't work with asMutable
+	      this.trackedKeypaths = this.trackedKeypaths.union(keypathDeps);
+	      this.observersMap.setIn([getterKey, handler], entry);
+	      this.observers.add(entry);
+
+	      return entry;
+	    }
+
+	    /**
+	     * Use cases
+	     * removeObserver(observerState, [])
+	     * removeObserver(observerState, [], handler)
+	     * removeObserver(observerState, ['keyPath'])
+	     * removeObserver(observerState, ['keyPath'], handler)
+	     * removeObserver(observerState, getter)
+	     * removeObserver(observerState, getter, handler)
+	     * @param {ReactorState} reactorState
+	     * @param {KeyPath|Getter} getter
+	     * @param {Function} handler
+	     * @return {ObserverState}
+	     */
+	  }, {
+	    key: 'removeObserver',
+	    value: function removeObserver(reactorState, getter, handler) {
+	      var _this2 = this;
+
+	      if ((0, _keyPath.isKeyPath)(getter)) {
+	        getter = (0, _getter.fromKeyPath)(getter);
+	      }
+	      var entriesToRemove = undefined;
+	      var getterKey = createGetterKey(getter);
+	      var maxCacheDepth = (0, _fns.getOption)(reactorState, 'maxCacheDepth');
+	      var keypathDeps = (0, _getter.getCanonicalKeypathDeps)(getter, maxCacheDepth);
+
+	      if (handler) {
+	        entriesToRemove = (0, _immutable.List)([this.observersMap.getIn([getterKey, handler])]);
+	      } else {
+	        entriesToRemove = this.observersMap.get(getterKey, (0, _immutable.Map)({})).toList();
+	      }
+
+	      entriesToRemove.forEach(function (entry) {
+	        _this2.removeObserverByEntry(reactorState, entry, keypathDeps);
+	      });
+	    }
+
+	    /**
+	     * Removes an observer entry
+	     * @param {ReactorState} reactorState
+	     * @param {Immutable.Map} entry
+	     * @param {Immutable.List|null} keypathDeps
+	     * @return {ObserverState}
+	     */
+	  }, {
+	    key: 'removeObserverByEntry',
+	    value: function removeObserverByEntry(reactorState, entry) {
+	      var _this3 = this;
+
+	      var keypathDeps = arguments.length <= 2 || arguments[2] === undefined ? null : arguments[2];
+
+	      var getter = entry.get('getter');
+	      if (!keypathDeps) {
+	        var maxCacheDepth = (0, _fns.getOption)(reactorState, 'maxCacheDepth');
+	        keypathDeps = (0, _getter.getCanonicalKeypathDeps)(getter, maxCacheDepth);
+	      }
+
+	      this.observers.remove(entry);
+
+	      // update the keypathToEntries
+	      keypathDeps.forEach(function (keypath) {
+	        var entries = _this3.keypathToEntries.get(keypath);
+
+	        if (entries) {
+	          // check for observers being present because reactor.reset() can be called before an unwatch fn
+	          entries.remove(entry);
+	          if (entries.size === 0) {
+	            _this3.keypathToEntries.remove(keypath);
+	            _this3.trackedKeypaths.remove(keypath);
+	          }
+	        }
+	      });
+
+	      // remove entry from observersobserverState
+	      var getterKey = createGetterKey(getter);
+	      var handler = entry.get('handler');
+
+	      this.observersMap.removeIn([getterKey, handler]);
+	      // protect against unwatch after reset
+	      if (this.observersMap.has(getterKey) && this.observersMap.get(getterKey).size === 0) {
+	        this.observersMap.remove(getterKey);
+	      }
+	    }
+	  }, {
+	    key: 'getTrackedKeypaths',
+	    value: function getTrackedKeypaths() {
+	      return this.trackedKeypaths.asImmutable();
+	    }
+
+	    /**
+	     * @param {Immutable.List} changedKeypaths
+	     * @return {Entries[]}
+	     */
+	  }, {
+	    key: 'getObserversToNotify',
+	    value: function getObserversToNotify(changedKeypaths) {
+	      var _this4 = this;
+
+	      return (0, _immutable.Set)().withMutations(function (set) {
+	        changedKeypaths.forEach(function (keypath) {
+	          var entries = _this4.keypathToEntries.get(keypath);
+	          if (entries && entries.size > 0) {
+	            set.union(entries);
+	          }
+	        });
+	      });
+	    }
+	  }, {
+	    key: 'hasObserver',
+	    value: function hasObserver(observer) {
+	      return this.observers.has(observer);
+	    }
+	  }]);
+
+	  return ObserverState;
+	})();
+
+	exports['default'] = ObserverState;
+	function createGetterKey(getter) {
+	  return (0, _immutableHelpers.toImmutable)(getter);
+	}
+	module.exports = exports['default'];
 
 /***/ },
-/* 13 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -6990,7 +7495,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _cache = __webpack_require__(9);
 
-	var _logging = __webpack_require__(12);
+	var _keypathTracker = __webpack_require__(12);
 
 	var PROD_OPTIONS = (0, _immutable.Map)({
 	  // logs information for each dispatch
@@ -7006,7 +7511,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	  // if true, throws an error if a store.getInitialState() returns a non immutable value
 	  throwOnNonImmutableStore: false,
 	  // if true, throws when dispatching in dispatch
-	  throwOnDispatchInDispatch: false
+	  throwOnDispatchInDispatch: false,
+	  // how many levels deep should getter keypath dirty states be tracked
+	  maxCacheDepth: 3
 	});
 
 	exports.PROD_OPTIONS = PROD_OPTIONS;
@@ -7024,7 +7531,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	  // if true, throws an error if a store.getInitialState() returns a non immutable value
 	  throwOnNonImmutableStore: true,
 	  // if true, throws when dispatching in dispatch
-	  throwOnDispatchInDispatch: true
+	  throwOnDispatchInDispatch: true,
+	  // how many levels deep should getter keypath dirty states be tracked
+	  maxCacheDepth: 3
 	});
 
 	exports.DEBUG_OPTIONS = DEBUG_OPTIONS;
@@ -7033,27 +7542,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	  state: (0, _immutable.Map)(),
 	  stores: (0, _immutable.Map)(),
 	  cache: (0, _cache.DefaultCache)(),
-	  logger: _logging.NoopLogger,
-	  // maintains a mapping of storeId => state id (monotomically increasing integer whenever store state changes)
-	  storeStates: (0, _immutable.Map)(),
-	  dirtyStores: (0, _immutable.Set)(),
+	  logger: {},
+	  keypathStates: new _keypathTracker.RootNode(),
 	  debug: false,
 	  // production defaults
 	  options: PROD_OPTIONS
 	});
-
 	exports.ReactorState = ReactorState;
-	var ObserverState = (0, _immutable.Record)({
-	  // observers registered to any store change
-	  any: (0, _immutable.Set)(),
-	  // observers registered to specific store changes
-	  stores: (0, _immutable.Map)({}),
-
-	  observersMap: (0, _immutable.Map)({}),
-
-	  nextId: 1
-	});
-	exports.ObserverState = ObserverState;
 
 /***/ }
 /******/ ])
