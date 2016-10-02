@@ -8,18 +8,6 @@ import * as KeypathTracker from './keypath-tracker'
 import { each } from '../utils'
 
 /**
- * Immutable Types
- */
-const EvaluateResult = Immutable.Record({ result: null, reactorState: null})
-
-function evaluateResult(result, reactorState) {
-  return new EvaluateResult({
-    result: result,
-    reactorState: reactorState,
-  })
-}
-
-/**
  * @param {ReactorState} reactorState
  * @param {Object<String, Store>} stores
  * @return {ReactorState}
@@ -132,78 +120,31 @@ export function dispatch(reactorState, actionType, payload) {
  * @return {ReactorState}
  */
 export function loadState(reactorState, state) {
-  let dirtyStores = []
-  const stateToLoad = toImmutable({}).withMutations(stateToLoad => {
+  reactorState = reactorState.asMutable()
+  let dirtyStores = Immutable.Set().asMutable()
+
+  const stateToLoad = Immutable.Map({}).withMutations(stateToLoad => {
     each(state, (serializedStoreState, storeId) => {
       const store = reactorState.getIn(['stores', storeId])
       if (store) {
         const storeState = store.deserialize(serializedStoreState)
         if (storeState !== undefined) {
           stateToLoad.set(storeId, storeState)
-          dirtyStores.push(storeId)
+          dirtyStores.add(storeId)
         }
       }
     })
   })
 
-  const dirtyStoresSet = Immutable.Set(dirtyStores)
-  return reactorState
+  reactorState
     .update('state', state => state.merge(stateToLoad))
     .update('keypathStates', k => k.withMutations(keypathStates => {
-      dirtyStoresSet.forEach(storeId => {
+      dirtyStores.forEach(storeId => {
         KeypathTracker.changed(keypathStates, [storeId])
       })
     }))
-}
 
-/**
- * Adds a change observer whenever a certain part of the reactor state changes
- *
- * 1. observe(handlerFn) - 1 argument, called anytime reactor.state changes
- * 2. observe(keyPath, handlerFn) same as above
- * 3. observe(getter, handlerFn) called whenever any getter dependencies change with
- *    the value of the getter
- *
- * Adds a change handler whenever certain deps change
- * If only one argument is passed invoked the handler whenever
- * the reactor state changes
- *
- * @param {ReactorState} reactorState
- * @param {ObserverState} observerState
- * @param {KeyPath|Getter} getter
- * @param {function} handler
- * @return {ObserveResult}
- */
-export function addObserver(reactorState, observerState, getter, handler) {
-  // use the passed in getter as the key so we can rely on a byreference call for unobserve
-  const rawGetter = getter
-  if (isKeyPath(getter)) {
-    getter = fromKeyPath(getter)
-  }
-
-  const maxCacheDepth = getOption(reactorState, 'maxCacheDepth')
-  const keypathDeps = getCanonicalKeypathDeps(getter, maxCacheDepth)
-  const entry = Immutable.Map({
-    getter: getter,
-    handler: handler,
-  })
-
-  const keypathToEntries = observerState.get('keypathToEntries')
-
-  keypathDeps.forEach(keypath => {
-    if (!keypathToEntries.has(keypath)) {
-      keypathToEntries.set(keypath, Immutable.Set().asMutable().add(entry))
-    } else {
-      keypathToEntries.get(keypath).add(entry)
-    }
-  })
-
-  const getterKey = createGetterKey(getter);
-  observerState.get('trackedKeypaths').union(keypathDeps)
-  observerState.get('observersMap').setIn([getterKey, handler], entry)
-  observerState.get('observers').add(entry)
-
-  return entry
+  return reactorState.asImmutable()
 }
 
 /**
@@ -219,81 +160,7 @@ export function getOption(reactorState, option) {
   return value
 }
 
-/**
- * Use cases
- * removeObserver(observerState, [])
- * removeObserver(observerState, [], handler)
- * removeObserver(observerState, ['keyPath'])
- * removeObserver(observerState, ['keyPath'], handler)
- * removeObserver(observerState, getter)
- * removeObserver(observerState, getter, handler)
- * @param {ObserverState} observerState
- * @param {KeyPath|Getter} getter
- * @param {Function} handler
- * @return {ObserverState}
- */
-export function removeObserver(reactorState, observerState, getter, handler) {
-  if (isKeyPath(getter)) {
-    getter = fromKeyPath(getter)
-  }
-  let entriesToRemove;
-  const getterKey = createGetterKey(getter)
-  const maxCacheDepth = getOption(reactorState, 'maxCacheDepth')
-  const keypathDeps = getCanonicalKeypathDeps(getter, maxCacheDepth)
 
-  if (handler) {
-    entriesToRemove = Immutable.List([
-      observerState.getIn(['observersMap', getterKey, handler]),
-    ])
-  } else {
-    entriesToRemove = observerState.getIn(['observersMap', getterKey], Immutable.Map({})).toList()
-  }
-
-  entriesToRemove.forEach(entry => removeObserverByEntry(reactorState, map, entry, keypathDeps))
-}
-
-/**
- * Removes an observer entry by id from the observerState
- * @param {ObserverState} observerState
- * @param {Immutable.Map} entry
- * @return {ObserverState}
- */
-export function removeObserverByEntry(reactorState, observerState, entry, keypathDeps = null) {
-  const getter = entry.get('getter')
-  if (!keypathDeps) {
-    const maxCacheDepth = getOption(reactorState, 'maxCacheDepth')
-    keypathDeps = getCanonicalKeypathDeps(getter, maxCacheDepth)
-  }
-
-  observerState.get('observers').remove(entry)
-
-  // update the keypathToEntries
-  keypathDeps.forEach(keypath => {
-    const kp = ['keypathToEntries', keypath]
-    const entries = observerState.getIn(kp)
-
-    if (entries) {
-      // check for observers being present because reactor.reset() can be called before an unwatch fn
-      entries.remove(entry)
-      if (entries.size === 0) {
-        observerState.removeIn(kp)
-        observerState.get('trackedKeypaths').remove(keypath)
-      }
-    }
-  })
-
-  // remove entry from observersobserverState
-  const getterKey = createGetterKey(getter)
-  const handler = entry.get('handler')
-
-  const observersMap = observerState.get('observersMap')
-  observersMap.removeIn([getterKey, handler])
-  // protect against unwatch after reset
-  if (observersMap.has(getterKey) &&
-      observersMap.get(getterKey).size === 0) {
-    observersMap.remove(getterKey)
-  }
-}
 
 /**
  * @param {ReactorState} reactorState
@@ -342,7 +209,7 @@ export function resolveDirtyKeypathStates(prevReactorState, currReactorState, ke
 
   let changedKeypaths = [];
 
-  const newReactorState = currReactorState.update('keypathStates', k => k.withMutations(keypathStates => {
+  currReactorState.update('keypathStates', k => k.withMutations(keypathStates => {
     keypaths.forEach(keypath => {
       if (KeypathTracker.isClean(keypathStates, keypath)) {
         return
@@ -362,26 +229,21 @@ export function resolveDirtyKeypathStates(prevReactorState, currReactorState, ke
     }
   }))
 
-  return {
-    changedKeypaths,
-    reactorState: newReactorState,
-  }
+  return changedKeypaths
 }
 
 /**
+ * This function must be called with mutable reactorState for performance reasons
  * @param {ReactorState} reactorState
  * @param {KeyPath|Gettter} keyPathOrGetter
- * @return {EvaluateResult}
+ * @return {*}
  */
 export function evaluate(reactorState, keyPathOrGetter) {
   const state = reactorState.get('state')
 
   if (isKeyPath(keyPathOrGetter)) {
     // if its a keyPath simply return
-    return evaluateResult(
-      state.getIn(keyPathOrGetter),
-      reactorState
-    )
+    return state.getIn(keyPathOrGetter);
   } else if (!isGetter(keyPathOrGetter)) {
     throw new Error('evaluate must be passed a keyPath or Getter')
   }
@@ -391,19 +253,17 @@ export function evaluate(reactorState, keyPathOrGetter) {
   let cacheEntry = cache.lookup(keyPathOrGetter)
   const isCacheMiss = !cacheEntry || isDirtyCacheEntry(reactorState, cacheEntry)
   if (isCacheMiss) {
-    const cacheResult = createCacheEntry(reactorState, keyPathOrGetter)
-    cacheEntry = cacheResult.entry
-    reactorState = cacheResult.reactorState
+    cacheEntry = createCacheEntry(reactorState, keyPathOrGetter)
   }
 
-  return evaluateResult(
-    cacheEntry.get('value'),
-    reactorState.update('cache', cache => {
-      return isCacheMiss
-        ? cache.miss(keyPathOrGetter, cacheEntry)
-        : cache.hit(keyPathOrGetter)
-    })
-  )
+  // TODO(jordan): respect the Getter's `shouldCache` setting
+  reactorState.update('cache', cache => {
+    return isCacheMiss
+      ? cache.miss(keyPathOrGetter, cacheEntry)
+      : cache.hit(keyPathOrGetter)
+  })
+
+  return cacheEntry.get('value')
 }
 
 /**
@@ -453,15 +313,6 @@ function isDirtyCacheEntry(reactorState, cacheEntry) {
 }
 
 /**
- * Creates an immutable key for a getter
- * @param {Getter} getter
- * @return {Immutable.List}
- */
-function createGetterKey(getter) {
-  return toImmutable(getter)
-}
-
-/**
  * Evaluates getter for given reactorState and returns CacheEntry
  * @param {ReactorState} reactorState
  * @param {Getter} getter
@@ -469,20 +320,10 @@ function createGetterKey(getter) {
  */
 function createCacheEntry(reactorState, getter) {
   // evaluate dependencies
-  const initial = {
-    reactorState: reactorState,
-    args: [],
-  }
-  // reduce here and capture updates to the ReactorState
-  const argResults = getDeps(getter).reduce((memo, dep) => {
-    const evaluateResult = evaluate(memo.reactorState, dep)
-    return {
-      reactorState: evaluateResult.get('reactorState'),
-      args: memo.args.concat(evaluateResult.get('result')),
-    }
-  }, initial)
-  const args = argResults.args
-  const newReactorState = argResults.reactorState
+  const args = getDeps(getter).reduce((memo, dep) => {
+    memo.push(evaluate(reactorState, dep))
+    return memo
+  }, [])
 
   const value = getComputeFn(getter).apply(null, args)
 
@@ -490,7 +331,7 @@ function createCacheEntry(reactorState, getter) {
   const keypathDeps = getCanonicalKeypathDeps(getter, maxCacheDepth)
   const keypathStates = reactorState.get('keypathStates')
 
-  const cacheStates = toImmutable({}).withMutations(map => {
+  const cacheStates = Immutable.Map({}).withMutations(map => {
     keypathDeps.forEach(keypath => {
       const keypathState = KeypathTracker.get(keypathStates, keypath)
       // The -1 case happens when evaluating soemthing against a previous reactorState
@@ -500,14 +341,11 @@ function createCacheEntry(reactorState, getter) {
     })
   })
 
-  return {
-    reactorState: newReactorState,
-    entry: CacheEntry({
-      value: value,
-      states: cacheStates,
-      dispatchId: reactorState.get('dispatchId'),
-    })
-  }
+  return CacheEntry({
+    value,
+    states: cacheStates,
+    dispatchId: reactorState.get('dispatchId'),
+  })
 }
 
 /**

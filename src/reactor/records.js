@@ -52,26 +52,3 @@ export const ReactorState = Record({
   options: PROD_OPTIONS,
 })
 
-export const ObserverState = Record({
-  /*
-  {
-    <Keypath>: Set<ObserverEntry>
-  }
-  */
-  keypathToEntries: Map({}).asMutable(),
-
-  /*
-  {
-    <GetterKey>: {
-      <handler>: <ObserverEntry>
-    }
-  }
-  */
-  observersMap: Map({}).asMutable(),
-
-  trackedKeypaths: Set().asMutable(),
-
-  // keep a flat set of observers to know when one is removed during a handler
-  observers: Set().asMutable(),
-})
-

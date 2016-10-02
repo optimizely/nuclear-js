@@ -1,4 +1,4 @@
-import Immutable from 'immutable'
+import { Map, is, Set } from 'immutable'
 import createReactMixin from './create-react-mixin'
 import * as fns from './reactor/fns'
 import { DefaultCache } from './reactor/cache'
@@ -7,9 +7,9 @@ import { isKeyPath } from './key-path'
 import { isGetter, getCanonicalKeypathDeps } from './getter'
 import { toJS } from './immutable-helpers'
 import { extend, toFactory } from './utils'
+import ObserverState from './reactor/observer-state'
 import {
   ReactorState,
-  ObserverState,
   DEBUG_OPTIONS,
   PROD_OPTIONS,
 } from './reactor/records'
@@ -45,8 +45,6 @@ class Reactor {
     this.reactorState = initialReactorState
     this.observerState = new ObserverState()
 
-    this.observerState = this.observerState.asMutable()
-
     this.ReactMixin = createReactMixin(this)
 
     // keep track of the depth of batch nesting
@@ -62,21 +60,22 @@ class Reactor {
    * @return {*}
    */
   evaluate(keyPathOrGetter) {
-    // look through the keypathStates and see if any of the getters dependencies are dirty, if so resolve
-    // against the previous reactor state
-    let updatedReactorState = this.reactorState
-    if (!isKeyPath(keyPathOrGetter)) {
-      const maxCacheDepth = fns.getOption(updatedReactorState, 'maxCacheDepth')
-      let res = fns.resolveDirtyKeypathStates(
-        this.prevReactorState,
-        this.reactorState,
-        getCanonicalKeypathDeps(keyPathOrGetter, maxCacheDepth)
-      )
-      updatedReactorState = res.reactorState
-    }
+    let result
 
-    let { result, reactorState } = fns.evaluate(updatedReactorState, keyPathOrGetter)
-    this.reactorState = reactorState
+    this.reactorState = this.reactorState.withMutations(reactorState => {
+      if (!isKeyPath(keyPathOrGetter)) {
+        // look through the keypathStates and see if any of the getters dependencies are dirty, if so resolve
+        // against the previous reactor state
+        const maxCacheDepth = fns.getOption(reactorState, 'maxCacheDepth')
+        fns.resolveDirtyKeypathStates(
+          this.prevReactorState,
+          reactorState,
+          getCanonicalKeypathDeps(keyPathOrGetter, maxCacheDepth)
+        )
+      }
+      result = fns.evaluate(reactorState, keyPathOrGetter)
+    })
+
     return result
   }
 
@@ -110,9 +109,9 @@ class Reactor {
       handler = getter
       getter = []
     }
-    let entry = fns.addObserver(this.reactorState, this.observerState, getter, handler)
+    const entry = this.observerState.addObserver(this.reactorState, getter, handler)
     return () => {
-      fns.removeObserverByEntry(this.reactorState, this.observerState, entry)
+      this.observerState.removeObserverByEntry(this.reactorState, entry)
     }
   }
 
@@ -124,7 +123,7 @@ class Reactor {
       throw new Error('Must call unobserve with a Getter')
     }
 
-    fns.removeObserver(this.reactorState, this.observerState, getter, handler)
+    this.observerState.removeObserver(this.reactorState, getter, handler)
   }
 
   /**
@@ -228,15 +227,6 @@ class Reactor {
   }
 
   /**
-   * Denotes a new state, via a store registration, dispatch or some other method
-   * Resolves any outstanding keypath states and sets a new reactorState
-   * @private
-   */
-  __nextState(newState) {
-    // TODO(jordan): determine if this is actually needed
-  }
-
-  /**
    * Notifies all change observers with the current state
    * @private
    */
@@ -246,29 +236,24 @@ class Reactor {
       return
     }
 
+    this.prevReactorState = this.prevReactorState.asMutable()
+    this.reactorState = this.reactorState.asMutable()
+
     fns.getLoggerFunction(this.reactorState, 'notifyStart')(this.reactorState, this.observerState)
 
-    const keypathsToResolve = this.observerState.get('trackedKeypaths')
-    const { reactorState, changedKeypaths } = fns.resolveDirtyKeypathStates(
+    const keypathsToResolve = this.observerState.getTrackedKeypaths()
+    const changedKeypaths = fns.resolveDirtyKeypathStates(
       this.prevReactorState,
       this.reactorState,
       keypathsToResolve,
       true // increment all dirty states (this should leave no unknown state in the keypath tracker map):
     )
-    this.reactorState = reactorState
 
     // get observers to notify based on the keypaths that changed
-    let observersToNotify = Immutable.Set().withMutations(set => {
-      changedKeypaths.forEach(keypath => {
-        const entries = this.observerState.getIn(['keypathToEntries', keypath])
-        if (entries && entries.size > 0) {
-          set.union(entries)
-        }
-      })
-    })
+    const observersToNotify = this.observerState.getObserversToNotify(changedKeypaths)
 
     observersToNotify.forEach((observer) => {
-      if (!this.observerState.get('observers').has(observer)) {
+      if (!this.observerState.hasObserver(observer)) {
         // the observer was removed in a hander function
         return
       }
@@ -279,22 +264,19 @@ class Reactor {
 
       fns.getLoggerFunction(this.reactorState, 'notifyEvaluateStart')(this.reactorState, getter)
 
-      const prevEvaluateResult = fns.evaluate(this.prevReactorState, getter)
-      const currEvaluateResult = fns.evaluate(this.reactorState, getter)
+      const prevValue = fns.evaluate(this.prevReactorState, getter)
+      const currValue = fns.evaluate(this.reactorState, getter)
 
-      this.prevReactorState = prevEvaluateResult.reactorState
-      this.reactorState = currEvaluateResult.reactorState
-
-      const prevValue = prevEvaluateResult.result
-      const currValue = currEvaluateResult.result
-
-      // TODO pull some comparator function out of the reactorState
-      if (!Immutable.is(prevValue, currValue)) {
+      // TODO(jordan) pull some comparator function out of the reactorState
+      if (!is(prevValue, currValue)) {
         handler.call(null, currValue)
         didCall = true
       }
       fns.getLoggerFunction(this.reactorState, 'notifyEvaluateEnd')(this.reactorState, getter, didCall, currValue)
     })
+
+    this.prevReactorState = this.prevReactorState.asImmutable()
+    this.reactorState = this.reactorState.asImmutable()
 
     fns.getLoggerFunction(this.reactorState, 'notifyEnd')(this.reactorState, this.observerState)
   }
