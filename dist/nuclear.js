@@ -6152,29 +6152,30 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 
 	function reset(reactorState) {
-	  var prevState = reactorState.get('state');
+	  var storeMap = reactorState.get('stores');
 
 	  return reactorState.withMutations(function (reactorState) {
-	    var storeMap = reactorState.get('stores');
-	    var storeIds = storeMap.keySeq().toJS();
-	    storeMap.forEach(function (store, id) {
-	      var storeState = prevState.get(id);
-	      var resetStoreState = store.handleReset(storeState);
-	      if (resetStoreState === undefined && getOption(reactorState, 'throwOnUndefinedStoreReturnValue')) {
-	        throw new Error('Store handleReset() must return a value, did you forget a return statement');
-	      }
-	      if (getOption(reactorState, 'throwOnNonImmutableStore') && !(0, _immutableHelpers.isImmutableValue)(resetStoreState)) {
-	        throw new Error('Store reset state must be an immutable value, did you forget to call toImmutable');
-	      }
-	      reactorState.setIn(['state', id], resetStoreState);
-	    });
-
-	    reactorState.update('keypathStates', function (k) {
-	      return k.withMutations(function (keypathStates) {
-	        storeIds.forEach(function (id) {
-	          KeypathTracker.changed(keypathStates, [id]);
+	    // update state
+	    reactorState.update('state', function (s) {
+	      return s.withMutations(function (state) {
+	        storeMap.forEach(function (store, id) {
+	          var storeState = state.get(id);
+	          var resetStoreState = store.handleReset(storeState);
+	          if (resetStoreState === undefined && getOption(reactorState, 'throwOnUndefinedStoreReturnValue')) {
+	            throw new Error('Store handleReset() must return a value, did you forget a return statement');
+	          }
+	          if (getOption(reactorState, 'throwOnNonImmutableStore') && !(0, _immutableHelpers.isImmutableValue)(resetStoreState)) {
+	            throw new Error('Store reset state must be an immutable value, did you forget to call toImmutable');
+	          }
+	          state.set(id, resetStoreState);
 	        });
 	      });
+	    });
+
+	    reactorState.set('keypathStates', new KeypathTracker.RootNode());
+	    reactorState.set('dispatchId', 1);
+	    reactorState.update('cache', function (cache) {
+	      return cache.empty();
 	    });
 	  });
 	}
@@ -6496,6 +6497,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      return new BasicCache(newCache);
 	    }
+	  }, {
+	    key: 'empty',
+	    value: function empty() {
+	      return new BasicCache();
+	    }
 	  }]);
 
 	  return BasicCache;
@@ -6621,6 +6627,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 
 	      return new LRUCache(this.limit, this.evictCount, this.cache.evict(item), this.lru.remove(item));
+	    }
+	  }, {
+	    key: 'empty',
+	    value: function empty() {
+	      return new LRUCache(this.limit, this.evictCount, this.cache.empty(), (0, _immutable.OrderedSet)());
 	    }
 	  }]);
 
