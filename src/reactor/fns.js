@@ -160,35 +160,32 @@ export function getOption(reactorState, option) {
   return value
 }
 
-
-
 /**
  * @param {ReactorState} reactorState
  * @return {ReactorState}
  */
 export function reset(reactorState) {
-  const prevState = reactorState.get('state')
+  const storeMap = reactorState.get('stores')
 
   return reactorState.withMutations(reactorState => {
-    const storeMap = reactorState.get('stores')
-    const storeIds = storeMap.keySeq().toJS()
-    storeMap.forEach((store, id) => {
-      const storeState = prevState.get(id)
-      const resetStoreState = store.handleReset(storeState)
-      if (resetStoreState === undefined && getOption(reactorState, 'throwOnUndefinedStoreReturnValue')) {
-        throw new Error('Store handleReset() must return a value, did you forget a return statement')
-      }
-      if (getOption(reactorState, 'throwOnNonImmutableStore') && !isImmutableValue(resetStoreState)) {
-        throw new Error('Store reset state must be an immutable value, did you forget to call toImmutable')
-      }
-      reactorState.setIn(['state', id], resetStoreState)
-    })
-
-    reactorState.update('keypathStates', k => k.withMutations(keypathStates => {
-      storeIds.forEach(id => {
-        KeypathTracker.changed(keypathStates, [id])
+    // update state
+    reactorState.update('state', s => s.withMutations(state => {
+      storeMap.forEach((store, id) => {
+        const storeState = state.get(id)
+        const resetStoreState = store.handleReset(storeState)
+        if (resetStoreState === undefined && getOption(reactorState, 'throwOnUndefinedStoreReturnValue')) {
+          throw new Error('Store handleReset() must return a value, did you forget a return statement')
+        }
+        if (getOption(reactorState, 'throwOnNonImmutableStore') && !isImmutableValue(resetStoreState)) {
+          throw new Error('Store reset state must be an immutable value, did you forget to call toImmutable')
+        }
+        state.set(id, resetStoreState)
       })
     }))
+
+    reactorState.set('keypathStates', new KeypathTracker.RootNode())
+    reactorState.set('dispatchId', 1)
+    reactorState.update('cache', cache => cache.empty())
   })
 }
 

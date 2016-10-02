@@ -108,6 +108,10 @@ export class BasicCache {
 
     return new BasicCache(newCache)
   }
+
+  empty() {
+    return new BasicCache()
+  }
 }
 
 const DEFAULT_LRU_LIMIT = 1000
@@ -222,6 +226,15 @@ export class LRUCache {
       this.evictCount,
       this.cache.evict(item),
       this.lru.remove(item)
+    )
+  }
+
+  empty() {
+    return new LRUCache(
+      this.limit,
+      this.evictCount,
+      this.cache.empty(),
+      OrderedSet()
     )
   }
 }
