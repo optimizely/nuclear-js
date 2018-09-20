@@ -27,7 +27,7 @@
     "stateless"
   ],
   "dependencies": {
-    "immutable": "^3.8.1"
+    "immutable": "^3.7.3"
   },
   "devDependencies": {
     "babel-core": "^5.8.29",

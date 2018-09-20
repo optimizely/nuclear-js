@@ -13,15 +13,3 @@ export function isKeyPath(toTest) {
   )
 }
 
-/**
- * Checks if two keypaths are equal by value
- * @param {KeyPath} a
- * @param {KeyPath} a
- * @return {Boolean}
- */
-export function isEqual(a, b) {
-  const iA = Immutable.List(a)
-  const iB = Immutable.List(b)
-
-  return Immutable.is(iA, iB)
-}

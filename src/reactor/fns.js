@@ -2,21 +2,10 @@ import Immutable from 'immutable'
 import { CacheEntry } from './cache'
 import { isImmutableValue } from '../immutable-helpers'
 import { toImmutable } from '../immutable-helpers'
-import { fromKeyPath, getStoreDeps, getComputeFn, getDeps, isGetter } from '../getter'
+import { fromKeyPath, getStoreDeps, getComputeFn, getDeps, isGetter, getCanonicalKeypathDeps } from '../getter'
 import { isEqual, isKeyPath } from '../key-path'
+import * as KeypathTracker from './keypath-tracker'
 import { each } from '../utils'
-
-/**
- * Immutable Types
- */
-const EvaluateResult = Immutable.Record({ result: null, reactorState: null})
-
-function evaluateResult(result, reactorState) {
-  return new EvaluateResult({
-    result: result,
-    reactorState: reactorState,
-  })
-}
 
 /**
  * @param {ReactorState} reactorState
@@ -44,8 +33,9 @@ export function registerStores(reactorState, stores) {
       reactorState
         .update('stores', stores => stores.set(id, store))
         .update('state', state => state.set(id, initialState))
-        .update('dirtyStores', state => state.add(id))
-        .update('storeStates', storeStates => incrementStoreStates(storeStates, [id]))
+        .update('keypathStates', keypathStates => {
+          return KeypathTracker.changed(keypathStates, [id])
+        })
     })
     incrementId(reactorState)
   })
@@ -78,7 +68,7 @@ export function dispatch(reactorState, actionType, payload) {
   }
 
   const currState = reactorState.get('state')
-  let dirtyStores = reactorState.get('dirtyStores')
+  let dirtyStores = []
 
   const nextState = currState.withMutations(state => {
     getLoggerFunction(reactorState, 'dispatchStart')(reactorState, actionType, payload)
@@ -106,17 +96,20 @@ export function dispatch(reactorState, actionType, payload) {
 
       if (currState !== newState) {
         // if the store state changed add store to list of dirty stores
-        dirtyStores = dirtyStores.add(id)
+        dirtyStores.push(id)
       }
     })
 
-    getLoggerFunction(reactorState, 'dispatchEnd')(reactorState, state, dirtyStores, currState)
+    getLoggerFunction(reactorState, 'dispatchEnd')(reactorState, state, toImmutable(dirtyStores), currState)
   })
 
   const nextReactorState = reactorState
     .set('state', nextState)
-    .set('dirtyStores', dirtyStores)
-    .update('storeStates', storeStates => incrementStoreStates(storeStates, dirtyStores))
+    .update('keypathStates', k => k.withMutations(keypathStates => {
+      dirtyStores.forEach(storeId => {
+        KeypathTracker.changed(keypathStates, [storeId])
+      })
+    }))
 
   return incrementId(nextReactorState)
 }
@@ -127,85 +120,31 @@ export function dispatch(reactorState, actionType, payload) {
  * @return {ReactorState}
  */
 export function loadState(reactorState, state) {
-  let dirtyStores = []
-  const stateToLoad = toImmutable({}).withMutations(stateToLoad => {
+  reactorState = reactorState.asMutable()
+  let dirtyStores = Immutable.Set().asMutable()
+
+  const stateToLoad = Immutable.Map({}).withMutations(stateToLoad => {
     each(state, (serializedStoreState, storeId) => {
       const store = reactorState.getIn(['stores', storeId])
       if (store) {
         const storeState = store.deserialize(serializedStoreState)
         if (storeState !== undefined) {
           stateToLoad.set(storeId, storeState)
-          dirtyStores.push(storeId)
+          dirtyStores.add(storeId)
         }
       }
     })
   })
 
-  const dirtyStoresSet = Immutable.Set(dirtyStores)
-  return reactorState
+  reactorState
     .update('state', state => state.merge(stateToLoad))
-    .update('dirtyStores', stores => stores.union(dirtyStoresSet))
-    .update('storeStates', storeStates => incrementStoreStates(storeStates, dirtyStores))
-}
-
-/**
- * Adds a change observer whenever a certain part of the reactor state changes
- *
- * 1. observe(handlerFn) - 1 argument, called anytime reactor.state changes
- * 2. observe(keyPath, handlerFn) same as above
- * 3. observe(getter, handlerFn) called whenever any getter dependencies change with
- *    the value of the getter
- *
- * Adds a change handler whenever certain deps change
- * If only one argument is passed invoked the handler whenever
- * the reactor state changes
- *
- * @param {ObserverState} observerState
- * @param {KeyPath|Getter} getter
- * @param {function} handler
- * @return {ObserveResult}
- */
-export function addObserver(observerState, getter, handler) {
-  // use the passed in getter as the key so we can rely on a byreference call for unobserve
-  const getterKey = getter
-  if (isKeyPath(getter)) {
-    getter = fromKeyPath(getter)
-  }
-
-  const currId = observerState.get('nextId')
-  const storeDeps = getStoreDeps(getter)
-  const entry = Immutable.Map({
-    id: currId,
-    storeDeps: storeDeps,
-    getterKey: getterKey,
-    getter: getter,
-    handler: handler,
-  })
-
-  let updatedObserverState
-  if (storeDeps.size === 0) {
-    // no storeDeps means the observer is dependent on any of the state changing
-    updatedObserverState = observerState.update('any', observerIds => observerIds.add(currId))
-  } else {
-    updatedObserverState = observerState.withMutations(map => {
-      storeDeps.forEach(storeId => {
-        let path = ['stores', storeId]
-        if (!map.hasIn(path)) {
-          map.setIn(path, Immutable.Set())
-        }
-        map.updateIn(['stores', storeId], observerIds => observerIds.add(currId))
+    .update('keypathStates', k => k.withMutations(keypathStates => {
+      dirtyStores.forEach(storeId => {
+        KeypathTracker.changed(keypathStates, [storeId])
       })
-    })
-  }
+    }))
 
-  updatedObserverState = updatedObserverState
-    .set('nextId', currId + 1)
-    .setIn(['observersMap', currId], entry)
-
-  return {
-    observerState: updatedObserverState,
-    entry: entry,
-  }
+  return reactorState.asImmutable()
 }
 
 /**
@@ -222,130 +161,106 @@ export function getOption(reactorState, option) {
 }
 
 /**
- * Use cases
- * removeObserver(observerState, [])
- * removeObserver(observerState, [], handler)
- * removeObserver(observerState, ['keyPath'])
- * removeObserver(observerState, ['keyPath'], handler)
- * removeObserver(observerState, getter)
- * removeObserver(observerState, getter, handler)
- * @param {ObserverState} observerState
- * @param {KeyPath|Getter} getter
- * @param {Function} handler
- * @return {ObserverState}
- */
-export function removeObserver(observerState, getter, handler) {
-  const entriesToRemove = observerState.get('observersMap').filter(entry => {
-    // use the getterKey in the case of a keyPath is transformed to a getter in addObserver
-    let entryGetter = entry.get('getterKey')
-    let handlersMatch = (!handler || entry.get('handler') === handler)
-    if (!handlersMatch) {
-      return false
-    }
-    // check for a by-value equality of keypaths
-    if (isKeyPath(getter) && isKeyPath(entryGetter)) {
-      return isEqual(getter, entryGetter)
-    }
-    // we are comparing two getters do it by reference
-    return (getter === entryGetter)
-  })
-
-  return observerState.withMutations(map => {
-    entriesToRemove.forEach(entry => removeObserverByEntry(map, entry))
-  })
-}
-
-/**
- * Removes an observer entry by id from the observerState
- * @param {ObserverState} observerState
- * @param {Immutable.Map} entry
- * @return {ObserverState}
- */
-export function removeObserverByEntry(observerState, entry) {
-  return observerState.withMutations(map => {
-    const id = entry.get('id')
-    const storeDeps = entry.get('storeDeps')
-
-    if (storeDeps.size === 0) {
-      map.update('any', anyObsevers => anyObsevers.remove(id))
-    } else {
-      storeDeps.forEach(storeId => {
-        map.updateIn(['stores', storeId], observers => {
-          if (observers) {
-            // check for observers being present because reactor.reset() can be called before an unwatch fn
-            return observers.remove(id)
-          }
-          return observers
-        })
-      })
-    }
-
-    map.removeIn(['observersMap', id])
-  })
-}
-
-/**
  * @param {ReactorState} reactorState
  * @return {ReactorState}
  */
 export function reset(reactorState) {
-  const prevState = reactorState.get('state')
+  const storeMap = reactorState.get('stores')
 
   return reactorState.withMutations(reactorState => {
-    const storeMap = reactorState.get('stores')
-    const storeIds = storeMap.keySeq().toJS()
-    storeMap.forEach((store, id) => {
-      const storeState = prevState.get(id)
-      const resetStoreState = store.handleReset(storeState)
-      if (resetStoreState === undefined && getOption(reactorState, 'throwOnUndefinedStoreReturnValue')) {
-        throw new Error('Store handleReset() must return a value, did you forget a return statement')
-      }
-      if (getOption(reactorState, 'throwOnNonImmutableStore') && !isImmutableValue(resetStoreState)) {
-        throw new Error('Store reset state must be an immutable value, did you forget to call toImmutable')
-      }
-      reactorState.setIn(['state', id], resetStoreState)
-    })
+    // update state
+    reactorState.update('state', s => s.withMutations(state => {
+      storeMap.forEach((store, id) => {
+        const storeState = state.get(id)
+        const resetStoreState = store.handleReset(storeState)
+        if (resetStoreState === undefined && getOption(reactorState, 'throwOnUndefinedStoreReturnValue')) {
+          throw new Error('Store handleReset() must return a value, did you forget a return statement')
+        }
+        if (getOption(reactorState, 'throwOnNonImmutableStore') && !isImmutableValue(resetStoreState)) {
+          throw new Error('Store reset state must be an immutable value, did you forget to call toImmutable')
+        }
+        state.set(id, resetStoreState)
+      })
+    }))
 
-    reactorState.update('storeStates', storeStates => incrementStoreStates(storeStates, storeIds))
-    resetDirtyStores(reactorState)
+    reactorState.set('keypathStates', new KeypathTracker.RootNode())
+    reactorState.set('dispatchId', 1)
+    reactorState.update('cache', cache => cache.empty())
   })
 }
 
 /**
+ * @param {ReactorState} prevReactorState
+ * @param {ReactorState} currReactorState
+ * @param {Array<KeyPath>} keyPathOrGetter
+ * @return {Object}
+ */
+export function resolveDirtyKeypathStates(prevReactorState, currReactorState, keypaths, cleanAll = false) {
+  const prevState = prevReactorState.get('state')
+  const currState = currReactorState.get('state')
+
+  // TODO(jordan): allow store define a comparator function
+  function equals(a, b) {
+    return Immutable.is(a, b)
+  }
+
+  let changedKeypaths = [];
+
+  currReactorState.update('keypathStates', k => k.withMutations(keypathStates => {
+    keypaths.forEach(keypath => {
+      if (KeypathTracker.isClean(keypathStates, keypath)) {
+        return
+      }
+
+      if (equals(prevState.getIn(keypath), currState.getIn(keypath))) {
+        KeypathTracker.unchanged(keypathStates, keypath)
+      } else {
+        KeypathTracker.changed(keypathStates, keypath)
+        changedKeypaths.push(keypath)
+      }
+    })
+
+    if (cleanAll) {
+      // TODO(jordan): this can probably be a single traversal
+      KeypathTracker.incrementAndClean(keypathStates)
+    }
+  }))
+
+  return changedKeypaths
+}
+
+/**
+ * This function must be called with mutable reactorState for performance reasons
  * @param {ReactorState} reactorState
  * @param {KeyPath|Gettter} keyPathOrGetter
- * @return {EvaluateResult}
+ * @return {*}
  */
 export function evaluate(reactorState, keyPathOrGetter) {
   const state = reactorState.get('state')
 
   if (isKeyPath(keyPathOrGetter)) {
     // if its a keyPath simply return
-    return evaluateResult(
-      state.getIn(keyPathOrGetter),
-      reactorState
-    )
+    return state.getIn(keyPathOrGetter);
   } else if (!isGetter(keyPathOrGetter)) {
     throw new Error('evaluate must be passed a keyPath or Getter')
   }
-
   // Must be a Getter
 
   const cache = reactorState.get('cache')
-  var cacheEntry = cache.lookup(keyPathOrGetter)
+  let cacheEntry = cache.lookup(keyPathOrGetter)
   const isCacheMiss = !cacheEntry || isDirtyCacheEntry(reactorState, cacheEntry)
   if (isCacheMiss) {
     cacheEntry = createCacheEntry(reactorState, keyPathOrGetter)
   }
 
-  return evaluateResult(
-    cacheEntry.get('value'),
-    reactorState.update('cache', cache => {
-      return isCacheMiss ?
-        cache.miss(keyPathOrGetter, cacheEntry) :
-        cache.hit(keyPathOrGetter)
-    })
-  )
+  // TODO(jordan): respect the Getter's `shouldCache` setting
+  reactorState.update('cache', cache => {
+    return isCacheMiss
+      ? cache.miss(keyPathOrGetter, cacheEntry)
+      : cache.hit(keyPathOrGetter)
+  })
+
+  return cacheEntry.get('value')
 }
 
 /**
@@ -365,15 +280,6 @@ export function serialize(reactorState) {
   return serialized
 }
 
-/**
- * Returns serialized state for all stores
- * @param {ReactorState} reactorState
- * @return {ReactorState}
- */
-export function resetDirtyStores(reactorState) {
-  return reactorState.set('dirtyStores', Immutable.Set())
-}
-
 export function getLoggerFunction(reactorState, fnName) {
   const logger = reactorState.get('logger')
   if (!logger) {
@@ -391,11 +297,15 @@ export function getLoggerFunction(reactorState, fnName) {
  * @return {boolean}
  */
 function isDirtyCacheEntry(reactorState, cacheEntry) {
-  const storeStates = cacheEntry.get('storeStates')
+  if (reactorState.get('dispatchId') === cacheEntry.get('dispatchId')) {
+    return false
+  }
 
-  // if there are no store states for this entry then it was never cached before
-  return !storeStates.size || storeStates.some((stateId, storeId) => {
-    return reactorState.getIn(['storeStates', storeId]) !== stateId
+  const cacheStates = cacheEntry.get('states')
+  const keypathStates = reactorState.get('keypathStates')
+
+  return cacheEntry.get('states').some((value, keypath) => {
+    return !KeypathTracker.isEqual(keypathStates, keypath, value)
   })
 }
 
@@ -407,20 +317,30 @@ function isDirtyCacheEntry(reactorState, cacheEntry) {
  */
 function createCacheEntry(reactorState, getter) {
   // evaluate dependencies
-  const args = getDeps(getter).map(dep => evaluate(reactorState, dep).result)
+  const args = getDeps(getter).reduce((memo, dep) => {
+    memo.push(evaluate(reactorState, dep))
+    return memo
+  }, [])
+
   const value = getComputeFn(getter).apply(null, args)
 
-  const storeDeps = getStoreDeps(getter)
-  const storeStates = toImmutable({}).withMutations(map => {
-    storeDeps.forEach(storeId => {
-      const stateId = reactorState.getIn(['storeStates', storeId])
-      map.set(storeId, stateId)
+  const maxCacheDepth = getOption(reactorState, 'maxCacheDepth')
+  const keypathDeps = getCanonicalKeypathDeps(getter, maxCacheDepth)
+  const keypathStates = reactorState.get('keypathStates')
+
+  const cacheStates = Immutable.Map({}).withMutations(map => {
+    keypathDeps.forEach(keypath => {
+      const keypathState = KeypathTracker.get(keypathStates, keypath)
+      // The -1 case happens when evaluating soemthing against a previous reactorState
+      // where the getter's keypaths were never registered and the old keypathState is undefined
+      // for particular keypaths, this shouldn't matter because we can cache hit by dispatchId
+      map.set(keypath, keypathState ? keypathState : -1)
     })
   })
 
   return CacheEntry({
-    value: value,
-    storeStates: storeStates,
+    value,
+    states: cacheStates,
     dispatchId: reactorState.get('dispatchId'),
   })
 }
@@ -431,21 +351,6 @@ function createCacheEntry(reactorState, getter) {
  */
 function incrementId(reactorState) {
   return reactorState.update('dispatchId', id => id + 1)
-}
-
-
-/**
- * @param {Immutable.Map} storeStates
- * @param {Array} storeIds
- * @return {Immutable.Map}
- */
-function incrementStoreStates(storeStates, storeIds) {
-  return storeStates.withMutations(map => {
-    storeIds.forEach(id => {
-      const nextId = map.has(id) ? map.get(id) + 1 : 1
-      map.set(id, nextId)
-    })
-  })
 }
 
 function noop() {}
