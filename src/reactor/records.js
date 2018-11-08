@@ -1,5 +1,6 @@
 import { Map, Set, Record } from 'immutable'
 import { DefaultCache } from './cache'
+import { RootNode as KeypathTrackerNode } from './keypath-tracker'
 
 export const PROD_OPTIONS = Map({
   // logs information for each dispatch
@@ -16,6 +17,8 @@ export const PROD_OPTIONS = Map({
   throwOnNonImmutableStore: false,
   // if true, throws when dispatching in dispatch
   throwOnDispatchInDispatch: false,
+  // how many levels deep should getter keypath dirty states be tracked
+  maxCacheDepth: 3,
 })
 
 export const DEBUG_OPTIONS = Map({
@@ -33,6 +36,8 @@ export const DEBUG_OPTIONS = Map({
   throwOnNonImmutableStore: true,
   // if true, throws when dispatching in dispatch
   throwOnDispatchInDispatch: true,
+  // how many levels deep should getter keypath dirty states be tracked
+  maxCacheDepth: 3,
 })
 
 export const ReactorState = Record({
@@ -41,21 +46,9 @@ export const ReactorState = Record({
   stores: Map(),
   cache: DefaultCache(),
   logger: {},
-  // maintains a mapping of storeId => state id (monotomically increasing integer whenever store state changes)
-  storeStates: Map(),
-  dirtyStores: Set(),
+  keypathStates: new KeypathTrackerNode(),
   debug: false,
   // production defaults
   options: PROD_OPTIONS,
 })
 
-export const ObserverState = Record({
-  // observers registered to any store change
-  any: Set(),
-  // observers registered to specific store changes
-  stores: Map({}),
-
-  observersMap: Map({}),
-
-  nextId: 1,
-})

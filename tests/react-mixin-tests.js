@@ -189,7 +189,7 @@ describe('reactor.ReactMixin', () => {
 
     it('should unobserve all getters', () => {
       React.unmountComponentAtNode(mountNode)
-      expect(reactor.observerState.get('observersMap').size).toBe(0)
+      expect(reactor.observerState.observers.size).toBe(0)
     })
   })
 })
