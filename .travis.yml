@@ -5,3 +5,4 @@ matrix:
       env: GRADLE_PUBLISH=false
 install: "env > /tmp/envx"
 script: "cat /tmp/envx"
+
