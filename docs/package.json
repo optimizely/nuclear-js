@@ -41,7 +41,7 @@
     "load-grunt-config": "^0.17.1",
     "node-sass": "^3.2.0",
     "react": "^0.13.3",
-    "react-highlight": "^0.4.1",
+    "react-highlight": "^0.15.0",
     "react-prism": "^1.4.1",
     "sass-loader": "^1.0.2",
     "style-loader": "^0.12.3"
