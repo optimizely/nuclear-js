@@ -40,7 +40,7 @@
     "highlight.js": "^8.6.0",
     "load-grunt-config": "^0.17.1",
     "node-sass": "^3.2.0",
-    "react": "^0.13.3",
+    "react": "^0.14.10",
     "react-highlight": "^0.4.1",
     "react-prism": "^1.4.1",
     "sass-loader": "^1.0.2",
