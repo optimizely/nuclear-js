@@ -38,7 +38,7 @@
     "babel-loader": "^5.1.4",
     "css-loader": "^0.14.5",
     "highlight.js": "^8.6.0",
-    "load-grunt-config": "^0.17.1",
+    "load-grunt-config": "^0.19.2",
     "node-sass": "^3.2.0",
     "react": "^0.13.3",
     "react-highlight": "^0.4.1",
