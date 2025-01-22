@@ -1,7 +1,7 @@
 module.exports = {
   'test': [
-    'karma:chrome', 
-    'karma:firefox'
+    'karma:chrome',
+    'karma:firefox',
   ],
 
 
