@@ -43,22 +43,24 @@ module.exports = {
     },
   },
 
-  phantom: {
-    frameworks: ['jasmine', 'es5-shim'],
-    browsers: ['PhantomJS'],
-  },
-
   chrome: {
-    reporters: ['html'],
-    browsers: ['Chrome'],
-    autoWatch: true,
-    singleRun: false,
+    frameworks: ['jasmine'],
+    reporters: ['progress', 'html'],
+    browsers: ['ChromeHeadless'], // Use ChromeHeadless instead of Chrome or PhantomJS
+    customLaunchers: {
+      HeadlessChrome: {
+        base: 'ChromeHeadless',
+        flags: ['--no-sandbox', '--disable-gpu'], // Required for CI environments
+      },
+    },
+    autoWatch: false,
+    singleRun: true,
   },
 
   coverage: {
-    frameworks: ['jasmine', 'es5-shim'],
+    frameworks: ['jasmine'],
     reporters: ['progress', 'coverage'],
-    browsers: ['PhantomJS'],
+    browsers: ['ChromeHeadless'],
     coverageReporter: {
       reporters: [
         { type: 'html', dir: 'coverage/' },

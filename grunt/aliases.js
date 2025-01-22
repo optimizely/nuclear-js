@@ -1,6 +1,6 @@
 module.exports = {
   'test': [
-    'karma:phantom',
+    'karma:chrome', 
   ],
 
   'sauce': [
@@ -13,7 +13,7 @@ module.exports = {
     'eslint',
     'clean:coverage',
     'karma:coverage',
-    'coveralls',
+    //  'coveralls', //doesn't seem to be a thing anymore.
     //'sauce', TODO: investigate why sauce connect isnt working
   ],
 }
