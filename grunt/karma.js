@@ -1,4 +1,3 @@
-var sauce = require('./sauce')
 var path = require('path')
 
 module.exports = {
@@ -6,7 +5,6 @@ module.exports = {
     // base path that will be used to resolve all patterns (eg. files, exclude)
     basePath: path.join(__dirname, '../'),
     // frameworks to use
-    // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
     frameworks: ['jasmine'],
 
     // list of files / patterns to load in the browser
@@ -43,22 +41,37 @@ module.exports = {
     },
   },
 
-  phantom: {
-    frameworks: ['jasmine', 'es5-shim'],
-    browsers: ['PhantomJS'],
+  chrome: {
+    frameworks: ['jasmine'],
+    reporters: ['progress', 'html'],
+    browsers: ['ChromeHeadless'], // Use ChromeHeadless for CI
+    customLaunchers: {
+      HeadlessChrome: {
+        base: 'ChromeHeadless',
+        flags: ['--no-sandbox', '--disable-gpu'], // Required for CI environments
+      },
+    },
+    autoWatch: false,
+    singleRun: true,
   },
 
-  chrome: {
-    reporters: ['html'],
-    browsers: ['Chrome'],
-    autoWatch: true,
-    singleRun: false,
+  firefox: {
+    frameworks: ['jasmine'],
+    reporters: ['progress', 'html'],
+    browsers: ['FirefoxHeadless'], // Use FirefoxHeadless for CI
+    customLaunchers: {
+      HeadlessFirefox: {
+        base: 'FirefoxHeadless',
+      },
+    },
+    autoWatch: false,
+    singleRun: true,
   },
 
   coverage: {
-    frameworks: ['jasmine', 'es5-shim'],
+    frameworks: ['jasmine'],
     reporters: ['progress', 'coverage'],
-    browsers: ['PhantomJS'],
+    browsers: ['ChromeHeadless', 'FirefoxHeadless'], // Run tests on both browsers for coverage
     coverageReporter: {
       reporters: [
         { type: 'html', dir: 'coverage/' },
@@ -81,17 +94,5 @@ module.exports = {
         ],
       },
     },
-  },
-
-  sauce_modern: {
-    options: sauce.modern,
-  },
-
-  sauce_ie: {
-    options: sauce.ie,
-  },
-
-  sauce_mobile: {
-    options: sauce.mobile,
   },
 }

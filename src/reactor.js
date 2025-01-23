@@ -6,7 +6,7 @@ import { ConsoleGroupLogger } from './logging'
 import { isKeyPath } from './key-path'
 import { isGetter } from './getter'
 import { toJS } from './immutable-helpers'
-import { extend, toFactory } from './utils'
+import { toFactory } from './utils'
 import {
   ReactorState,
   ObserverState,

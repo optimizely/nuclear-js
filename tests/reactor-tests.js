@@ -3,7 +3,7 @@ import { Reactor, Store } from '../src/main'
 import { getOption } from '../src/reactor/fns'
 import { toImmutable } from '../src/immutable-helpers'
 import { PROD_OPTIONS, DEBUG_OPTIONS } from '../src/reactor/records'
-import { NoopLogger, ConsoleGroupLogger } from '../src/logging'
+import { ConsoleGroupLogger } from '../src/logging'
 
 describe('Reactor', () => {
   it('should construct without \'new\'', () => {
