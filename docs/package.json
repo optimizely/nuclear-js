@@ -44,6 +44,6 @@
     "react-highlight": "^0.4.1",
     "react-prism": "^1.4.1",
     "sass-loader": "^1.0.2",
-    "style-loader": "^0.12.3"
+    "style-loader": "^0.23.1"
   }
 }
